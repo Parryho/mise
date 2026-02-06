@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { Loader2, Table2 } from "lucide-react";
+import { Link } from "wouter";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -42,6 +43,7 @@ export default function Rotation() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDay, setSelectedDay] = useState(0); // 0=Mon
+  const [selectedLocation, setSelectedLocation] = useState<"city" | "sued">("city");
   const { toast } = useToast();
 
   const currentRotationWeek = ((getISOWeek(new Date()) - 1) % 6) + 1;
@@ -90,9 +92,9 @@ export default function Rotation() {
 
   const weekButtons = Array.from({ length: weekCount }, (_, i) => i + 1);
 
-  // Get slots for the selected day
+  // Get slots for the selected day + location
   const dbDow = uiIndexToDbDow(selectedDay);
-  const daySlots = slots.filter(s => s.dayOfWeek === dbDow);
+  const daySlots = slots.filter(s => s.dayOfWeek === dbDow && s.locationSlug === selectedLocation);
 
   // Group by meal
   const mealGroups: Record<string, RotationSlot[]> = {};
@@ -107,9 +109,16 @@ export default function Rotation() {
       <div className="bg-primary text-primary-foreground px-4 pt-4 pb-3">
         <div className="flex items-center justify-between">
           <h1 className="font-heading text-xl font-bold uppercase tracking-wide">6-Wochen-Rotation</h1>
-          <span className="text-xs text-primary-foreground/70">
-            KW {getISOWeek(new Date())} = Woche {currentRotationWeek}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-primary-foreground/70">
+              KW {getISOWeek(new Date())} = W{currentRotationWeek}
+            </span>
+            <Link href="/rotation/print">
+              <Button size="icon" variant="ghost" className="text-primary-foreground hover:bg-primary-foreground/10 h-8 w-8">
+                <Table2 className="h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -128,6 +137,24 @@ export default function Rotation() {
               <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-status-info border-2 border-background" />
             )}
           </Button>
+        ))}
+      </div>
+
+      {/* Location Toggle */}
+      <div className="flex gap-2 px-4 pt-2 pb-0">
+        {(["city", "sued"] as const).map(loc => (
+          <button
+            key={loc}
+            onClick={() => setSelectedLocation(loc)}
+            className={cn(
+              "flex-1 py-1.5 rounded-full text-xs font-bold transition-colors",
+              selectedLocation === loc
+                ? "bg-foreground text-background"
+                : "bg-muted text-muted-foreground hover:bg-muted/80"
+            )}
+          >
+            {loc === "city" ? "City" : "SÜD"}
+          </button>
         ))}
       </div>
 

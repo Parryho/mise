@@ -9,6 +9,9 @@ import crypto from "crypto";
 const app = express();
 const isDev = process.env.NODE_ENV !== "production";
 
+// Trust first proxy (nginx) for correct X-Forwarded-Proto, X-Real-IP
+app.set("trust proxy", 1);
+
 // CORS: In dev allow all origins for LAN access, in production disable
 app.use(cors({
   origin: isDev ? true : false,

@@ -121,7 +121,7 @@ export async function registerRoutes(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: isProduction,
+      secure: process.env.FORCE_HTTPS === "true",
       httpOnly: true,
       sameSite: "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
@@ -144,45 +144,29 @@ export async function registerRoutes(
     console.log("Default admin account created: admin@mise.app / admin123");
   }
 
-  // Auth middleware helper
+  // Auth middleware – pass-through (app is public, no login required)
   const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
-    if (!req.session.userId) {
-      return res.status(401).json({ error: "Nicht angemeldet" });
+    const admin = await storage.getUserByEmail("admin@mise.app");
+    if (admin) {
+      (req as any).user = admin;
     }
-    const user = await storage.getUser(req.session.userId);
-    if (!user || !user.isApproved) {
-      return res.status(401).json({ error: "Keine Berechtigung" });
-    }
-    (req as any).user = user;
     next();
   };
 
   const requireAdmin = async (req: Request, res: Response, next: NextFunction) => {
-    if (!req.session.userId) {
-      return res.status(401).json({ error: "Nicht angemeldet" });
+    const admin = await storage.getUserByEmail("admin@mise.app");
+    if (admin) {
+      (req as any).user = admin;
     }
-    const user = await storage.getUser(req.session.userId);
-    if (!user || user.role !== "admin") {
-      return res.status(403).json({ error: "Keine Berechtigung" });
-    }
-    (req as any).user = user;
     next();
   };
 
-  // Role-based access: requireRole("admin", "souschef") allows either role
-  const requireRole = (...roles: string[]) => {
+  const requireRole = (..._roles: string[]) => {
     return async (req: Request, res: Response, next: NextFunction) => {
-      if (!req.session.userId) {
-        return res.status(401).json({ error: "Nicht angemeldet" });
+      const admin = await storage.getUserByEmail("admin@mise.app");
+      if (admin) {
+        (req as any).user = admin;
       }
-      const user = await storage.getUser(req.session.userId);
-      if (!user || !user.isApproved) {
-        return res.status(401).json({ error: "Keine Berechtigung" });
-      }
-      if (!roles.includes(user.role)) {
-        return res.status(403).json({ error: `Rolle ${roles.join(" oder ")} erforderlich` });
-      }
-      (req as any).user = user;
       next();
     };
   };
@@ -270,25 +254,20 @@ export async function registerRoutes(
     });
   });
 
-  // Get current user
+  // Get current user – always return admin (no login required)
   app.get("/api/auth/me", async (req, res) => {
-    if (!req.session.userId) {
-      return res.status(401).json({ error: "Nicht angemeldet" });
+    const admin = await storage.getUserByEmail("admin@mise.app");
+    if (!admin) {
+      return res.status(500).json({ error: "Admin-Benutzer nicht gefunden" });
     }
-    
-    const user = await storage.getUser(req.session.userId);
-    if (!user) {
-      req.session.destroy(() => {});
-      return res.status(401).json({ error: "Benutzer nicht gefunden" });
-    }
-    
+
     res.json({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      position: user.position,
-      role: user.role,
-      isApproved: user.isApproved
+      id: admin.id,
+      name: admin.name,
+      email: admin.email,
+      position: admin.position,
+      role: admin.role,
+      isApproved: admin.isApproved
     });
   });
 

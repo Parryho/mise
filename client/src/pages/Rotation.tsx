@@ -1,10 +1,13 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { getISOWeek, MEAL_SLOT_LABELS, MEAL_SLOTS } from "@shared/constants";
+import { cn } from "@/lib/utils";
 
 interface RotationSlot {
   id: number;
@@ -23,8 +26,13 @@ interface Recipe {
   category: string;
 }
 
-const DAY_NAMES = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
-const WEEK_DAYS = [1, 2, 3, 4, 5, 6, 0]; // Mo-Sa, So
+const DAY_LABELS = ["MO", "DI", "MI", "DO", "FR", "SA", "SO"];
+const DAY_NAMES_LONG = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
+// dayOfWeek in DB: 0=Sun, 1=Mon ... 6=Sat
+// Our UI index: 0=Mon ... 6=Sun
+function uiIndexToDbDow(uiIdx: number): number {
+  return uiIdx === 6 ? 0 : uiIdx + 1;
+}
 
 export default function Rotation() {
   const [templateId, setTemplateId] = useState<number | null>(null);
@@ -33,12 +41,11 @@ export default function Rotation() {
   const [slots, setSlots] = useState<RotationSlot[]>([]);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedDay, setSelectedDay] = useState(0); // 0=Mon
   const { toast } = useToast();
 
-  // Current rotation week based on ISO week
   const currentRotationWeek = ((getISOWeek(new Date()) - 1) % 6) + 1;
 
-  // On mount: ensure default template + fetch recipes
   useEffect(() => {
     Promise.all([
       fetch("/api/rotation-templates/ensure-default", { method: "POST" }).then(r => r.json()),
@@ -52,7 +59,6 @@ export default function Rotation() {
     }).catch(() => setLoading(false));
   }, []);
 
-  // Fetch slots when template or week changes
   useEffect(() => {
     if (!templateId) return;
     fetch(`/api/rotation-slots/${templateId}?weekNr=${weekNr}`)
@@ -74,14 +80,6 @@ export default function Rotation() {
     }
   };
 
-  // Group slots by day → meal
-  const grouped: Record<number, Record<string, RotationSlot[]>> = {};
-  for (const slot of slots) {
-    if (!grouped[slot.dayOfWeek]) grouped[slot.dayOfWeek] = {};
-    if (!grouped[slot.dayOfWeek][slot.meal]) grouped[slot.dayOfWeek][slot.meal] = [];
-    grouped[slot.dayOfWeek][slot.meal].push(slot);
-  }
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -92,17 +90,31 @@ export default function Rotation() {
 
   const weekButtons = Array.from({ length: weekCount }, (_, i) => i + 1);
 
+  // Get slots for the selected day
+  const dbDow = uiIndexToDbDow(selectedDay);
+  const daySlots = slots.filter(s => s.dayOfWeek === dbDow);
+
+  // Group by meal
+  const mealGroups: Record<string, RotationSlot[]> = {};
+  for (const slot of daySlots) {
+    if (!mealGroups[slot.meal]) mealGroups[slot.meal] = [];
+    mealGroups[slot.meal].push(slot);
+  }
+
   return (
-    <div className="p-4 space-y-4 pb-24">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-heading font-bold">6-Wochen-Rotation</h1>
-        <span className="text-xs text-muted-foreground">
-          KW {getISOWeek(new Date())} = Woche {currentRotationWeek}
-        </span>
+    <div className="flex flex-col pb-24">
+      {/* Orange Header */}
+      <div className="bg-primary text-primary-foreground px-4 pt-4 pb-3">
+        <div className="flex items-center justify-between">
+          <h1 className="font-heading text-xl font-bold uppercase tracking-wide">6-Wochen-Rotation</h1>
+          <span className="text-xs text-primary-foreground/70">
+            KW {getISOWeek(new Date())} = Woche {currentRotationWeek}
+          </span>
+        </div>
       </div>
 
-      {/* Week selector buttons */}
-      <div className="flex gap-2">
+      {/* Week Selector Buttons */}
+      <div className="flex gap-2 px-4 pt-3 pb-1">
         {weekButtons.map(w => (
           <Button
             key={w}
@@ -119,63 +131,128 @@ export default function Rotation() {
         ))}
       </div>
 
-      {/* Week grid: days × meals × courses */}
-      <div className="space-y-3">
-        {WEEK_DAYS.map(dow => {
-          const daySlots = grouped[dow];
-          if (!daySlots) return null;
+      {/* Day Selector Pills */}
+      <div className="flex gap-1.5 px-4 py-3">
+        {DAY_LABELS.map((label, idx) => {
+          const isSelected = selectedDay === idx;
+          return (
+            <button
+              key={label}
+              onClick={() => setSelectedDay(idx)}
+              className={cn(
+                "flex-1 py-2 rounded-full text-xs font-bold transition-colors",
+                isSelected
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              )}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Single-Day Course Cards */}
+      <div className="px-4 space-y-5 pt-1">
+        {["lunch", "dinner"].map(meal => {
+          const mealSlots = mealGroups[meal] || [];
+          if (mealSlots.length === 0) return null;
 
           return (
-            <Card key={dow}>
-              <CardHeader className="py-2 px-3">
-                <CardTitle className="text-sm font-medium">{DAY_NAMES[dow]}</CardTitle>
-              </CardHeader>
-              <CardContent className="p-2 space-y-2">
-                {["lunch", "dinner"].map(meal => {
-                  const mealSlots = daySlots[meal] || [];
-                  if (mealSlots.length === 0) return null;
+            <div key={meal} className="space-y-2">
+              <h2 className="font-heading text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                {DAY_NAMES_LONG[selectedDay]} — {meal === "lunch" ? "Mittagessen" : "Abendessen"}
+              </h2>
+
+              <div className="space-y-2">
+                {MEAL_SLOTS.map(course => {
+                  const slot = mealSlots.find(s => s.course === course);
+                  if (!slot) return null;
+
+                  const recipeName = slot.recipeId
+                    ? recipes.find(r => r.id === slot.recipeId)?.name || null
+                    : null;
 
                   return (
-                    <div key={meal}>
-                      <div className="text-xs text-muted-foreground mb-1 font-medium">
-                        {meal === "lunch" ? "Mittag" : "Abend"}
-                      </div>
-                      <div className="space-y-1">
-                        {MEAL_SLOTS.map(course => {
-                          const slot = mealSlots.find(s => s.course === course);
-                          if (!slot) return null;
-
-                          return (
-                            <div key={course} className="flex items-center gap-2">
-                              <span className="text-[10px] text-muted-foreground w-16 shrink-0">
-                                {MEAL_SLOT_LABELS[course]}
-                              </span>
-                              <Select
-                                value={slot.recipeId ? String(slot.recipeId) : "none"}
-                                onValueChange={v => handleSlotChange(slot.id, v === "none" ? null : parseInt(v))}
-                              >
-                                <SelectTrigger className="h-7 text-xs flex-1">
-                                  <SelectValue placeholder="Gericht wählen" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="none">- leer -</SelectItem>
-                                  {recipes.map(r => (
-                                    <SelectItem key={r.id} value={String(r.id)}>{r.name}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
+                    <RotationCourseCard
+                      key={course}
+                      slot={slot}
+                      courseLabel={MEAL_SLOT_LABELS[course]}
+                      recipeName={recipeName}
+                      recipes={recipes}
+                      onSlotChange={handleSlotChange}
+                    />
                   );
                 })}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           );
         })}
       </div>
     </div>
+  );
+}
+
+function RotationCourseCard({ slot, courseLabel, recipeName, recipes, onSlotChange }: {
+  slot: RotationSlot;
+  courseLabel: string;
+  recipeName: string | null;
+  recipes: Recipe[];
+  onSlotChange: (slotId: number, recipeId: number | null) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [recipeId, setRecipeId] = useState(slot.recipeId ? String(slot.recipeId) : "none");
+
+  useEffect(() => {
+    setRecipeId(slot.recipeId ? String(slot.recipeId) : "none");
+  }, [slot.recipeId]);
+
+  const handleSave = () => {
+    onSlotChange(slot.id, recipeId === "none" ? null : parseInt(recipeId));
+    setOpen(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Card className="cursor-pointer hover:bg-muted/50 transition-colors active:scale-[0.98]">
+          <CardContent className="flex items-center justify-between p-3">
+            <div className="min-w-0">
+              <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
+                {courseLabel}
+              </div>
+              <div className="text-base font-medium truncate">
+                {recipeName || <span className="text-muted-foreground">— leer —</span>}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </DialogTrigger>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>{courseLabel}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="space-y-2">
+            <Label>Rezept</Label>
+            <Select value={recipeId} onValueChange={setRecipeId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Gericht wählen..." />
+              </SelectTrigger>
+              <SelectContent className="max-h-60">
+                <SelectItem value="none">— leer —</SelectItem>
+                {recipes.map(r => (
+                  <SelectItem key={r.id} value={String(r.id)}>{r.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Button onClick={handleSave} className="w-full">
+            Speichern
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -12,7 +12,7 @@ import {
 import { autoCategorize } from "@shared/categorizer";
 import { parseFelixText } from "./felix-parser";
 import { getAirtableStatus, testAirtableConnection, syncAirtableEvents } from "./airtable";
-import { generateWeekFromRotation, getRotationOverview } from "./rotation";
+import { generateWeekFromRotation, getRotationOverview, ensureDefaultTemplate, getOrGenerateWeekPlan } from "./rotation";
 import { getProductionList } from "./production";
 import { getShoppingList } from "./shopping";
 import { getDishCost, getWeeklyCostReport } from "./costs";
@@ -1285,6 +1285,22 @@ export async function registerRoutes(
   });
 
   // === MENU PLANS ===
+
+  // Week-based menu plan query with auto-generate from rotation
+  app.get("/api/menu-plans/week", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const year = parseInt(req.query.year as string);
+      const week = parseInt(req.query.week as string);
+      if (!year || !week || week < 1 || week > 53) {
+        return res.status(400).json({ error: "year und week (1-53) erforderlich" });
+      }
+      const result = await getOrGenerateWeekPlan(year, week);
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.get("/api/menu-plans", requireAuth, async (req, res) => {
     const { start, end, date, withRecipes } = req.query;
     // Support single date or date range
@@ -1993,6 +2009,15 @@ export async function registerRoutes(
   app.get("/api/rotation-templates", requireAuth, async (_req: Request, res: Response) => {
     const templates = await storage.getRotationTemplates();
     res.json(templates);
+  });
+
+  app.post("/api/rotation-templates/ensure-default", requireAuth, async (_req: Request, res: Response) => {
+    try {
+      const template = await ensureDefaultTemplate();
+      res.json(template);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
   });
 
   app.get("/api/rotation-templates/:id", requireAuth, async (req: Request, res: Response) => {

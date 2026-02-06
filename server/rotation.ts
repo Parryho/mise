@@ -4,8 +4,8 @@
  */
 
 import { storage } from "./storage";
-import type { InsertMenuPlan } from "@shared/schema";
-import { MEAL_SLOTS } from "@shared/constants";
+import type { InsertMenuPlan, InsertRotationSlot } from "@shared/schema";
+import { MEAL_SLOTS, getWeekDateRange, getISOWeek } from "@shared/constants";
 
 /**
  * Generate weekly menu plans from a rotation template.
@@ -85,5 +85,100 @@ export async function getRotationOverview(templateId: number) {
     weeks,
     totalSlots: allSlots.length,
     filledSlots: allSlots.filter(s => s.recipeId !== null).length,
+  };
+}
+
+/**
+ * Ensure a default rotation template exists with all empty slots.
+ * If one already exists (isActive=true), return it.
+ * Otherwise create "Standard-Rotation" with weekCount=6 and all slots.
+ */
+export async function ensureDefaultTemplate() {
+  const templates = await storage.getRotationTemplates();
+  const active = templates.find(t => t.isActive);
+  if (active) {
+    // Check if slots exist
+    const existingSlots = await storage.getRotationSlots(active.id);
+    if (existingSlots.length > 0) return active;
+    // Template exists but no slots — create them
+    await createAllSlots(active.id, active.weekCount);
+    return active;
+  }
+
+  // Create new default template
+  const template = await storage.createRotationTemplate({
+    name: "Standard-Rotation",
+    weekCount: 6,
+    isActive: true,
+  });
+
+  await createAllSlots(template.id, 6);
+  return template;
+}
+
+async function createAllSlots(templateId: number, weekCount: number) {
+  const days = [1, 2, 3, 4, 5, 6, 0]; // Mo-Sa, So
+  const meals = ["lunch", "dinner"];
+  const locationSlug = "city";
+
+  const slots: InsertRotationSlot[] = [];
+  for (let week = 1; week <= weekCount; week++) {
+    for (const dow of days) {
+      for (const meal of meals) {
+        for (const course of MEAL_SLOTS) {
+          slots.push({
+            templateId,
+            weekNr: week,
+            dayOfWeek: dow,
+            meal,
+            locationSlug,
+            course,
+            recipeId: null,
+          });
+        }
+      }
+    }
+  }
+
+  // Insert in batches to avoid huge queries
+  const BATCH = 200;
+  for (let i = 0; i < slots.length; i += BATCH) {
+    await storage.createRotationSlots(slots.slice(i, i + BATCH));
+  }
+}
+
+/**
+ * Get menu plans for a calendar week, auto-generating from rotation if empty.
+ */
+export async function getOrGenerateWeekPlan(year: number, week: number) {
+  const { from, to } = getWeekDateRange(year, week);
+  let plans = await storage.getMenuPlans(from, to);
+
+  if (plans.length === 0) {
+    // Auto-generate from rotation
+    const template = await ensureDefaultTemplate();
+    const rotationWeekNr = ((week - 1) % template.weekCount) + 1;
+
+    // Check if rotation has any filled slots for this week
+    const rotSlots = await storage.getRotationSlotsByWeek(template.id, rotationWeekNr);
+    const filledSlots = rotSlots.filter(s => s.recipeId !== null);
+
+    if (filledSlots.length > 0) {
+      await generateWeekFromRotation(template.id, rotationWeekNr, from);
+      plans = await storage.getMenuPlans(from, to);
+    }
+  }
+
+  // Compute rotation week number for display
+  const template = await ensureDefaultTemplate();
+  const rotationWeekNr = ((week - 1) % template.weekCount) + 1;
+
+  return {
+    year,
+    week,
+    from,
+    to,
+    rotationWeekNr,
+    plans,
   };
 }

@@ -2,11 +2,9 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, ChevronLeft, ChevronRight, Wand2 } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { getISOWeek, MEAL_SLOT_LABELS, MEAL_SLOTS } from "@shared/constants";
 
 interface RotationSlot {
   id: number;
@@ -26,46 +24,42 @@ interface Recipe {
 }
 
 const DAY_NAMES = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
-const COURSES = ["soup", "main1", "side1a", "side1b", "main2", "side2a", "side2b", "dessert"];
-const COURSE_LABELS: Record<string, string> = {
-  soup: "Suppe",
-  main1: "Hauptgericht 1",
-  side1a: "Beilage 1a",
-  side1b: "Beilage 1b",
-  main2: "Vegetarisch",
-  side2a: "Beilage 2a",
-  side2b: "Beilage 2b",
-  dessert: "Dessert",
-};
+const WEEK_DAYS = [1, 2, 3, 4, 5, 6, 0]; // Mo-Sa, So
 
 export default function Rotation() {
-  const [templates, setTemplates] = useState<Array<{ id: number; name: string; weekCount: number }>>([]);
-  const [selectedTemplate, setSelectedTemplate] = useState<number | null>(null);
+  const [templateId, setTemplateId] = useState<number | null>(null);
+  const [weekCount, setWeekCount] = useState(6);
   const [weekNr, setWeekNr] = useState(1);
   const [slots, setSlots] = useState<RotationSlot[]>([]);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
+  // Current rotation week based on ISO week
+  const currentRotationWeek = ((getISOWeek(new Date()) - 1) % 6) + 1;
+
+  // On mount: ensure default template + fetch recipes
   useEffect(() => {
     Promise.all([
-      fetch("/api/rotation-templates").then(r => r.json()),
+      fetch("/api/rotation-templates/ensure-default", { method: "POST" }).then(r => r.json()),
       fetch("/api/recipes").then(r => r.json()),
     ]).then(([tmpl, recs]) => {
-      setTemplates(tmpl);
+      setTemplateId(tmpl.id);
+      setWeekCount(tmpl.weekCount || 6);
       setRecipes(recs);
-      if (tmpl.length > 0) setSelectedTemplate(tmpl[0].id);
+      setWeekNr(currentRotationWeek);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
 
+  // Fetch slots when template or week changes
   useEffect(() => {
-    if (!selectedTemplate) return;
-    fetch(`/api/rotation-slots/${selectedTemplate}?weekNr=${weekNr}`)
+    if (!templateId) return;
+    fetch(`/api/rotation-slots/${templateId}?weekNr=${weekNr}`)
       .then(r => r.json())
       .then(data => setSlots(data))
       .catch(() => {});
-  }, [selectedTemplate, weekNr]);
+  }, [templateId, weekNr]);
 
   const handleSlotChange = async (slotId: number, recipeId: number | null) => {
     try {
@@ -80,13 +74,9 @@ export default function Rotation() {
     }
   };
 
-  const template = templates.find(t => t.id === selectedTemplate);
-  const maxWeek = template?.weekCount || 6;
-
-  // Group slots by day+meal
-  const grouped: Record<string, Record<string, RotationSlot[]>> = {};
+  // Group slots by day → meal
+  const grouped: Record<number, Record<string, RotationSlot[]>> = {};
   for (const slot of slots) {
-    const dayKey = `${slot.dayOfWeek}-${slot.meal}`;
     if (!grouped[slot.dayOfWeek]) grouped[slot.dayOfWeek] = {};
     if (!grouped[slot.dayOfWeek][slot.meal]) grouped[slot.dayOfWeek][slot.meal] = [];
     grouped[slot.dayOfWeek][slot.meal].push(slot);
@@ -100,38 +90,38 @@ export default function Rotation() {
     );
   }
 
+  const weekButtons = Array.from({ length: weekCount }, (_, i) => i + 1);
+
   return (
     <div className="p-4 space-y-4 pb-24">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-heading font-bold">Rotation</h1>
-        <GenerateDialog templateId={selectedTemplate} weekNr={weekNr} />
+        <h1 className="text-2xl font-heading font-bold">6-Wochen-Rotation</h1>
+        <span className="text-xs text-muted-foreground">
+          KW {getISOWeek(new Date())} = Woche {currentRotationWeek}
+        </span>
       </div>
 
-      <div className="flex items-center gap-2">
-        <Select value={String(selectedTemplate || "")} onValueChange={v => setSelectedTemplate(parseInt(v))}>
-          <SelectTrigger className="w-[180px] h-8 text-xs">
-            <SelectValue placeholder="Template" />
-          </SelectTrigger>
-          <SelectContent>
-            {templates.map(t => (
-              <SelectItem key={t.id} value={String(t.id)}>{t.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <div className="flex items-center gap-1 ml-auto">
-          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setWeekNr(Math.max(1, weekNr - 1))} disabled={weekNr <= 1}>
-            <ChevronLeft className="h-4 w-4" />
+      {/* Week selector buttons */}
+      <div className="flex gap-2">
+        {weekButtons.map(w => (
+          <Button
+            key={w}
+            variant={weekNr === w ? "default" : "outline"}
+            size="sm"
+            className="relative flex-1"
+            onClick={() => setWeekNr(w)}
+          >
+            W{w}
+            {w === currentRotationWeek && (
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-status-info border-2 border-background" />
+            )}
           </Button>
-          <span className="text-sm font-medium w-20 text-center">Woche {weekNr}/{maxWeek}</span>
-          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setWeekNr(Math.min(maxWeek, weekNr + 1))} disabled={weekNr >= maxWeek}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
+        ))}
       </div>
 
+      {/* Week grid: days × meals × courses */}
       <div className="space-y-3">
-        {[1, 2, 3, 4, 5, 0].map(dow => {
+        {WEEK_DAYS.map(dow => {
           const daySlots = grouped[dow];
           if (!daySlots) return null;
 
@@ -147,15 +137,19 @@ export default function Rotation() {
 
                   return (
                     <div key={meal}>
-                      <div className="text-xs text-muted-foreground mb-1">{meal === "lunch" ? "Mittag" : "Abend"}</div>
+                      <div className="text-xs text-muted-foreground mb-1 font-medium">
+                        {meal === "lunch" ? "Mittag" : "Abend"}
+                      </div>
                       <div className="space-y-1">
-                        {COURSES.map(course => {
+                        {MEAL_SLOTS.map(course => {
                           const slot = mealSlots.find(s => s.course === course);
                           if (!slot) return null;
 
                           return (
                             <div key={course} className="flex items-center gap-2">
-                              <span className="text-[10px] text-muted-foreground w-16 shrink-0">{COURSE_LABELS[course]}</span>
+                              <span className="text-[10px] text-muted-foreground w-16 shrink-0">
+                                {MEAL_SLOT_LABELS[course]}
+                              </span>
                               <Select
                                 value={slot.recipeId ? String(slot.recipeId) : "none"}
                                 onValueChange={v => handleSlotChange(slot.id, v === "none" ? null : parseInt(v))}
@@ -183,60 +177,5 @@ export default function Rotation() {
         })}
       </div>
     </div>
-  );
-}
-
-function GenerateDialog({ templateId, weekNr }: { templateId: number | null; weekNr: number }) {
-  const [open, setOpen] = useState(false);
-  const [startDate, setStartDate] = useState("");
-  const [generating, setGenerating] = useState(false);
-  const { toast } = useToast();
-
-  const handleGenerate = async () => {
-    if (!templateId || !startDate) return;
-    setGenerating(true);
-    try {
-      const res = await fetch("/api/menu-plans/generate-from-rotation", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ templateId, weekNr, startDate }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      toast({ title: `${data.created} Menüpläne erstellt` });
-      setOpen(false);
-    } catch (err: any) {
-      toast({ title: "Fehler", description: err.message, variant: "destructive" });
-    } finally {
-      setGenerating(false);
-    }
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm" className="gap-1">
-          <Wand2 className="h-4 w-4" /> Generieren
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-xs">
-        <DialogHeader>
-          <DialogTitle>Menüplan generieren</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-3">
-          <p className="text-sm text-muted-foreground">
-            Erstellt Menüpläne aus Woche {weekNr} der Rotation.
-          </p>
-          <div className="space-y-2">
-            <Label>Montag (Startwoche)</Label>
-            <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
-          </div>
-          <Button onClick={handleGenerate} disabled={generating || !startDate} className="w-full">
-            {generating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-            Generieren
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
   );
 }

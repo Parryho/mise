@@ -103,7 +103,7 @@ export default function Recipes() {
           </div>
         </div>
 
-        <div className="grid gap-4">
+        <div className="grid gap-3 md:grid-cols-2">
           {globalSearchResults.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <Search className="h-12 w-12 mx-auto mb-4 opacity-30" />
@@ -157,7 +157,7 @@ export default function Recipes() {
           </div>
         </div>
 
-        <div className="grid gap-4">
+        <div className="grid gap-3 md:grid-cols-2">
           {filteredRecipes.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <Search className="h-12 w-12 mx-auto mb-4 opacity-30" />
@@ -197,12 +197,12 @@ export default function Recipes() {
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
         {CATEGORIES.map((category) => (
           <button
             key={category.id}
             onClick={() => setSelectedCategory(category.id)}
-            className="flex flex-col items-center justify-center gap-1 p-4 rounded-xl border border-border bg-card shadow-sm hover:shadow-md active:scale-[0.98] transition-all"
+            className="flex flex-col items-center justify-center gap-1 p-4 rounded-lg border border-border bg-card elevation-0 press transition-all"
             data-testid={`category-${category.id.toLowerCase()}`}
           >
             <span className="text-4xl mb-1">{category.symbol}</span>
@@ -687,14 +687,14 @@ function RecipeCard({ recipe }: { recipe: Recipe }) {
   return (
     <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (open) loadIngredients(); if (!open) setEditMode(false); }}>
       <DialogTrigger asChild>
-        <Card className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow active:scale-[0.99] border-border/50" data-testid={`recipe-card-${recipe.id}`}>
+        <Card className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow press border-border/50" data-testid={`recipe-card-${recipe.id}`}>
           <div className="relative h-32 w-full">
             <img 
               src={recipe.image || "https://images.unsplash.com/photo-1495521821757-a1efb6729352?auto=format&fit=crop&q=80&w=800"} 
               alt={recipe.name} 
               className="absolute inset-0 w-full h-full object-cover" 
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
             <div className="absolute bottom-2 left-3 right-3 flex justify-between items-end text-white">
               <div>
                 <Badge variant="secondary" className="text-[10px] h-5 px-1.5 mb-1 bg-white/20 hover:bg-white/30 text-white border-0 backdrop-blur-sm">
@@ -720,7 +720,7 @@ function RecipeCard({ recipe }: { recipe: Recipe }) {
         </Card>
       </DialogTrigger>
       
-      <DialogContent className="max-w-md h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-lg h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <div className="relative h-40 shrink-0">
           <img 
             src={recipe.image || "https://images.unsplash.com/photo-1495521821757-a1efb6729352?auto=format&fit=crop&q=80&w=800"} 

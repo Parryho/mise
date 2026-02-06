@@ -1,14 +1,12 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Loader2, Table2, ChefHat } from "lucide-react";
+import { Loader2, ChefHat, Printer } from "lucide-react";
 import { Link } from "wouter";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { getISOWeek, MEAL_SLOT_LABELS, MEAL_SLOTS } from "@shared/constants";
-import { cn } from "@/lib/utils";
 
 interface RotationSlot {
   id: number;
@@ -25,15 +23,38 @@ interface Recipe {
   id: number;
   name: string;
   category: string;
+  allergens?: string[];
 }
 
-const DAY_LABELS = ["MO", "DI", "MI", "DO", "FR", "SA", "SO"];
-const DAY_NAMES_LONG = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
+const DAY_LABELS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 // dayOfWeek in DB: 0=Sun, 1=Mon ... 6=Sat
-// Our UI index: 0=Mon ... 6=Sun
+// UI index: 0=Mon ... 6=Sun
 function uiIndexToDbDow(uiIdx: number): number {
   return uiIdx === 6 ? 0 : uiIdx + 1;
 }
+
+const COURSE_SHORT: Record<string, string> = {
+  soup: "Suppe",
+  main1: "H1",
+  side1a: "B1a",
+  side1b: "B1b",
+  main2: "H2",
+  side2a: "B2a",
+  side2b: "B2b",
+  dessert: "Dessert",
+};
+
+interface ColDef {
+  locationSlug: string;
+  meal: string;
+  label: string;
+}
+
+const COLUMNS: ColDef[] = [
+  { locationSlug: "city", meal: "lunch", label: "City Mittag" },
+  { locationSlug: "city", meal: "dinner", label: "City Abend" },
+  { locationSlug: "sued", meal: "lunch", label: "SÜD Mittag" },
+];
 
 export default function Rotation() {
   const [templateId, setTemplateId] = useState<number | null>(null);
@@ -42,10 +63,10 @@ export default function Rotation() {
   const [slots, setSlots] = useState<RotationSlot[]>([]);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedDay, setSelectedDay] = useState(0); // 0=Mon
-  const [selectedLocation, setSelectedLocation] = useState<"city" | "sued">("city");
   const [autoFillOpen, setAutoFillOpen] = useState(false);
   const [autoFilling, setAutoFilling] = useState(false);
+  const [editSlot, setEditSlot] = useState<RotationSlot | null>(null);
+  const [editRecipeId, setEditRecipeId] = useState("none");
   const { toast } = useToast();
 
   const currentRotationWeek = ((getISOWeek(new Date()) - 1) % 6) + 1;
@@ -71,6 +92,19 @@ export default function Rotation() {
       .catch(() => {});
   }, [templateId, weekNr]);
 
+  const recipeMap = useMemo(() => {
+    const m = new Map<number, Recipe>();
+    for (const r of recipes) m.set(r.id, r);
+    return m;
+  }, [recipes]);
+
+  const getSlot = (dayUiIdx: number, meal: string, locationSlug: string, course: string): RotationSlot | undefined => {
+    const dbDow = uiIndexToDbDow(dayUiIdx);
+    return slots.find(
+      s => s.dayOfWeek === dbDow && s.meal === meal && s.locationSlug === locationSlug && s.course === course
+    );
+  };
+
   const handleAutoFill = async (overwrite: boolean) => {
     if (!templateId) return;
     setAutoFilling(true);
@@ -86,7 +120,6 @@ export default function Rotation() {
         title: "Küchenchef-Agent fertig",
         description: `${data.filled} Gerichte zugewiesen, ${data.skipped} übersprungen.`,
       });
-      // Reload current week slots
       const slotsRes = await fetch(`/api/rotation-slots/${templateId}?weekNr=${weekNr}`);
       setSlots(await slotsRes.json());
     } catch (err: any) {
@@ -110,6 +143,17 @@ export default function Rotation() {
     }
   };
 
+  const openEditDialog = (slot: RotationSlot) => {
+    setEditSlot(slot);
+    setEditRecipeId(slot.recipeId ? String(slot.recipeId) : "none");
+  };
+
+  const handleEditSave = () => {
+    if (!editSlot) return;
+    handleSlotChange(editSlot.id, editRecipeId === "none" ? null : parseInt(editRecipeId));
+    setEditSlot(null);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -119,17 +163,6 @@ export default function Rotation() {
   }
 
   const weekButtons = Array.from({ length: weekCount }, (_, i) => i + 1);
-
-  // Get slots for the selected day + location
-  const dbDow = uiIndexToDbDow(selectedDay);
-  const daySlots = slots.filter(s => s.dayOfWeek === dbDow && s.locationSlug === selectedLocation);
-
-  // Group by meal
-  const mealGroups: Record<string, RotationSlot[]> = {};
-  for (const slot of daySlots) {
-    if (!mealGroups[slot.meal]) mealGroups[slot.meal] = [];
-    mealGroups[slot.meal].push(slot);
-  }
 
   return (
     <div className="flex flex-col pb-24">
@@ -152,7 +185,7 @@ export default function Rotation() {
             </Button>
             <Link href="/rotation/print">
               <Button size="icon" variant="ghost" className="text-primary-foreground hover:bg-primary-foreground/10 h-8 w-8">
-                <Table2 className="h-4 w-4" />
+                <Printer className="h-4 w-4" />
               </Button>
             </Link>
           </div>
@@ -160,7 +193,7 @@ export default function Rotation() {
       </div>
 
       {/* Week Selector Buttons */}
-      <div className="flex gap-2 px-4 pt-3 pb-1">
+      <div className="flex gap-2 px-4 pt-3 pb-2">
         {weekButtons.map(w => (
           <Button
             key={w}
@@ -177,82 +210,111 @@ export default function Rotation() {
         ))}
       </div>
 
-      {/* Location Toggle */}
-      <div className="flex gap-2 px-4 pt-2 pb-0">
-        {(["city", "sued"] as const).map(loc => (
-          <button
-            key={loc}
-            onClick={() => setSelectedLocation(loc)}
-            className={cn(
-              "flex-1 py-1.5 rounded-full text-xs font-bold transition-colors",
-              selectedLocation === loc
-                ? "bg-foreground text-background"
-                : "bg-muted text-muted-foreground hover:bg-muted/80"
-            )}
-          >
-            {loc === "city" ? "City" : "SÜD"}
-          </button>
-        ))}
+      {/* Week Table */}
+      <div className="px-2 pt-1">
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-[11px] leading-tight">
+            <thead>
+              <tr className="bg-primary text-primary-foreground">
+                <th className="border border-border/30 px-1.5 py-1 text-left w-8 font-bold">Tag</th>
+                {COLUMNS.map(col => (
+                  <th key={`${col.locationSlug}-${col.meal}`} className="border border-border/30 px-1.5 py-1 text-left font-bold">
+                    {col.label}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {DAY_LABELS.map((dayLabel, dayIdx) => (
+                <tr key={dayLabel} className={dayIdx % 2 === 0 ? "bg-background" : "bg-muted/30"}>
+                  <td className="border border-border/50 px-1.5 py-0.5 font-bold align-top bg-muted/50">
+                    {dayLabel}
+                  </td>
+                  {COLUMNS.map(col => (
+                    <td key={`${col.locationSlug}-${col.meal}`} className="border border-border/50 px-1 py-0.5 align-top">
+                      <div className="space-y-px">
+                        {MEAL_SLOTS.map(course => {
+                          const slot = getSlot(dayIdx, col.meal, col.locationSlug, course);
+                          const recipe = slot?.recipeId ? recipeMap.get(slot.recipeId) : null;
+                          const isDessert = course === "dessert";
+
+                          return (
+                            <div key={course} className="flex items-baseline gap-1 min-h-[14px]">
+                              <span className="text-[9px] text-muted-foreground font-medium w-10 shrink-0">
+                                {COURSE_SHORT[course]}:
+                              </span>
+                              {isDessert && !recipe ? (
+                                <button
+                                  onClick={() => slot && openEditDialog(slot)}
+                                  className="text-left truncate cursor-pointer hover:text-primary"
+                                  title="Dessertvariation (klicken zum Ändern)"
+                                >
+                                  <span className="italic">Dessertvariation</span>
+                                  <span className="ml-1 text-[9px] text-orange-600 font-medium">A,C,G</span>
+                                </button>
+                              ) : recipe ? (
+                                <button
+                                  onClick={() => slot && openEditDialog(slot)}
+                                  className="text-left hover:text-primary truncate cursor-pointer"
+                                  title={`${recipe.name} (klicken zum Ändern)`}
+                                >
+                                  <span className="truncate">{recipe.name}</span>
+                                  {recipe.allergens && recipe.allergens.length > 0 && (
+                                    <span className="ml-1 text-[9px] text-orange-600 font-medium">
+                                      {recipe.allergens.join(",")}
+                                    </span>
+                                  )}
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => slot && openEditDialog(slot)}
+                                  className="text-muted-foreground/40 cursor-pointer hover:text-primary"
+                                >
+                                  —
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {/* Day Selector Pills */}
-      <div className="flex gap-1.5 px-4 py-3">
-        {DAY_LABELS.map((label, idx) => {
-          const isSelected = selectedDay === idx;
-          return (
-            <button
-              key={label}
-              onClick={() => setSelectedDay(idx)}
-              className={cn(
-                "flex-1 py-2 rounded-full text-xs font-bold transition-colors",
-                isSelected
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground hover:bg-muted/80"
-              )}
-            >
-              {label}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Single-Day Course Cards */}
-      <div className="px-4 space-y-5 pt-1">
-        {["lunch", "dinner"].map(meal => {
-          const mealSlots = mealGroups[meal] || [];
-          if (mealSlots.length === 0) return null;
-
-          return (
-            <div key={meal} className="space-y-2">
-              <h2 className="font-heading text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                {DAY_NAMES_LONG[selectedDay]} — {meal === "lunch" ? "Mittagessen" : "Abendessen"}
-              </h2>
-
-              <div className="space-y-2">
-                {MEAL_SLOTS.map(course => {
-                  const slot = mealSlots.find(s => s.course === course);
-                  if (!slot) return null;
-
-                  const recipeName = slot.recipeId
-                    ? recipes.find(r => r.id === slot.recipeId)?.name || null
-                    : null;
-
-                  return (
-                    <RotationCourseCard
-                      key={course}
-                      slot={slot}
-                      courseLabel={MEAL_SLOT_LABELS[course]}
-                      recipeName={recipeName}
-                      recipes={recipes}
-                      onSlotChange={handleSlotChange}
-                    />
-                  );
-                })}
-              </div>
+      {/* Slot Edit Dialog */}
+      <Dialog open={!!editSlot} onOpenChange={(open) => { if (!open) setEditSlot(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>
+              {editSlot ? MEAL_SLOT_LABELS[editSlot.course as keyof typeof MEAL_SLOT_LABELS] || editSlot.course : ""}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Rezept</Label>
+              <Select value={editRecipeId} onValueChange={setEditRecipeId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Gericht wählen..." />
+                </SelectTrigger>
+                <SelectContent className="max-h-60">
+                  <SelectItem value="none">— leer —</SelectItem>
+                  {recipes.map(r => (
+                    <SelectItem key={r.id} value={String(r.id)}>{r.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          );
-        })}
-      </div>
+            <Button onClick={handleEditSave} className="w-full">
+              Speichern
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Auto-Fill Confirmation Dialog */}
       <Dialog open={autoFillOpen} onOpenChange={setAutoFillOpen}>
@@ -265,7 +327,7 @@ export default function Rotation() {
           <div className="space-y-3 py-2">
             <p className="text-sm text-muted-foreground">
               Leere Slots automatisch mit passenden Rezepten befüllen?
-              Gerichte werden nach Kategorie zugeordnet (Suppen, Hauptspeisen, Beilagen, Desserts).
+              Dessert wird immer als "Dessertvariation" angezeigt.
             </p>
             <div className="flex flex-col gap-2">
               <Button onClick={() => handleAutoFill(false)} disabled={autoFilling} className="w-full">
@@ -281,69 +343,5 @@ export default function Rotation() {
         </DialogContent>
       </Dialog>
     </div>
-  );
-}
-
-function RotationCourseCard({ slot, courseLabel, recipeName, recipes, onSlotChange }: {
-  slot: RotationSlot;
-  courseLabel: string;
-  recipeName: string | null;
-  recipes: Recipe[];
-  onSlotChange: (slotId: number, recipeId: number | null) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [recipeId, setRecipeId] = useState(slot.recipeId ? String(slot.recipeId) : "none");
-
-  useEffect(() => {
-    setRecipeId(slot.recipeId ? String(slot.recipeId) : "none");
-  }, [slot.recipeId]);
-
-  const handleSave = () => {
-    onSlotChange(slot.id, recipeId === "none" ? null : parseInt(recipeId));
-    setOpen(false);
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Card className="cursor-pointer hover:bg-muted/50 transition-colors active:scale-[0.98]">
-          <CardContent className="flex items-center justify-between p-3">
-            <div className="min-w-0">
-              <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
-                {courseLabel}
-              </div>
-              <div className="text-base font-medium truncate">
-                {recipeName || <span className="text-muted-foreground">— leer —</span>}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </DialogTrigger>
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle>{courseLabel}</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 py-2">
-          <div className="space-y-2">
-            <Label>Rezept</Label>
-            <Select value={recipeId} onValueChange={setRecipeId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Gericht wählen..." />
-              </SelectTrigger>
-              <SelectContent className="max-h-60">
-                <SelectItem value="none">— leer —</SelectItem>
-                {recipes.map(r => (
-                  <SelectItem key={r.id} value={String(r.id)}>{r.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <Button onClick={handleSave} className="w-full">
-            Speichern
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
   );
 }

@@ -201,12 +201,18 @@ export default function RotationPrint() {
                           {MEAL_SLOTS.map(course => {
                             const slot = getSlot(weekNr, dayIdx, col.meal, col.locationSlug, course);
                             const recipe = slot?.recipeId ? recipeMap.get(slot.recipeId) : null;
+                            const isDessert = course === "dessert";
                             return (
                               <div key={course} className="flex items-baseline gap-1 min-h-[14px]">
                                 <span className="text-[9px] text-muted-foreground font-medium w-10 shrink-0">
                                   {COURSE_SHORT[course]}:
                                 </span>
-                                {recipe ? (
+                                {isDessert && !recipe ? (
+                                  <span>
+                                    <span className="italic">Dessertvariation</span>
+                                    <span className="ml-1 text-[9px] text-orange-600 font-medium">A,C,G</span>
+                                  </span>
+                                ) : recipe ? (
                                   <button
                                     onClick={() => handleRecipeClick(recipe.id)}
                                     className="text-left hover:text-primary hover:underline truncate cursor-pointer print:no-underline"

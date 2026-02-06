@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Table2 } from "lucide-react";
+import { Loader2, Table2, ChefHat } from "lucide-react";
 import { Link } from "wouter";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -44,6 +44,8 @@ export default function Rotation() {
   const [loading, setLoading] = useState(true);
   const [selectedDay, setSelectedDay] = useState(0); // 0=Mon
   const [selectedLocation, setSelectedLocation] = useState<"city" | "sued">("city");
+  const [autoFillOpen, setAutoFillOpen] = useState(false);
+  const [autoFilling, setAutoFilling] = useState(false);
   const { toast } = useToast();
 
   const currentRotationWeek = ((getISOWeek(new Date()) - 1) % 6) + 1;
@@ -68,6 +70,32 @@ export default function Rotation() {
       .then(data => setSlots(data))
       .catch(() => {});
   }, [templateId, weekNr]);
+
+  const handleAutoFill = async (overwrite: boolean) => {
+    if (!templateId) return;
+    setAutoFilling(true);
+    try {
+      const res = await fetch("/api/rotation/auto-fill", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ templateId, overwrite }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      toast({
+        title: "Küchenchef-Agent fertig",
+        description: `${data.filled} Gerichte zugewiesen, ${data.skipped} übersprungen.`,
+      });
+      // Reload current week slots
+      const slotsRes = await fetch(`/api/rotation-slots/${templateId}?weekNr=${weekNr}`);
+      setSlots(await slotsRes.json());
+    } catch (err: any) {
+      toast({ title: "Fehler", description: err.message, variant: "destructive" });
+    } finally {
+      setAutoFilling(false);
+      setAutoFillOpen(false);
+    }
+  };
 
   const handleSlotChange = async (slotId: number, recipeId: number | null) => {
     try {
@@ -113,6 +141,15 @@ export default function Rotation() {
             <span className="text-xs text-primary-foreground/70">
               KW {getISOWeek(new Date())} = W{currentRotationWeek}
             </span>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="text-primary-foreground hover:bg-primary-foreground/10 h-8 w-8"
+              onClick={() => setAutoFillOpen(true)}
+              disabled={autoFilling}
+            >
+              {autoFilling ? <Loader2 className="h-4 w-4 animate-spin" /> : <ChefHat className="h-4 w-4" />}
+            </Button>
             <Link href="/rotation/print">
               <Button size="icon" variant="ghost" className="text-primary-foreground hover:bg-primary-foreground/10 h-8 w-8">
                 <Table2 className="h-4 w-4" />
@@ -216,6 +253,33 @@ export default function Rotation() {
           );
         })}
       </div>
+
+      {/* Auto-Fill Confirmation Dialog */}
+      <Dialog open={autoFillOpen} onOpenChange={setAutoFillOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ChefHat className="h-5 w-5" /> Küchenchef-Agent
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <p className="text-sm text-muted-foreground">
+              Leere Slots automatisch mit passenden Rezepten befüllen?
+              Gerichte werden nach Kategorie zugeordnet (Suppen, Hauptspeisen, Beilagen, Desserts).
+            </p>
+            <div className="flex flex-col gap-2">
+              <Button onClick={() => handleAutoFill(false)} disabled={autoFilling} className="w-full">
+                {autoFilling ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                Leere Slots befüllen
+              </Button>
+              <Button variant="outline" onClick={() => handleAutoFill(true)} disabled={autoFilling} className="w-full">
+                {autoFilling ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                Alles neu befüllen
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -13,6 +13,7 @@ import { autoCategorize } from "@shared/categorizer";
 import { parseFelixText } from "./felix-parser";
 import { getAirtableStatus, testAirtableConnection, syncAirtableEvents } from "./airtable";
 import { generateWeekFromRotation, getRotationOverview, ensureDefaultTemplate, getOrGenerateWeekPlan } from "./rotation";
+import { autoFillRotation } from "./rotation-agent";
 import { getProductionList } from "./production";
 import { getShoppingList } from "./shopping";
 import { getDishCost, getWeeklyCostReport } from "./costs";
@@ -2084,6 +2085,20 @@ export async function registerRoutes(
       res.json(updated);
     } catch (error: any) {
       res.status(400).json({ error: error.message });
+    }
+  });
+
+  // --- Auto-fill rotation slots ---
+  app.post("/api/rotation/auto-fill", requireRole("admin", "souschef"), async (req: Request, res: Response) => {
+    try {
+      const { templateId, overwrite } = req.body;
+      if (!templateId) {
+        return res.status(400).json({ error: "templateId erforderlich" });
+      }
+      const result = await autoFillRotation(templateId, { overwrite: !!overwrite });
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
     }
   });
 

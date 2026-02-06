@@ -3,7 +3,7 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm ci --ignore-scripts
+RUN npm install --ignore-scripts
 
 COPY . .
 RUN npm run build
@@ -15,7 +15,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev --ignore-scripts
+RUN npm install --omit=dev --ignore-scripts
 
 COPY --from=builder /app/dist ./dist
 

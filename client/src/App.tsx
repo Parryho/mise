@@ -16,6 +16,7 @@ import MenuPlanPage from "@/pages/MenuPlan";
 import Today from "@/pages/Today";
 
 import Rotation from "@/pages/Rotation";
+import RotationPrint from "@/pages/RotationPrint";
 import ProductionList from "@/pages/ProductionList";
 import ShoppingList from "@/pages/ShoppingList";
 import Print from "@/pages/Print";
@@ -54,6 +55,9 @@ function Router() {
       </Route>
       <Route path="/settings">
         <Layout><Settings /></Layout>
+      </Route>
+      <Route path="/rotation/print">
+        <Layout><RotationPrint /></Layout>
       </Route>
       <Route path="/rotation">
         <Layout><Rotation /></Layout>

@@ -1,0 +1,431 @@
+import {
+  type User, type InsertUser,
+  type Recipe, type InsertRecipe,
+  type Ingredient, type InsertIngredient,
+  type MasterIngredient, type InsertMasterIngredient,
+  type Fridge, type InsertFridge,
+  type HaccpLog, type InsertHaccpLog,
+  type GuestCount, type InsertGuestCount,
+  type CateringEvent, type InsertCateringEvent,
+  type CateringMenuItem, type InsertCateringMenuItem,
+  type Staff, type InsertStaff,
+  type ShiftType, type InsertShiftType,
+  type ScheduleEntry, type InsertScheduleEntry,
+  type MenuPlan, type InsertMenuPlan,
+  type MenuPlanTemperature, type InsertMenuPlanTemperature,
+  type AppSetting,
+  type Task, type InsertTask,
+  type TaskTemplate, type InsertTaskTemplate,
+  type Location, type InsertLocation,
+  type RotationTemplate, type InsertRotationTemplate,
+  type RotationSlot, type InsertRotationSlot,
+  users, recipes, ingredients, masterIngredients, fridges, haccpLogs,
+  guestCounts, cateringEvents, cateringMenuItems, staff, shiftTypes,
+  scheduleEntries, menuPlans, menuPlanTemperatures, appSettings, tasks,
+  taskTemplates, locations, rotationTemplates, rotationSlots
+} from "@shared/schema";
+import { db } from "./db";
+import { eq, desc, and, gte, lte } from "drizzle-orm";
+
+export class DatabaseStorage {
+  // === Users ===
+  async getUser(id: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
+  }
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
+  async getAllUsers(): Promise<User[]> {
+    return db.select().from(users);
+  }
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db.insert(users).values(insertUser).returning();
+    return user;
+  }
+  async updateUser(id: string, user: Partial<InsertUser>): Promise<User | undefined> {
+    const [updated] = await db.update(users).set(user).where(eq(users.id, id)).returning();
+    return updated;
+  }
+  async deleteUser(id: string): Promise<void> {
+    await db.delete(users).where(eq(users.id, id));
+  }
+
+  // === App settings ===
+  async getSetting(key: string): Promise<AppSetting | undefined> {
+    const [setting] = await db.select().from(appSettings).where(eq(appSettings.key, key));
+    return setting;
+  }
+  async getAllSettings(): Promise<AppSetting[]> {
+    return db.select().from(appSettings);
+  }
+  async setSetting(key: string, value: string): Promise<AppSetting> {
+    const existing = await this.getSetting(key);
+    if (existing) {
+      const [updated] = await db.update(appSettings).set({ value }).where(eq(appSettings.key, key)).returning();
+      return updated;
+    }
+    const [created] = await db.insert(appSettings).values({ key, value }).returning();
+    return created;
+  }
+
+  // === Locations ===
+  async getLocations(): Promise<Location[]> {
+    return db.select().from(locations);
+  }
+  async getLocation(id: number): Promise<Location | undefined> {
+    const [loc] = await db.select().from(locations).where(eq(locations.id, id));
+    return loc;
+  }
+  async getLocationBySlug(slug: string): Promise<Location | undefined> {
+    const [loc] = await db.select().from(locations).where(eq(locations.slug, slug));
+    return loc;
+  }
+  async createLocation(location: InsertLocation): Promise<Location> {
+    const [created] = await db.insert(locations).values(location).returning();
+    return created;
+  }
+  async updateLocation(id: number, location: Partial<InsertLocation>): Promise<Location | undefined> {
+    const [updated] = await db.update(locations).set(location).where(eq(locations.id, id)).returning();
+    return updated;
+  }
+
+  // === Recipes ===
+  async getRecipes(filters?: { q?: string; category?: string }): Promise<Recipe[]> {
+    let query = db.select().from(recipes);
+    if (filters?.category) {
+      query = query.where(eq(recipes.category, filters.category)) as typeof query;
+    }
+    const results = await query;
+    if (filters?.q && filters.q.length >= 2) {
+      const searchTerm = filters.q.toLowerCase();
+      return results.filter(r => r.name.toLowerCase().includes(searchTerm));
+    }
+    return results;
+  }
+  async getRecipe(id: number): Promise<Recipe | undefined> {
+    const [recipe] = await db.select().from(recipes).where(eq(recipes.id, id));
+    return recipe;
+  }
+  async createRecipe(recipe: InsertRecipe): Promise<Recipe> {
+    const [created] = await db.insert(recipes).values(recipe).returning();
+    return created;
+  }
+  async updateRecipe(id: number, recipe: Partial<InsertRecipe>): Promise<Recipe | undefined> {
+    const [updated] = await db.update(recipes).set({ ...recipe, updatedAt: new Date() }).where(eq(recipes.id, id)).returning();
+    return updated;
+  }
+  async deleteRecipe(id: number): Promise<void> {
+    await db.delete(recipes).where(eq(recipes.id, id));
+  }
+
+  // === Ingredients (per recipe) ===
+  async getIngredients(recipeId: number): Promise<Ingredient[]> {
+    return db.select().from(ingredients).where(eq(ingredients.recipeId, recipeId));
+  }
+  async createIngredient(ingredient: InsertIngredient): Promise<Ingredient> {
+    const [created] = await db.insert(ingredients).values(ingredient).returning();
+    return created;
+  }
+  async deleteIngredientsByRecipe(recipeId: number): Promise<void> {
+    await db.delete(ingredients).where(eq(ingredients.recipeId, recipeId));
+  }
+
+  // === Master Ingredients ===
+  async getMasterIngredients(): Promise<MasterIngredient[]> {
+    return db.select().from(masterIngredients).orderBy(masterIngredients.name);
+  }
+  async getMasterIngredient(id: number): Promise<MasterIngredient | undefined> {
+    const [mi] = await db.select().from(masterIngredients).where(eq(masterIngredients.id, id));
+    return mi;
+  }
+  async createMasterIngredient(mi: InsertMasterIngredient): Promise<MasterIngredient> {
+    const [created] = await db.insert(masterIngredients).values(mi).returning();
+    return created;
+  }
+  async updateMasterIngredient(id: number, mi: Partial<InsertMasterIngredient>): Promise<MasterIngredient | undefined> {
+    const [updated] = await db.update(masterIngredients).set(mi).where(eq(masterIngredients.id, id)).returning();
+    return updated;
+  }
+  async deleteMasterIngredient(id: number): Promise<void> {
+    await db.delete(masterIngredients).where(eq(masterIngredients.id, id));
+  }
+
+  // === Fridges ===
+  async getFridges(): Promise<Fridge[]> {
+    return db.select().from(fridges);
+  }
+  async getFridge(id: number): Promise<Fridge | undefined> {
+    const [fridge] = await db.select().from(fridges).where(eq(fridges.id, id));
+    return fridge;
+  }
+  async createFridge(fridge: InsertFridge): Promise<Fridge> {
+    const [created] = await db.insert(fridges).values(fridge).returning();
+    return created;
+  }
+  async updateFridge(id: number, fridge: Partial<InsertFridge>): Promise<Fridge | undefined> {
+    const [updated] = await db.update(fridges).set(fridge).where(eq(fridges.id, id)).returning();
+    return updated;
+  }
+  async deleteFridge(id: number): Promise<void> {
+    await db.delete(fridges).where(eq(fridges.id, id));
+  }
+
+  // === HACCP Logs ===
+  async getHaccpLogs(): Promise<HaccpLog[]> {
+    return db.select().from(haccpLogs).orderBy(desc(haccpLogs.timestamp));
+  }
+  async getHaccpLogsByFridge(fridgeId: number): Promise<HaccpLog[]> {
+    return db.select().from(haccpLogs).where(eq(haccpLogs.fridgeId, fridgeId)).orderBy(desc(haccpLogs.timestamp));
+  }
+  async createHaccpLog(log: InsertHaccpLog): Promise<HaccpLog> {
+    const [created] = await db.insert(haccpLogs).values(log).returning();
+    return created;
+  }
+
+  // === Guest counts ===
+  async getGuestCounts(startDate: string, endDate: string): Promise<GuestCount[]> {
+    return db.select().from(guestCounts).where(and(gte(guestCounts.date, startDate), lte(guestCounts.date, endDate)));
+  }
+  async getGuestCountByDateMeal(date: string, meal: string): Promise<GuestCount | undefined> {
+    const [count] = await db.select().from(guestCounts).where(and(eq(guestCounts.date, date), eq(guestCounts.meal, meal)));
+    return count;
+  }
+  async createGuestCount(count: InsertGuestCount): Promise<GuestCount> {
+    const [created] = await db.insert(guestCounts).values(count).returning();
+    return created;
+  }
+  async updateGuestCount(id: number, count: Partial<InsertGuestCount>): Promise<GuestCount | undefined> {
+    const [updated] = await db.update(guestCounts).set(count).where(eq(guestCounts.id, id)).returning();
+    return updated;
+  }
+  async deleteGuestCount(id: number): Promise<void> {
+    await db.delete(guestCounts).where(eq(guestCounts.id, id));
+  }
+
+  // === Rotation Templates ===
+  async getRotationTemplates(): Promise<RotationTemplate[]> {
+    return db.select().from(rotationTemplates).orderBy(rotationTemplates.name);
+  }
+  async getRotationTemplate(id: number): Promise<RotationTemplate | undefined> {
+    const [t] = await db.select().from(rotationTemplates).where(eq(rotationTemplates.id, id));
+    return t;
+  }
+  async createRotationTemplate(t: InsertRotationTemplate): Promise<RotationTemplate> {
+    const [created] = await db.insert(rotationTemplates).values(t).returning();
+    return created;
+  }
+  async updateRotationTemplate(id: number, t: Partial<InsertRotationTemplate>): Promise<RotationTemplate | undefined> {
+    const [updated] = await db.update(rotationTemplates).set(t).where(eq(rotationTemplates.id, id)).returning();
+    return updated;
+  }
+  async deleteRotationTemplate(id: number): Promise<void> {
+    await db.delete(rotationTemplates).where(eq(rotationTemplates.id, id));
+  }
+
+  // === Rotation Slots ===
+  async getRotationSlots(templateId: number): Promise<RotationSlot[]> {
+    return db.select().from(rotationSlots).where(eq(rotationSlots.templateId, templateId));
+  }
+  async getRotationSlotsByWeek(templateId: number, weekNr: number): Promise<RotationSlot[]> {
+    return db.select().from(rotationSlots).where(and(eq(rotationSlots.templateId, templateId), eq(rotationSlots.weekNr, weekNr)));
+  }
+  async createRotationSlot(slot: InsertRotationSlot): Promise<RotationSlot> {
+    const [created] = await db.insert(rotationSlots).values(slot).returning();
+    return created;
+  }
+  async createRotationSlots(slots: InsertRotationSlot[]): Promise<RotationSlot[]> {
+    if (slots.length === 0) return [];
+    return db.insert(rotationSlots).values(slots).returning();
+  }
+  async updateRotationSlot(id: number, slot: Partial<InsertRotationSlot>): Promise<RotationSlot | undefined> {
+    const [updated] = await db.update(rotationSlots).set(slot).where(eq(rotationSlots.id, id)).returning();
+    return updated;
+  }
+  async deleteRotationSlotsByTemplate(templateId: number): Promise<void> {
+    await db.delete(rotationSlots).where(eq(rotationSlots.templateId, templateId));
+  }
+
+  // === Catering events ===
+  async getCateringEvents(): Promise<CateringEvent[]> {
+    return db.select().from(cateringEvents).orderBy(desc(cateringEvents.date));
+  }
+  async getCateringEvent(id: number): Promise<CateringEvent | undefined> {
+    const [event] = await db.select().from(cateringEvents).where(eq(cateringEvents.id, id));
+    return event;
+  }
+  async getCateringEventByAirtableId(airtableId: string): Promise<CateringEvent | undefined> {
+    const [event] = await db.select().from(cateringEvents).where(eq(cateringEvents.airtableId, airtableId));
+    return event;
+  }
+  async createCateringEvent(event: InsertCateringEvent): Promise<CateringEvent> {
+    const [created] = await db.insert(cateringEvents).values(event).returning();
+    return created;
+  }
+  async updateCateringEvent(id: number, event: Partial<InsertCateringEvent>): Promise<CateringEvent | undefined> {
+    const [updated] = await db.update(cateringEvents).set(event).where(eq(cateringEvents.id, id)).returning();
+    return updated;
+  }
+  async deleteCateringEvent(id: number): Promise<void> {
+    await db.delete(cateringEvents).where(eq(cateringEvents.id, id));
+  }
+
+  // === Catering Menu Items ===
+  async getCateringMenuItems(eventId: number): Promise<CateringMenuItem[]> {
+    return db.select().from(cateringMenuItems).where(eq(cateringMenuItems.eventId, eventId)).orderBy(cateringMenuItems.sortOrder);
+  }
+  async createCateringMenuItem(item: InsertCateringMenuItem): Promise<CateringMenuItem> {
+    const [created] = await db.insert(cateringMenuItems).values(item).returning();
+    return created;
+  }
+  async updateCateringMenuItem(id: number, item: Partial<InsertCateringMenuItem>): Promise<CateringMenuItem | undefined> {
+    const [updated] = await db.update(cateringMenuItems).set(item).where(eq(cateringMenuItems.id, id)).returning();
+    return updated;
+  }
+  async deleteCateringMenuItem(id: number): Promise<void> {
+    await db.delete(cateringMenuItems).where(eq(cateringMenuItems.id, id));
+  }
+  async deleteCateringMenuItemsByEvent(eventId: number): Promise<void> {
+    await db.delete(cateringMenuItems).where(eq(cateringMenuItems.eventId, eventId));
+  }
+
+  // === Staff ===
+  async getStaff(): Promise<Staff[]> {
+    return db.select().from(staff);
+  }
+  async getStaffMember(id: number): Promise<Staff | undefined> {
+    const [member] = await db.select().from(staff).where(eq(staff.id, id));
+    return member;
+  }
+  async createStaff(member: InsertStaff): Promise<Staff> {
+    const [created] = await db.insert(staff).values(member).returning();
+    return created;
+  }
+  async updateStaff(id: number, member: Partial<InsertStaff>): Promise<Staff | undefined> {
+    const [updated] = await db.update(staff).set(member).where(eq(staff.id, id)).returning();
+    return updated;
+  }
+  async deleteStaff(id: number): Promise<void> {
+    await db.delete(staff).where(eq(staff.id, id));
+  }
+
+  // === Shift types ===
+  async getShiftTypes(): Promise<ShiftType[]> {
+    return db.select().from(shiftTypes);
+  }
+  async getShiftType(id: number): Promise<ShiftType | undefined> {
+    const [st] = await db.select().from(shiftTypes).where(eq(shiftTypes.id, id));
+    return st;
+  }
+  async createShiftType(st: InsertShiftType): Promise<ShiftType> {
+    const [created] = await db.insert(shiftTypes).values(st).returning();
+    return created;
+  }
+  async updateShiftType(id: number, st: Partial<InsertShiftType>): Promise<ShiftType | undefined> {
+    const [updated] = await db.update(shiftTypes).set(st).where(eq(shiftTypes.id, id)).returning();
+    return updated;
+  }
+  async deleteShiftType(id: number): Promise<void> {
+    await db.delete(shiftTypes).where(eq(shiftTypes.id, id));
+  }
+
+  // === Schedule ===
+  async getScheduleEntries(startDate: string, endDate: string): Promise<ScheduleEntry[]> {
+    return db.select().from(scheduleEntries).where(and(gte(scheduleEntries.date, startDate), lte(scheduleEntries.date, endDate)));
+  }
+  async getScheduleEntry(id: number): Promise<ScheduleEntry | undefined> {
+    const [entry] = await db.select().from(scheduleEntries).where(eq(scheduleEntries.id, id));
+    return entry;
+  }
+  async createScheduleEntry(entry: InsertScheduleEntry): Promise<ScheduleEntry> {
+    const [created] = await db.insert(scheduleEntries).values(entry).returning();
+    return created;
+  }
+  async updateScheduleEntry(id: number, entry: Partial<InsertScheduleEntry>): Promise<ScheduleEntry | undefined> {
+    const [updated] = await db.update(scheduleEntries).set(entry).where(eq(scheduleEntries.id, id)).returning();
+    return updated;
+  }
+  async deleteScheduleEntry(id: number): Promise<void> {
+    await db.delete(scheduleEntries).where(eq(scheduleEntries.id, id));
+  }
+
+  // === Menu plans ===
+  async getMenuPlans(startDate: string, endDate: string): Promise<MenuPlan[]> {
+    return db.select().from(menuPlans).where(and(gte(menuPlans.date, startDate), lte(menuPlans.date, endDate)));
+  }
+  async getMenuPlan(id: number): Promise<MenuPlan | undefined> {
+    const [plan] = await db.select().from(menuPlans).where(eq(menuPlans.id, id));
+    return plan;
+  }
+  async createMenuPlan(plan: InsertMenuPlan): Promise<MenuPlan> {
+    const [created] = await db.insert(menuPlans).values(plan).returning();
+    return created;
+  }
+  async createMenuPlans(plans: InsertMenuPlan[]): Promise<MenuPlan[]> {
+    if (plans.length === 0) return [];
+    return db.insert(menuPlans).values(plans).returning();
+  }
+  async updateMenuPlan(id: number, plan: Partial<InsertMenuPlan>): Promise<MenuPlan | undefined> {
+    const [updated] = await db.update(menuPlans).set(plan).where(eq(menuPlans.id, id)).returning();
+    return updated;
+  }
+  async deleteMenuPlan(id: number): Promise<void> {
+    await db.delete(menuPlans).where(eq(menuPlans.id, id));
+  }
+
+  // === Menu Plan Temperatures ===
+  async getMenuPlanTemperatures(menuPlanId: number): Promise<MenuPlanTemperature[]> {
+    return db.select().from(menuPlanTemperatures).where(eq(menuPlanTemperatures.menuPlanId, menuPlanId));
+  }
+  async createMenuPlanTemperature(temp: InsertMenuPlanTemperature): Promise<MenuPlanTemperature> {
+    const [created] = await db.insert(menuPlanTemperatures).values(temp).returning();
+    return created;
+  }
+  async updateMenuPlanTemperature(id: number, temp: Partial<InsertMenuPlanTemperature>): Promise<MenuPlanTemperature | undefined> {
+    const [updated] = await db.update(menuPlanTemperatures).set(temp).where(eq(menuPlanTemperatures.id, id)).returning();
+    return updated;
+  }
+
+  // === Tasks ===
+  async getTasksByDate(date: string): Promise<Task[]> {
+    return db.select().from(tasks).where(eq(tasks.date, date)).orderBy(desc(tasks.priority));
+  }
+  async createTask(task: InsertTask): Promise<Task> {
+    const [created] = await db.insert(tasks).values(task).returning();
+    return created;
+  }
+  async updateTask(id: number, patch: Partial<InsertTask>): Promise<Task | undefined> {
+    const [updated] = await db.update(tasks).set(patch).where(eq(tasks.id, id)).returning();
+    return updated;
+  }
+  async deleteTask(id: number): Promise<void> {
+    await db.delete(tasks).where(eq(tasks.id, id));
+  }
+
+  // === Task Templates ===
+  async getTaskTemplates(): Promise<TaskTemplate[]> {
+    return db.select().from(taskTemplates).orderBy(taskTemplates.name);
+  }
+  async getTaskTemplate(id: number): Promise<TaskTemplate | undefined> {
+    const [t] = await db.select().from(taskTemplates).where(eq(taskTemplates.id, id));
+    return t;
+  }
+  async createTaskTemplate(t: InsertTaskTemplate): Promise<TaskTemplate> {
+    const [created] = await db.insert(taskTemplates).values(t).returning();
+    return created;
+  }
+  async updateTaskTemplate(id: number, t: Partial<InsertTaskTemplate>): Promise<TaskTemplate | undefined> {
+    const [updated] = await db.update(taskTemplates).set(t).where(eq(taskTemplates.id, id)).returning();
+    return updated;
+  }
+  async deleteTaskTemplate(id: number): Promise<void> {
+    await db.delete(taskTemplates).where(eq(taskTemplates.id, id));
+  }
+}
+
+export const storage = new DatabaseStorage();

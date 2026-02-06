@@ -99,9 +99,16 @@ export async function ensureDefaultTemplate() {
   if (active) {
     // Check if slots exist
     const existingSlots = await storage.getRotationSlots(active.id);
-    if (existingSlots.length > 0) return active;
-    // Template exists but no slots — create them
-    await createAllSlots(active.id, active.weekCount);
+    if (existingSlots.length === 0) {
+      // Template exists but no slots — create them for both locations
+      await createAllSlots(active.id, active.weekCount);
+      return active;
+    }
+    // Backfill: if only "city" slots exist, add "sued" slots
+    const hasSued = existingSlots.some(s => s.locationSlug === "sued");
+    if (!hasSued) {
+      await createSlotsForLocation(active.id, active.weekCount, "sued");
+    }
     return active;
   }
 
@@ -116,10 +123,9 @@ export async function ensureDefaultTemplate() {
   return template;
 }
 
-async function createAllSlots(templateId: number, weekCount: number) {
+async function createSlotsForLocation(templateId: number, weekCount: number, locationSlug: string) {
   const days = [1, 2, 3, 4, 5, 6, 0]; // Mo-Sa, So
   const meals = ["lunch", "dinner"];
-  const locationSlug = "city";
 
   const slots: InsertRotationSlot[] = [];
   for (let week = 1; week <= weekCount; week++) {
@@ -140,10 +146,15 @@ async function createAllSlots(templateId: number, weekCount: number) {
     }
   }
 
-  // Insert in batches to avoid huge queries
   const BATCH = 200;
   for (let i = 0; i < slots.length; i += BATCH) {
     await storage.createRotationSlots(slots.slice(i, i + BATCH));
+  }
+}
+
+async function createAllSlots(templateId: number, weekCount: number) {
+  for (const loc of ["city", "sued"]) {
+    await createSlotsForLocation(templateId, weekCount, loc);
   }
 }
 

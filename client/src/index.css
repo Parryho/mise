@@ -37,6 +37,22 @@
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
 
+  --color-status-info: hsl(var(--status-info));
+  --color-status-info-foreground: hsl(var(--status-info-foreground));
+  --color-status-info-subtle: hsl(var(--status-info-subtle));
+  --color-status-success: hsl(var(--status-success));
+  --color-status-success-foreground: hsl(var(--status-success-foreground));
+  --color-status-success-subtle: hsl(var(--status-success-subtle));
+  --color-status-warning: hsl(var(--status-warning));
+  --color-status-warning-foreground: hsl(var(--status-warning-foreground));
+  --color-status-warning-subtle: hsl(var(--status-warning-subtle));
+  --color-status-danger: hsl(var(--status-danger));
+  --color-status-danger-foreground: hsl(var(--status-danger-foreground));
+  --color-status-danger-subtle: hsl(var(--status-danger-subtle));
+  --color-status-neutral: hsl(var(--status-neutral));
+  --color-status-neutral-foreground: hsl(var(--status-neutral-foreground));
+  --color-status-neutral-subtle: hsl(var(--status-neutral-subtle));
+
   --font-sans: 'Inter', sans-serif;
   --font-heading: 'Oswald', sans-serif;
   --font-mono: 'Roboto Mono', monospace;
@@ -75,6 +91,30 @@
   --ring: 22 90% 54%;
 
   --radius: 0.5rem;
+
+  /* Semantic status colors */
+  --status-info: 217 91% 60%;
+  --status-info-foreground: 0 0% 100%;
+  --status-info-subtle: 214 95% 93%;
+
+  --status-success: 142 76% 36%;
+  --status-success-foreground: 0 0% 100%;
+  --status-success-subtle: 138 76% 93%;
+
+  --status-warning: 38 92% 50%;
+  --status-warning-foreground: 20 20% 15%;
+  --status-warning-subtle: 48 96% 89%;
+
+  --status-danger: 0 84% 60%;
+  --status-danger-foreground: 0 0% 100%;
+  --status-danger-subtle: 0 93% 94%;
+
+  --status-neutral: 220 9% 46%;
+  --status-neutral-foreground: 0 0% 100%;
+  --status-neutral-subtle: 220 14% 94%;
+
+  /* Layout */
+  --nav-height: 4rem;
 }
 
 .dark {
@@ -105,6 +145,28 @@
   --border: 217.2 32.6% 17.5%;
   --input: 217.2 32.6% 17.5%;
   --ring: 212.7 26.8% 83.9%;
+
+  --status-info: 217 91% 60%;
+  --status-info-foreground: 210 40% 98%;
+  --status-info-subtle: 217 33% 17%;
+
+  --status-success: 142 70% 45%;
+  --status-success-foreground: 210 40% 98%;
+  --status-success-subtle: 142 30% 15%;
+
+  --status-warning: 38 92% 50%;
+  --status-warning-foreground: 20 20% 15%;
+  --status-warning-subtle: 38 30% 15%;
+
+  --status-danger: 0 63% 31%;
+  --status-danger-foreground: 210 40% 98%;
+  --status-danger-subtle: 0 30% 15%;
+
+  --status-neutral: 215 20% 65%;
+  --status-neutral-foreground: 210 40% 98%;
+  --status-neutral-subtle: 217 33% 17%;
+
+  --nav-height: 4rem;
 }
 
 @layer base {
@@ -116,6 +178,24 @@
   }
   h1, h2, h3, h4, h5, h6 {
     @apply font-heading uppercase tracking-wide;
+  }
+}
+
+@layer utilities {
+  /* Elevation system — replaces uniform shadow usage */
+  .elevation-0 {
+    box-shadow: none;
+  }
+  .elevation-1 {
+    @apply shadow-sm;
+  }
+  .elevation-2 {
+    @apply shadow-md;
+  }
+
+  /* Standardized press feedback */
+  .press {
+    @apply active:scale-[0.98] transition-transform;
   }
 }
 

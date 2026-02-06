@@ -34,20 +34,20 @@ interface CateringEvent {
 }
 
 const EVENT_TYPES = [
-  { value: "brunch", label: "Brunch", icon: Sun, color: "bg-yellow-50 text-yellow-700 border-yellow-200", bar: "bg-yellow-500" },
-  { value: "ball", label: "Ball", icon: Sparkles, color: "bg-purple-50 text-purple-700 border-purple-200", bar: "bg-purple-500" },
-  { value: "buffet", label: "Buffet", icon: LayoutGrid, color: "bg-blue-50 text-blue-700 border-blue-200", bar: "bg-blue-500" },
-  { value: "bankett", label: "Bankett", icon: Crown, color: "bg-red-50 text-red-700 border-red-200", bar: "bg-red-500" },
-  { value: "empfang", label: "Empfang", icon: Wine, color: "bg-green-50 text-green-700 border-green-200", bar: "bg-green-500" },
-  { value: "seminar", label: "Seminar", icon: BookOpen, color: "bg-indigo-50 text-indigo-700 border-indigo-200", bar: "bg-indigo-500" },
-  { value: "sonstiges", label: "Sonstiges", icon: Circle, color: "bg-gray-50 text-gray-700 border-gray-200", bar: "bg-gray-500" },
+  { value: "brunch", label: "Brunch", icon: Sun, color: "bg-yellow-50 text-yellow-600 border-yellow-200", bar: "bg-yellow-500" },
+  { value: "ball", label: "Ball", icon: Sparkles, color: "bg-purple-50 text-purple-600 border-purple-200", bar: "bg-purple-500" },
+  { value: "buffet", label: "Buffet", icon: LayoutGrid, color: "bg-blue-50 text-blue-600 border-blue-200", bar: "bg-blue-500" },
+  { value: "bankett", label: "Bankett", icon: Crown, color: "bg-red-50 text-red-600 border-red-200", bar: "bg-red-500" },
+  { value: "empfang", label: "Empfang", icon: Wine, color: "bg-green-50 text-green-600 border-green-200", bar: "bg-green-500" },
+  { value: "seminar", label: "Seminar", icon: BookOpen, color: "bg-indigo-50 text-indigo-600 border-indigo-200", bar: "bg-indigo-500" },
+  { value: "sonstiges", label: "Sonstiges", icon: Circle, color: "bg-gray-50 text-gray-600 border-gray-200", bar: "bg-gray-500" },
 ];
 
 const STATUS_OPTIONS = [
-  { value: "geplant", label: "Geplant", color: "bg-blue-100 text-blue-700" },
-  { value: "bestaetigt", label: "Bestätigt", color: "bg-green-100 text-green-700" },
-  { value: "abgesagt", label: "Abgesagt", color: "bg-red-100 text-red-700" },
-  { value: "abgeschlossen", label: "Abgeschlossen", color: "bg-gray-100 text-gray-600" },
+  { value: "geplant", label: "Geplant", color: "bg-status-info-subtle text-status-info" },
+  { value: "bestaetigt", label: "Bestätigt", color: "bg-status-success-subtle text-status-success" },
+  { value: "abgesagt", label: "Abgesagt", color: "bg-status-danger-subtle text-status-danger" },
+  { value: "abgeschlossen", label: "Abgeschlossen", color: "bg-status-neutral-subtle text-status-neutral" },
 ];
 
 function formatDate(date: Date): string {
@@ -242,7 +242,7 @@ export default function Catering() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
         <Card>
           <CardContent className="p-3 flex items-center gap-3">
             <CalendarDays className="h-5 w-5 text-muted-foreground" />
@@ -283,7 +283,7 @@ export default function Catering() {
 
       {/* Airtable Sync */}
       {airtableStatus && (
-        <Card className={airtableStatus.configured ? "border-green-200 bg-green-50/50" : "border-yellow-200 bg-yellow-50/50"}>
+        <Card className={airtableStatus.configured ? "border-status-success/30 bg-status-success-subtle/50" : "border-status-warning/30 bg-status-warning-subtle/50"}>
           <CardContent className="p-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
@@ -306,12 +306,12 @@ export default function Catering() {
       )}
 
       {syncResult && (
-        <Card className={syncResult.errors.length > 0 ? "border-red-200 bg-red-50/50" : "border-green-200 bg-green-50/50"}>
+        <Card className={syncResult.errors.length > 0 ? "border-status-danger/30 bg-status-danger-subtle/50" : "border-status-success/30 bg-status-success-subtle/50"}>
           <CardContent className="p-3 text-sm">
             {syncResult.errors.length > 0 ? (
-              <div className="text-red-700">{syncResult.errors.join(", ")}</div>
+              <div className="text-status-danger">{syncResult.errors.join(", ")}</div>
             ) : (
-              <div className="text-green-700">
+              <div className="text-status-success">
                 Sync abgeschlossen: {syncResult.created} neu, {syncResult.updated} aktualisiert ({syncResult.synced} Datensätze)
               </div>
             )}
@@ -385,11 +385,11 @@ export default function Catering() {
                   <div
                     className={`w-1.5 flex-shrink-0 ${
                       event.status === "bestaetigt"
-                        ? "bg-green-500"
+                        ? "bg-status-success"
                         : event.status === "abgesagt"
-                          ? "bg-red-400"
+                          ? "bg-status-danger"
                           : event.status === "abgeschlossen"
-                            ? "bg-gray-400"
+                            ? "bg-status-neutral"
                             : typeInfo.bar
                     }`}
                   />

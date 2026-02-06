@@ -36,7 +36,7 @@ export default function Login() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-2">
-            <img src="/mise-logo.png" alt="Mise - befor Serve" className="h-20 object-contain" />
+            <img src="/mise-logo.png" alt="Mise - before Serve" className="h-20 object-contain" />
           </div>
           <CardDescription>Melden Sie sich an, um fortzufahren</CardDescription>
         </CardHeader>

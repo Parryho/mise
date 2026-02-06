@@ -1551,7 +1551,7 @@ export async function registerRoutes(
       }
       
       // Footer
-      doc.fontSize(8).fillColor(lightGray).text('Mise - befor Serve | Menüplan', startX, 780, { align: 'center' });
+      doc.fontSize(8).fillColor(lightGray).text('Mise - before Serve | Menüplan', startX, 780, { align: 'center' });
       
       doc.end();
     } catch (error: any) {
@@ -1821,7 +1821,7 @@ export async function registerRoutes(
       }
       
       // Footer
-      doc.fontSize(7).fillColor('#999').text('Mise - befor Serve | Dienstplan', startX, 550, { align: 'center' });
+      doc.fontSize(7).fillColor('#999').text('Mise - before Serve | Dienstplan', startX, 550, { align: 'center' });
       
       doc.end();
     } catch (error: any) {

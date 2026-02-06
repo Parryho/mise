@@ -22,24 +22,24 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   ];
 
   return (
-    <div className="min-h-screen bg-background flex flex-col md:max-w-md md:mx-auto md:border-x md:shadow-2xl overflow-hidden relative">
+    <div className="min-h-screen bg-background flex flex-col md:max-w-2xl lg:max-w-5xl md:mx-auto overflow-hidden relative">
       {/* Content Area - Scrollable */}
       <main className="flex-1 overflow-y-auto pb-20 safe-area-bottom custom-scrollbar">
         {children}
       </main>
 
       {/* Bottom Navigation - Scrollable */}
-      <nav className="fixed md:absolute bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-border/50 h-16 pb-safe z-50 md:w-full md:max-w-md md:mx-auto">
+      <nav className="fixed md:absolute bottom-0 left-0 right-0 bg-card border-t border-border/50 h-[var(--nav-height)] pb-safe z-50 md:w-full md:max-w-2xl lg:max-w-5xl md:mx-auto">
         <div className="flex h-full overflow-x-auto scrollbar-hide">
           {navItems.map((item) => {
             const isActive = location === item.href || (item.href !== "/" && location.startsWith(item.href));
             return (
               <Link key={item.href} href={item.href} className={cn(
-                  "flex flex-col items-center justify-center gap-0.5 transition-colors duration-200 h-full min-w-[56px] px-2",
+                  "flex flex-col items-center justify-center gap-0.5 transition-colors duration-200 h-full min-w-[60px] min-h-[48px] px-2",
                   isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
                 )}>
-                  <item.icon className={cn("h-5 w-5", isActive && "fill-current/20")} strokeWidth={isActive ? 2.5 : 2} />
-                  <span className="text-[7px] font-medium uppercase tracking-wider whitespace-nowrap">{item.label}</span>
+                  <item.icon className={cn("h-6 w-6", isActive && "fill-current/20")} strokeWidth={isActive ? 2.5 : 2} />
+                  <span className="text-[10px] font-medium uppercase tracking-wider whitespace-nowrap">{item.label}</span>
               </Link>
             );
           })}

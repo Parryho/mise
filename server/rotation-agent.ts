@@ -1,14 +1,22 @@
 /**
- * Küchenchef-Agent: Rule-based auto-fill for rotation slots.
+ * Küchenchef-Agent v2: Kulinarische Regeln für Rotation-Slots.
  *
- * Kulinarische Regeln:
- * - side1a/side2a = NUR Stärkebeilage (Reis, Knödel, Kartoffeln, Spätzle etc.)
- * - side1b/side2b = NUR Gemüsebeilage (Bratgemüse, Rotkraut, Sauerkraut etc.)
- * - Alles mit Tag "kein-rotation" wird IGNORIERT (Salate, Jause, Aufstriche, Frühstück)
- * - Dessert ist immer "Dessertvariation" (nicht auto-filled)
- * - Keine 2× gleiche Beilagen-Art am selben Tag (z.B. nicht Pommes + Bratkartoffeln)
- * - Keine Wiederholung am selben Tag (Mittag ≠ Abend)
- * - Jeder Standort bekommt unabhängige Rezept-Rotation
+ * v2 Verbesserungen gegenüber v1:
+ * - DISH_META: Rezept-spezifische Metadaten (selfContained, dessertMain, preferred/forbidden)
+ * - Intelligente Stärke-Auswahl: preferred/forbidden statt blindes Round-Robin
+ * - Self-contained Gerichte (Käsespätzle, Lasagne) bekommen KEINE Stärkebeilage
+ * - Dessert-Mains (Marillenknödel, Mohnnudeln) bekommen WEDER Stärke NOCH Gemüse
+ * - Random-Auswahl statt modulo-Cycling → keine Monotonie-Muster
+ * - Per-MEAL Stärkegruppen-Reset (Knödel mittags UND abends OK)
+ * - Per-DAY usedIds (kein Rezept doppelt am selben Tag)
+ * - Keyword-basierter Fallback in getDishMeta() für neue Rezepte
+ *
+ * Beibehaltene Regeln:
+ * - Tag "kein-rotation" = ignoriert (Salate, Jause, Aufstriche, Frühstück)
+ * - Tag "stärke" / "gemüse" für Beilagen-Zuordnung
+ * - Per-Location unabhängige Pools
+ * - Dessert immer null (nicht auto-filled)
+ * - STARCH_GROUPS für Kollisionsvermeidung innerhalb einer Mahlzeit
  */
 
 import { storage } from "./storage";
@@ -16,22 +24,411 @@ import type { Recipe, RotationSlot } from "@shared/schema";
 import type { MealSlotName } from "@shared/constants";
 
 // ============================================================
-// Kulinarische Gruppen für Stärkebeilagen (Kollisionsvermeidung)
+// Starch Groups — Kollisionsvermeidung innerhalb einer Mahlzeit
+// Keine 2× gleiche Stärke-Art (z.B. nicht Pommes + Kroketten)
 // ============================================================
 const STARCH_GROUPS: Record<string, string> = {
+  // Reis
   "Reis": "reis",
+  "Basmatireis": "reis",
+  "Safranreis": "reis",
+  // Teig/Nockerl
   "Spätzle": "teig",
+  "Eierspätzle": "teig",
   "Butternockerl": "teig",
+  "Nockerl": "teig",
+  // Knödel
   "Semmelknödel": "knödel",
   "Serviettenknödel": "knödel",
+  "Speckknödel": "knödel",
+  "Waldviertler Knödel": "knödel",
+  "Kartoffelknödel": "knödel",
+  "Grammelknödel": "knödel",
+  "Leberknödel (als Beilage)": "knödel",
+  "Grießknödel": "knödel",
+  "Topfenknödel (pikant, als Beilage)": "knödel",
+  "Böhmische Knödel": "knödel",
+  "Semmelknödel (als Scheiben gebraten)": "knödel",
+  "Knödel mit Ei": "knödel",
+  // Kartoffel
   "Petersilkartoffeln": "kartoffel",
+  "Salzkartoffeln": "kartoffel",
   "Bratkartoffeln": "kartoffel",
+  "Röstkartoffeln": "kartoffel",
+  "Rösterdäpfel": "kartoffel",
   "Erdäpfelpüree": "kartoffel",
   "Pommes Frites": "kartoffel",
   "Kroketten": "kartoffel",
+  "Wedges / Kartoffelspalten": "kartoffel",
+  "Ofenkartoffeln": "kartoffel",
+  "Kartoffelgratin (als Beilage)": "kartoffel",
+  "Erdäpfelsalat (warm)": "kartoffel",
+  "Schwenkkartoffeln": "kartoffel",
+  "Kartoffelpüree mit Kräutern": "kartoffel",
+  "Kartoffelpüree mit Muskatnuss": "kartoffel",
+  "Herzoginkartoffeln": "kartoffel",
+  "Kartoffel-Kroketten selbstgemacht": "kartoffel",
+  "Hasselback-Kartoffeln": "kartoffel",
+  "Kartoffelrösti": "kartoffel",
+  "Erdäpfelpuffer / Reibekuchen": "kartoffel",
+  "Schupfnudeln": "kartoffel",
+  "Gnocchi": "kartoffel",
+  // Nudeln
+  "Spiralnudeln / Fusilli": "nudel",
+  "Penne": "nudel",
+  "Bandnudeln": "nudel",
+  // Getreide
+  "Couscous": "getreide",
+  "Bulgur": "getreide",
+  "Ebly / Weizen": "getreide",
+  "Quinoa": "getreide",
+  "Hirse": "getreide",
+  "Buchweizen": "getreide",
+  "Maisgrieß": "getreide",
+  "Griesschnitten": "getreide",
+  // Polenta / Risotto
+  "Polenta (als Beilage)": "polenta",
+  "Risotto (als Beilage)": "risotto",
+  // Sonstiges
+  "Dampfnudeln (pikant)": "dampfnudel",
 };
 
-/** Shuffle array in place (Fisher-Yates) */
+function getStarchGroup(recipe: Recipe): string {
+  return STARCH_GROUPS[recipe.name] || recipe.name.toLowerCase();
+}
+
+// ============================================================
+// Dish Metadata — Kulinarische Regeln pro Gericht
+// ============================================================
+interface DishMeta {
+  /** Braucht KEINE Stärkebeilage (Stärke ist Teil des Gerichts) */
+  selfContained?: boolean;
+  /** Braucht WEDER Stärke NOCH Gemüse (süßes Hauptgericht) */
+  dessertMain?: boolean;
+  /** Bevorzugte Stärkebeilagen (Name muss mit Rezept-Name matchen) */
+  preferredStarches?: string[];
+  /** Verbotene Stärkebeilagen */
+  forbiddenStarches?: string[];
+  /** Bevorzugte Gemüsebeilagen */
+  preferredVeggies?: string[];
+}
+
+// ── Forbidden/Preferred lists für Wiederverwendung ──
+const ALL_KNÖDEL = [
+  "Semmelknödel", "Serviettenknödel", "Speckknödel",
+  "Waldviertler Knödel", "Kartoffelknödel", "Böhmische Knödel", "Grammelknödel",
+];
+const POMMES_KROKETTEN = ["Pommes Frites", "Kroketten", "Wedges / Kartoffelspalten"];
+
+// ── Shared rule templates ──
+const PANIERT: DishMeta = {
+  forbiddenStarches: ALL_KNÖDEL,
+  preferredStarches: ["Pommes Frites", "Erdäpfelpüree", "Reis", "Petersilkartoffeln"],
+};
+const BRATEN: DishMeta = {
+  preferredStarches: ["Semmelknödel", "Serviettenknödel"],
+  forbiddenStarches: POMMES_KROKETTEN,
+};
+const BRATEN_SAUERKRAUT: DishMeta = {
+  ...BRATEN,
+  preferredVeggies: ["Sauerkraut", "Rahmsauerkraut"],
+};
+const BRATEN_ROTKRAUT: DishMeta = {
+  ...BRATEN,
+  preferredVeggies: ["Rotkraut"],
+};
+const GULASCH: DishMeta = {
+  preferredStarches: ["Semmelknödel", "Spätzle", "Serviettenknödel"],
+};
+const GESCHNETZELTES: DishMeta = {
+  preferredStarches: ["Spätzle", "Eierspätzle", "Reis", "Butternockerl"],
+};
+const FISCH: DishMeta = {
+  preferredStarches: ["Reis", "Petersilkartoffeln", "Erdäpfelpüree", "Salzkartoffeln"],
+  forbiddenStarches: ALL_KNÖDEL,
+};
+const SC: DishMeta = { selfContained: true };
+const DM: DishMeta = { dessertMain: true };
+
+/**
+ * Kulinarische Metadaten für Rotation-Gerichte.
+ * Lookup: exact name → substring match → keyword fallback → {}
+ */
+const DISH_META: Record<string, DishMeta> = {
+  // ══════════════════════════════════════════════════════════
+  // PANIERTES: KEIN Knödel, bevorzugt Pommes/Püree/Reis
+  // ══════════════════════════════════════════════════════════
+  "Wiener Schnitzel": PANIERT,
+  "Backhendl": PANIERT,
+  "Cordon Bleu": PANIERT,
+  "Putenschnitzel paniert": PANIERT,
+  "Gebackene Leber": PANIERT,
+  "Gebackener Karpfen": PANIERT,
+  "Pariser Schnitzel": PANIERT,
+  "Surschnitzel": PANIERT,
+  "Hühnerschnitzel Natur paniert": PANIERT,
+  "Gebackener Blumenkohl": PANIERT,
+  // Panierte Fisch
+  "Fischstäbchen": PANIERT,
+  "Fischknusperle": PANIERT,
+  "Kabeljau gebacken": PANIERT,
+
+  // ══════════════════════════════════════════════════════════
+  // BRATEN: Knödel bevorzugt, KEINE Pommes/Kroketten
+  // ══════════════════════════════════════════════════════════
+  "Schweinsbraten": BRATEN_SAUERKRAUT,
+  "Kümmelbraten": BRATEN_SAUERKRAUT,
+  "Stelze": BRATEN_SAUERKRAUT,
+  "Lammstelze": BRATEN,
+  "Rindsbraten": BRATEN,
+  "Kalbsbraten": BRATEN,
+  "Sauerbraten": { ...BRATEN, preferredVeggies: ["Rotkraut"] },
+  "Geselchtes mit Sauerkraut": BRATEN_SAUERKRAUT,
+  "Selchfleisch": BRATEN_SAUERKRAUT,
+  "Spanferkel": BRATEN_SAUERKRAUT,
+  "Entenkeule": BRATEN_ROTKRAUT,
+  "Ganslbraten": BRATEN_ROTKRAUT,
+  "Lammkeule": {
+    preferredStarches: ["Petersilkartoffeln", "Erdäpfelpüree", "Röstkartoffeln"],
+    forbiddenStarches: POMMES_KROKETTEN,
+  },
+  "Lammkarree": {
+    preferredStarches: ["Erdäpfelpüree", "Röstkartoffeln", "Petersilkartoffeln"],
+    forbiddenStarches: POMMES_KROKETTEN,
+  },
+  "Rehragout": BRATEN_ROTKRAUT,
+
+  // ── Spezial-Braten ──
+  "Tafelspitz": {
+    preferredStarches: ["Rösterdäpfel", "Petersilkartoffeln", "Erdäpfelpüree", "Salzkartoffeln"],
+    forbiddenStarches: [...ALL_KNÖDEL, "Pommes Frites", "Kroketten"],
+    preferredVeggies: ["Wurzelgemüse (Mischung)", "Apfelkren", "Semmelkren", "Schnittlauchsauce"],
+  },
+  "Tellerfleisch": {
+    preferredStarches: ["Rösterdäpfel", "Petersilkartoffeln", "Erdäpfelpüree"],
+    forbiddenStarches: [...ALL_KNÖDEL, "Pommes Frites", "Kroketten"],
+    preferredVeggies: ["Wurzelgemüse (Mischung)", "Apfelkren", "Schnittlauchsauce"],
+  },
+  "Zwiebelrostbraten": {
+    preferredStarches: ["Bratkartoffeln", "Röstkartoffeln", "Rösterdäpfel"],
+    forbiddenStarches: ALL_KNÖDEL,
+  },
+  "Faschierter Braten": {
+    preferredStarches: ["Erdäpfelpüree", "Petersilkartoffeln", "Salzkartoffeln"],
+  },
+  "Putenbraten": BRATEN,
+  "Schweinemedaillons": GESCHNETZELTES,
+
+  // ══════════════════════════════════════════════════════════
+  // GULASCH & RAGOUTS: Knödel/Spätzle bevorzugt
+  // ══════════════════════════════════════════════════════════
+  "Rindsgulasch": GULASCH,
+  "Saftgulasch": GULASCH,
+  "Fiakergulasch": GULASCH,
+  "Kalbsgulasch": GULASCH,
+  "Beuschel": { preferredStarches: ["Semmelknödel", "Spätzle"] },
+  "Beuscherl": { preferredStarches: ["Semmelknödel", "Spätzle"] },
+  "Boeuf Stroganoff": { preferredStarches: ["Reis", "Spätzle", "Bandnudeln"] },
+  "Ragout fin": { preferredStarches: ["Reis", "Bandnudeln"] },
+
+  // ══════════════════════════════════════════════════════════
+  // GESCHNETZELTES: Spätzle/Reis bevorzugt
+  // ══════════════════════════════════════════════════════════
+  "Zürcher Geschnetzeltes": GESCHNETZELTES,
+  "Rahmgeschnetzeltes": GESCHNETZELTES,
+  "Putengeschnetzeltes": GESCHNETZELTES,
+  "Kalbsrahmgeschnetzeltes": GESCHNETZELTES,
+  "Hühnergeschnetzeltes": GESCHNETZELTES,
+  "Putenmedaillons": GESCHNETZELTES,
+  "Saltimbocca": { preferredStarches: ["Reis", "Bandnudeln", "Spätzle"] },
+
+  // ══════════════════════════════════════════════════════════
+  // HENDL & GEGRILLTES: Pommes/Kartoffeln
+  // ══════════════════════════════════════════════════════════
+  "Grillhendl": { preferredStarches: ["Pommes Frites", "Bratkartoffeln", "Erdäpfelpüree"] },
+  "Hühnerkeule überbacken": { preferredStarches: ["Reis", "Pommes Frites", "Bratkartoffeln"] },
+  "Hühnerkeule gegrillt": { preferredStarches: ["Pommes Frites", "Bratkartoffeln", "Reis"] },
+  "Cevapcici": { preferredStarches: ["Reis", "Pommes Frites"] },
+  "Fleischlaberl": { preferredStarches: ["Erdäpfelpüree", "Petersilkartoffeln"] },
+  "Kalbsleber Berliner Art": { preferredStarches: ["Erdäpfelpüree", "Bratkartoffeln"] },
+
+  // ══════════════════════════════════════════════════════════
+  // FISCH: Reis/Kartoffeln, KEINE Knödel
+  // ══════════════════════════════════════════════════════════
+  "Gebratenes Forellenfilet": FISCH,
+  "Zanderfilet": FISCH,
+  "Lachsfilet": FISCH,
+  "Schollenfilet": FISCH,
+  "Seelachsfilet": FISCH,
+  "Dorschfilet": FISCH,
+  "Pangasiusfilet": FISCH,
+  "Forelle Müllerin": FISCH,
+  "Karpfen blau": FISCH,
+  "Matjesfilet": FISCH,
+  "Thunfischsteak": FISCH,
+  "Garnelenpfanne": { preferredStarches: ["Reis", "Basmatireis"] },
+
+  // ══════════════════════════════════════════════════════════
+  // VEGETARISCH MIT BEILAGE: Gefülltes braucht oft Reis
+  // ══════════════════════════════════════════════════════════
+  "Gefüllte Paprika": { preferredStarches: ["Reis", "Basmatireis"] },
+  "Gefüllte Zucchini": { preferredStarches: ["Reis", "Couscous"] },
+  "Überbackene Auberginen": { preferredStarches: ["Reis", "Couscous"] },
+  "Stuffed Mushrooms / Gefüllte Champignons": { preferredStarches: ["Reis"] },
+  "Gemüselaibchen": { preferredStarches: ["Reis", "Erdäpfelpüree"] },
+  "Erdäpfellaibchen": { preferredStarches: ["Reis"], forbiddenStarches: ["Erdäpfelpüree", "Petersilkartoffeln", "Bratkartoffeln", "Salzkartoffeln", "Pommes Frites", "Kroketten"] },
+  "Linsenlaibchen": { preferredStarches: ["Reis", "Couscous"] },
+  "Kichererbsen-Bratlinge / Falafel": { preferredStarches: ["Reis", "Couscous", "Bulgur"] },
+  "Rote-Rüben-Laibchen": { preferredStarches: ["Reis", "Couscous"] },
+  "Hirslaibchen": { preferredStarches: ["Reis"] },
+  "Zucchini-Puffer": { preferredStarches: ["Reis", "Erdäpfelpüree"] },
+  "Karotten-Ingwer-Bratlinge": { preferredStarches: ["Reis", "Basmatireis", "Couscous"] },
+  "Kürbislaibchen": { preferredStarches: ["Reis", "Couscous"] },
+  "Kartoffelpuffer": { preferredStarches: ["Reis"], forbiddenStarches: ["Erdäpfelpüree", "Petersilkartoffeln", "Bratkartoffeln", "Pommes Frites"] },
+  "Eierspeise / Bauernomelett": { preferredStarches: ["Bratkartoffeln", "Röstkartoffeln"] },
+
+  // ══════════════════════════════════════════════════════════
+  // SELF-CONTAINED: Stärke ist Teil des Gerichts
+  // → KEINE Stärkebeilage zuweisen
+  // ══════════════════════════════════════════════════════════
+  // Teigwaren
+  "Käsespätzle": SC,
+  "Krautfleckerl": SC,
+  "Schinkenfleckerl": SC,
+  "Spinatspätzle mit Käsesauce": SC,
+  "Pasta Arrabiata": SC,
+  "Pasta Pomodoro": SC,
+  "Penne al Forno": SC,
+  "Lasagne": SC,
+  "Lasagne vegetarisch": SC,
+  "Nudeln mit Pesto": SC,
+  "Rigatoni mit Gemüseragout": SC,
+  "Tortellini in Sahnesauce": SC,
+  "Spaghetti Aglio e Olio": SC,
+  "Mac and Cheese": SC,
+  "Nudelauflauf mit Gemüse": SC,
+  "Pasta mit Kürbissauce": SC,
+  // Strudel & Quiche
+  "Gemüsestrudel": SC,
+  "Krautstrudel": SC,
+  "Spinatstrudel": SC,
+  "Kürbis-Feta-Strudel": SC,
+  "Quiche Lorraine": SC,
+  "Gemüsequiche": SC,
+  "Zwiebelkuchen": SC,
+  "Lauchquiche": SC,
+  "Tomaten-Ziegenkäse-Tarte": SC,
+  "Flammkuchen": SC,
+  "Flammkuchen vegetarisch": SC,
+  // Knödel-Hauptgerichte
+  "Spinatknödel": SC,
+  "Kaspressknödel": SC,
+  "Serviettenknödel mit Schwammerlsauce": SC,
+  "Kasnocken": SC,
+  "Eiernockerl": SC,
+  "Grammelknödel": SC,
+  "Eierschwammerl mit Knödel": SC,
+  "Knödel mit Ei": SC,
+  // Aufläufe & Gratins
+  "Gemüseauflauf": SC,
+  "Kartoffelgratin": SC,
+  "Moussaka vegetarisch": SC,
+  "Zucchini-Auflauf": SC,
+  "Broccoli-Gratin": SC,
+  "Polenta mit Schwammerl": SC,
+  "Polenta-Gemüse-Auflauf": SC,
+  "Kürbis-Kartoffel-Gratin": SC,
+  "Melanzani-Parmigiana": SC,
+  // Curry, Eintopf, Pfannen
+  "Gemüsecurry mit Kokosmilch": SC,
+  "Kichererbsen-Curry": SC,
+  "Linsen-Dal": SC,
+  "Ratatouille": SC,
+  "Chili sin Carne": SC,
+  "Pilzragout": SC,
+  "Gemüsepfanne": SC,
+  "Wok-Gemüse mit Sojasauce": SC,
+  // Risotto, Polenta, Gröstl
+  "Risotto": SC,
+  "Polenta": SC,
+  "Reiberdatschi": SC,
+  "Blunzengröstl": SC,
+  "Tiroler Gröstl": SC,
+  "Bauernschmaus": SC,
+  "Erdäpfelgulasch": SC,
+  "Altwiener Suppentopf": SC,
+
+  // ══════════════════════════════════════════════════════════
+  // DESSERT-MAINS: Süße Hauptgerichte
+  // → WEDER Stärke NOCH Gemüse
+  // ══════════════════════════════════════════════════════════
+  "Marillenknödel": DM,
+  "Mohnnudeln": DM,
+  "Topfenknödel": DM,
+  "Zwetschgenknödel": DM,
+  "Germknödel": DM,
+  "Kaiserschmarrn": DM,
+  "Palatschinken gefüllt": DM,
+};
+
+/**
+ * Get dish metadata: exact name → substring match → keyword fallback → {}
+ */
+function getDishMeta(name: string): DishMeta {
+  // 1. Exact match
+  if (DISH_META[name]) return DISH_META[name];
+
+  // 2. Substring match (e.g. "Wiener Schnitzel vom Schwein" → "Wiener Schnitzel")
+  for (const [key, meta] of Object.entries(DISH_META)) {
+    if (name.includes(key) || key.includes(name)) return meta;
+  }
+
+  // 3. Keyword-based fallback for future/uncategorized dishes
+  const lower = name.toLowerCase();
+
+  // Dessert-mains (check FIRST — "knödel" would match selfContained otherwise)
+  if (/marillenknödel|zwetschgenknödel|topfenknödel|mohnnudeln|germknödel|kaiserschmarrn|palatschinken/i.test(name)) {
+    return DM;
+  }
+
+  // Self-contained: Pasta/Teigwaren
+  if (/spätzle|fleckerl|lasagne|mac and cheese|aglio|pomodoro|arrabiata|pesto|carbonara|bolognese/i.test(name)) {
+    return SC;
+  }
+  if (/\b(pasta|spaghetti|penne|rigatoni|tortellini|fusilli|tagliatelle|gnocchi|schupfnudeln)\b/i.test(name)) {
+    return SC;
+  }
+  // Self-contained: Strudel/Quiche/Tarte
+  if (/\b(strudel|quiche|tarte|flammkuchen|zwiebelkuchen)\b/i.test(name)) {
+    return SC;
+  }
+  // Self-contained: Auflauf/Gratin
+  if (/\b(auflauf|gratin|moussaka|parmigiana|überbacken)\b/i.test(name)) {
+    return SC;
+  }
+  // Self-contained: Curry/Eintopf
+  if (/\b(curry|chili sin|eintopf|linsen-dal)\b/i.test(name)) {
+    return SC;
+  }
+  // Self-contained: Gröstl/Risotto/Polenta
+  if (/gröstl|erdäpfelgulasch/i.test(name)) {
+    return SC;
+  }
+  if (/\b(risotto|polenta)\b/i.test(name) && !/beilage/i.test(name)) {
+    return SC;
+  }
+
+  // Paniertes pattern (but not "Suppe" or "Auflauf")
+  if (/\b(paniert|gebackene[rs]?)\b/i.test(name) && !/suppe|auflauf|gratin/i.test(name)) {
+    return PANIERT;
+  }
+
+  return {};
+}
+
+// ============================================================
+// Fisher-Yates Shuffle
+// ============================================================
 function shuffle<T>(arr: T[]): T[] {
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -40,54 +437,106 @@ function shuffle<T>(arr: T[]): T[] {
   return arr;
 }
 
-/** Get the starch group of a recipe (for collision avoidance) */
-function getStarchGroup(recipe: Recipe): string {
-  return STARCH_GROUPS[recipe.name] || recipe.name.toLowerCase();
+/** Pick random element from array */
+function pickRandom<T>(arr: T[]): T | null {
+  if (arr.length === 0) return null;
+  return arr[Math.floor(Math.random() * arr.length)];
 }
 
 // ============================================================
-// Pool-based iterator with collision avoidance
+// Intelligent Side-Dish Selection
 // ============================================================
-interface RecipePool {
-  recipes: Recipe[];
-  idx: number;
-}
 
-function createPool(recipes: Recipe[]): RecipePool {
-  return { recipes: shuffle([...recipes]), idx: 0 };
+/**
+ * Pick a starch side dish that respects culinary rules.
+ *
+ * 1. Remove forbidden starches for this main
+ * 2. Remove already-used IDs and starch groups (per-meal)
+ * 3. If preferred starches exist → random from available preferred
+ * 4. Otherwise → random from all remaining
+ * 5. Fallback: relax starch-group constraint
+ */
+function pickStarchFor(
+  mainName: string,
+  starchPool: Recipe[],
+  usedIds: Set<number>,
+  usedStarchGroups: Set<string>,
+): Recipe | null {
+  if (starchPool.length === 0) return null;
+
+  const meta = getDishMeta(mainName);
+
+  // Step 1: Remove forbidden
+  const forbiddenNames = new Set(meta.forbiddenStarches || []);
+  let candidates = starchPool.filter(r => !forbiddenNames.has(r.name));
+
+  // Step 2: Remove used IDs + starch groups
+  const withoutUsed = candidates.filter(r => {
+    if (usedIds.has(r.id)) return false;
+    const group = getStarchGroup(r);
+    if (usedStarchGroups.has(group)) return false;
+    return true;
+  });
+
+  // Step 3: Try preferred first
+  if (meta.preferredStarches && meta.preferredStarches.length > 0) {
+    const preferredNames = new Set(meta.preferredStarches);
+    const preferredCandidates = withoutUsed.filter(r => preferredNames.has(r.name));
+    if (preferredCandidates.length > 0) {
+      return pickRandom(preferredCandidates);
+    }
+  }
+
+  // Step 4: Any remaining (no collision)
+  if (withoutUsed.length > 0) {
+    return pickRandom(withoutUsed);
+  }
+
+  // Step 5: Fallback — relax starch-group constraint (still respect forbidden + usedIds)
+  const relaxed = candidates.filter(r => !usedIds.has(r.id));
+  if (relaxed.length > 0) {
+    return pickRandom(relaxed);
+  }
+
+  // Final fallback: anything from pool
+  return pickRandom(candidates.length > 0 ? candidates : starchPool);
 }
 
 /**
- * Pick next recipe from pool, avoiding:
- * - Same recipe used today (usedIds)
- * - Same starch group used today for starch pools (usedStarchGroups)
+ * Pick a veggie side dish that respects culinary rules.
+ *
+ * 1. Remove already-used IDs
+ * 2. If preferred veggies exist → random from available preferred
+ * 3. Otherwise → random from all remaining
  */
-function pickNext(
-  pool: RecipePool,
+function pickVeggieFor(
+  mainName: string,
+  veggiePool: Recipe[],
   usedIds: Set<number>,
-  usedStarchGroups?: Set<string>,
 ): Recipe | null {
-  if (pool.recipes.length === 0) return null;
+  if (veggiePool.length === 0) return null;
 
-  for (let attempt = 0; attempt < pool.recipes.length; attempt++) {
-    const recipe = pool.recipes[pool.idx % pool.recipes.length];
-    pool.idx++;
+  const meta = getDishMeta(mainName);
 
-    if (usedIds.has(recipe.id)) continue;
+  // Remove used IDs
+  const available = veggiePool.filter(r => !usedIds.has(r.id));
 
-    // For starch sides: avoid same group (no 2× Kartoffel, no 2× Knödel)
-    if (usedStarchGroups) {
-      const group = getStarchGroup(recipe);
-      if (usedStarchGroups.has(group)) continue;
+  // Try preferred first
+  if (meta.preferredVeggies && meta.preferredVeggies.length > 0) {
+    const preferredNames = new Set(meta.preferredVeggies);
+    const preferredCandidates = available.filter(r => preferredNames.has(r.name));
+    if (preferredCandidates.length > 0) {
+      return pickRandom(preferredCandidates);
     }
-
-    return recipe;
   }
 
-  // Fallback: just pick one (all collide)
-  const recipe = pool.recipes[pool.idx % pool.recipes.length];
-  pool.idx++;
-  return recipe;
+  // Any remaining
+  if (available.length > 0) {
+    return pickRandom(available);
+  }
+
+  // Fallback
+  return pickRandom(veggiePool);
 }
 
 // ============================================================
@@ -130,39 +579,46 @@ export async function autoFillRotation(
         mainsVegan.push(r);
         break;
       case "Sides":
-        // Only use tagged sides
         if (r.tags && r.tags.includes("stärke")) {
           sidesStarch.push(r);
         } else if (r.tags && r.tags.includes("gemüse")) {
           sidesVeg.push(r);
         }
-        // Untagged sides are skipped (safety net)
         break;
-      // Salads, Sauces, Desserts = not used in rotation
     }
   }
 
-  console.log(`[rotation-agent] Pools: ${soups.length} Suppen, ${mainsMeat.length} Fleisch, ${mainsVegan.length} Vegan, ${sidesStarch.length} Stärke, ${sidesVeg.length} Gemüse`);
+  console.log(
+    `[rotation-agent v2] Pools: ${soups.length} Suppen, ${mainsMeat.length} Fleisch, ` +
+    `${mainsVegan.length} Vegan, ${sidesStarch.length} Stärke, ${sidesVeg.length} Gemüse`
+  );
 
-  // ── Create per-location pools ──
+  // ── Shuffle all pools once for variety ──
+  shuffle(soups);
+  shuffle(mainsMeat);
+  shuffle(mainsVegan);
+  shuffle(sidesStarch);
+  shuffle(sidesVeg);
+
+  // ── Create per-location shuffled copies ──
   const locationSlugs = Array.from(new Set(allSlots.map(s => s.locationSlug)));
 
   type LocationPools = {
-    soup: RecipePool;
-    main1: RecipePool;
-    main2: RecipePool;
-    starch: RecipePool;
-    veg: RecipePool;
+    soup: Recipe[];
+    main1: Recipe[];
+    main2: Recipe[];
+    starch: Recipe[];
+    veg: Recipe[];
   };
 
   const poolsByLocation = new Map<string, LocationPools>();
   for (const loc of locationSlugs) {
     poolsByLocation.set(loc, {
-      soup: createPool(soups),
-      main1: createPool(mainsMeat),
-      main2: createPool(mainsVegan),
-      starch: createPool(sidesStarch),
-      veg: createPool(sidesVeg),
+      soup: shuffle([...soups]),
+      main1: shuffle([...mainsMeat]),
+      main2: shuffle([...mainsVegan]),
+      starch: [...sidesStarch],
+      veg: [...sidesVeg],
     });
   }
 
@@ -178,6 +634,12 @@ export async function autoFillRotation(
   let filled = 0;
   let skipped = 0;
 
+  // ── Per-location pool indices for round-robin main/soup variety across weeks ──
+  const poolIdx = new Map<string, { soup: number; main1: number; main2: number }>();
+  for (const loc of locationSlugs) {
+    poolIdx.set(loc, { soup: 0, main1: 0, main2: 0 });
+  }
+
   const weekNrs = Array.from(new Set(allSlots.map(s => s.weekNr))).sort();
   const daysOfWeek = Array.from(new Set(allSlots.map(s => s.dayOfWeek))).sort();
 
@@ -185,16 +647,19 @@ export async function autoFillRotation(
     for (const dow of daysOfWeek) {
       for (const locSlug of locationSlugs) {
         const pools = poolsByLocation.get(locSlug)!;
+        const idx = poolIdx.get(locSlug)!;
 
-        // Track per-day collisions
-        const usedIds = new Set<number>();
-        const usedStarchGroups = new Set<string>();
+        // Per-DAY: no recipe used twice
+        const dayUsedIds = new Set<number>();
 
         for (const meal of ["lunch", "dinner"]) {
+          // Per-MEAL: starch group collision avoidance resets
+          const mealUsedStarchGroups = new Set<string>();
+
           const key = `${weekNr}-${dow}-${locSlug}-${meal}`;
           const groupSlots = slotGroups.get(key) || [];
 
-          // Sort slots so we fill in order: soup → main1 → side1a → side1b → main2 → side2a → side2b → dessert
+          // Sort slots: soup → main1 → side1a → side1b → main2 → side2a → side2b → dessert
           const slotOrder: MealSlotName[] = ["soup", "main1", "side1a", "side1b", "main2", "side2a", "side2b", "dessert"];
           const sorted = [...groupSlots].sort((a, b) => {
             const ai = slotOrder.indexOf(a.course as MealSlotName);
@@ -202,8 +667,12 @@ export async function autoFillRotation(
             return ai - bi;
           });
 
+          // Track the main dishes picked for this meal (to inform side selection)
+          let main1Recipe: Recipe | null = null;
+          let main2Recipe: Recipe | null = null;
+
           for (const slot of sorted) {
-            // Dessert = always "Dessertvariation" (handled in UI, not auto-filled)
+            // Dessert = always null (not auto-filled)
             if (slot.course === "dessert") {
               if (overwrite && slot.recipeId !== null) {
                 await storage.updateRotationSlot(slot.id, { recipeId: null });
@@ -214,11 +683,17 @@ export async function autoFillRotation(
 
             // Skip already filled slots (unless overwrite)
             if (slot.recipeId !== null && !overwrite) {
-              usedIds.add(slot.recipeId);
-              // Track starch group for existing starch sides
+              dayUsedIds.add(slot.recipeId);
+              // Track existing main dishes for side selection
+              if (slot.course === "main1") {
+                main1Recipe = recipes.find(r => r.id === slot.recipeId) || null;
+              } else if (slot.course === "main2") {
+                main2Recipe = recipes.find(r => r.id === slot.recipeId) || null;
+              }
+              // Track starch groups from existing sides
               if (slot.course === "side1a" || slot.course === "side2a") {
                 const existing = recipes.find(r => r.id === slot.recipeId);
-                if (existing) usedStarchGroups.add(getStarchGroup(existing));
+                if (existing) mealUsedStarchGroups.add(getStarchGroup(existing));
               }
               skipped++;
               continue;
@@ -228,26 +703,135 @@ export async function autoFillRotation(
             let picked: Recipe | null = null;
 
             switch (slot.course) {
-              case "soup":
-                picked = pickNext(pools.soup, usedIds);
+              case "soup": {
+                // Round-robin through shuffled soup pool
+                const pool = pools.soup;
+                if (pool.length > 0) {
+                  for (let attempt = 0; attempt < pool.length; attempt++) {
+                    const candidate = pool[idx.soup % pool.length];
+                    idx.soup++;
+                    if (!dayUsedIds.has(candidate.id)) {
+                      picked = candidate;
+                      break;
+                    }
+                  }
+                  if (!picked) {
+                    picked = pool[idx.soup % pool.length];
+                    idx.soup++;
+                  }
+                }
                 break;
-              case "main1":
-                picked = pickNext(pools.main1, usedIds);
+              }
+
+              case "main1": {
+                // Round-robin through shuffled meat/fish pool
+                const pool = pools.main1;
+                if (pool.length > 0) {
+                  for (let attempt = 0; attempt < pool.length; attempt++) {
+                    const candidate = pool[idx.main1 % pool.length];
+                    idx.main1++;
+                    if (!dayUsedIds.has(candidate.id)) {
+                      picked = candidate;
+                      break;
+                    }
+                  }
+                  if (!picked) {
+                    picked = pool[idx.main1 % pool.length];
+                    idx.main1++;
+                  }
+                }
+                main1Recipe = picked;
                 break;
-              case "main2":
-                picked = pickNext(pools.main2, usedIds);
+              }
+
+              case "main2": {
+                // Round-robin through shuffled vegan pool
+                const pool = pools.main2;
+                if (pool.length > 0) {
+                  for (let attempt = 0; attempt < pool.length; attempt++) {
+                    const candidate = pool[idx.main2 % pool.length];
+                    idx.main2++;
+                    if (!dayUsedIds.has(candidate.id)) {
+                      picked = candidate;
+                      break;
+                    }
+                  }
+                  if (!picked) {
+                    picked = pool[idx.main2 % pool.length];
+                    idx.main2++;
+                  }
+                }
+                main2Recipe = picked;
                 break;
-              case "side1a":
-              case "side2a":
-                // Stärkebeilage — with starch group collision avoidance
-                picked = pickNext(pools.starch, usedIds, usedStarchGroups);
-                if (picked) usedStarchGroups.add(getStarchGroup(picked));
+              }
+
+              case "side1a": {
+                // Starch for main1
+                if (main1Recipe) {
+                  const meta = getDishMeta(main1Recipe.name);
+                  if (meta.selfContained || meta.dessertMain) {
+                    // No starch needed — set to null
+                    if (overwrite && slot.recipeId !== null) {
+                      await storage.updateRotationSlot(slot.id, { recipeId: null });
+                    }
+                    skipped++;
+                    continue;
+                  }
+                  picked = pickStarchFor(main1Recipe.name, pools.starch, dayUsedIds, mealUsedStarchGroups);
+                  if (picked) mealUsedStarchGroups.add(getStarchGroup(picked));
+                }
                 break;
-              case "side1b":
-              case "side2b":
-                // Gemüsebeilage
-                picked = pickNext(pools.veg, usedIds);
+              }
+
+              case "side1b": {
+                // Veggie for main1
+                if (main1Recipe) {
+                  const meta = getDishMeta(main1Recipe.name);
+                  if (meta.dessertMain) {
+                    // No veggie needed — set to null
+                    if (overwrite && slot.recipeId !== null) {
+                      await storage.updateRotationSlot(slot.id, { recipeId: null });
+                    }
+                    skipped++;
+                    continue;
+                  }
+                  picked = pickVeggieFor(main1Recipe.name, pools.veg, dayUsedIds);
+                }
                 break;
+              }
+
+              case "side2a": {
+                // Starch for main2
+                if (main2Recipe) {
+                  const meta = getDishMeta(main2Recipe.name);
+                  if (meta.selfContained || meta.dessertMain) {
+                    if (overwrite && slot.recipeId !== null) {
+                      await storage.updateRotationSlot(slot.id, { recipeId: null });
+                    }
+                    skipped++;
+                    continue;
+                  }
+                  picked = pickStarchFor(main2Recipe.name, pools.starch, dayUsedIds, mealUsedStarchGroups);
+                  if (picked) mealUsedStarchGroups.add(getStarchGroup(picked));
+                }
+                break;
+              }
+
+              case "side2b": {
+                // Veggie for main2
+                if (main2Recipe) {
+                  const meta = getDishMeta(main2Recipe.name);
+                  if (meta.dessertMain) {
+                    if (overwrite && slot.recipeId !== null) {
+                      await storage.updateRotationSlot(slot.id, { recipeId: null });
+                    }
+                    skipped++;
+                    continue;
+                  }
+                  picked = pickVeggieFor(main2Recipe.name, pools.veg, dayUsedIds);
+                }
+                break;
+              }
             }
 
             if (picked === null) {
@@ -256,7 +840,7 @@ export async function autoFillRotation(
             }
 
             await storage.updateRotationSlot(slot.id, { recipeId: picked.id });
-            usedIds.add(picked.id);
+            dayUsedIds.add(picked.id);
             filled++;
           }
         }

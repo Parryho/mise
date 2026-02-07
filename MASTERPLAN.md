@@ -163,13 +163,13 @@ mise hat bereits: React 19 + Express 5 + PostgreSQL + Drizzle ORM, Multi-Locatio
 
 | # | Task | Aufwand | Status |
 |---|------|---------|--------|
-| 5.1 | **Quiz-Feedback DB** — `quiz_feedback`, `pairing_scores`, `learned_rules` Tabellen (Drizzle) | 6h | |
-| 5.2 | **Quiz UI** — Menü-Kombination bewerten (1-5 Sterne), Swipe-Interface | 10h | |
-| 5.3 | **Pairing-Score Engine** — Feedback → gewichtete Scores aggregieren, Decay-Funktion | 8h | |
-| 5.4 | **Rotation-Agent v3 Integration** — Pairing-Scores in Stärke/Gemüse-Auswahl einbauen | 8h | |
-| 5.5 | **Exploration vs Exploitation** — Epsilon-Greedy: 80% bewährte Paarungen, 20% neue Kombis | 4h | |
-| 5.6 | **Lern-Dashboard** — Top/Flop-Paarungen, Lernfortschritt, Score-Verteilung | 6h | |
-| 5.7 | **AI-Validierung** — Claude API für Regelvorschläge aus gesammeltem Feedback | 6h | |
+| 5.1 | **Quiz-Feedback DB** — `quiz_feedback`, `pairing_scores`, `learned_rules` Tabellen (Drizzle) | 6h | ✅ 07.02.2026 |
+| 5.2 | **Quiz UI** — Menü-Kombination bewerten (1-5 Sterne), Swipe-Interface | 10h | ✅ 07.02.2026 |
+| 5.3 | **Pairing-Score Engine** — Feedback → gewichtete Scores aggregieren, Decay-Funktion | 8h | ✅ 07.02.2026 |
+| 5.4 | **Rotation-Agent v3 Integration** — Pairing-Scores in Stärke/Gemüse-Auswahl einbauen | 8h | ✅ 07.02.2026 |
+| 5.5 | **Exploration vs Exploitation** — Epsilon-Greedy: 80% bewährte Paarungen, 20% neue Kombis | 4h | ✅ 07.02.2026 |
+| 5.6 | **Lern-Dashboard** — Top/Flop-Paarungen, Lernfortschritt, Score-Verteilung | 6h | ✅ 07.02.2026 |
+| 5.7 | **AI-Validierung** — Claude API für Regelvorschläge aus gesammeltem Feedback | 6h | ✅ 07.02.2026 |
 
 **Gesamt Phase 5: ~48h**
 
@@ -184,8 +184,8 @@ mise hat bereits: React 19 + Express 5 + PostgreSQL + Drizzle ORM, Multi-Locatio
 | **2** | Killer Features | ~82h | Woche 6-10 ✅ |
 | **3** | AI-Powered | ~56h | Woche 11-14 ✅ |
 | **4** | Professional Polish | ~72h | Woche 15-18 ✅ |
-| **5** | Adaptive Learning | ~48h | Woche 19-22 |
-| **TOTAL** | | **~362h** | **Phase 0-4 abgeschlossen, Phase 5 geplant** |
+| **5** | Adaptive Learning | ~48h | Woche 19-22 ✅ |
+| **TOTAL** | | **~362h** | **Alle 5 Phasen abgeschlossen** |
 
 ---
 
@@ -240,4 +240,4 @@ Folgende Skills sind unter `.agents/skills/` installiert und sollten bei der Ums
 
 ## Nächster Schritt
 
-**Phase 0-4 abgeschlossen.** Rotation-Agent v2 mit kulinarischen Regeln deployed (07.02.2026). Nächster Schritt: Phase 5 (Adaptive Learning) — Quiz-Feedback-System, damit der Rotation-Agent aus Koch-Bewertungen lernt.
+**Alle 5 Phasen abgeschlossen** (07.02.2026). Phase 5 (Adaptive Learning) implementiert: Quiz-Feedback UI, Pairing-Score Engine mit Zeitverfall, Rotation-Agent v3 mit score-gewichteter Beilagen-Auswahl (Explore/Exploit), Lern-Dashboard mit Recharts, AI-Regelvalidierung via Claude API. `npm run db:push` für 3 neue Tabellen erforderlich.

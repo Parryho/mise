@@ -341,6 +341,53 @@ export const recipeMedia = pgTable("recipe_media", {
   index("idx_recipe_media_recipe").on(table.recipeId),
 ]);
 
+// === Phase 5: Quiz Feedback (Adaptive Learning) ===
+export const quizFeedback = pgTable("quiz_feedback", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "set null" }),
+  templateId: integer("template_id").references(() => rotationTemplates.id, { onDelete: "cascade" }).notNull(),
+  weekNr: integer("week_nr").notNull(),
+  dayOfWeek: integer("day_of_week").notNull(),
+  meal: text("meal").notNull(),
+  locationSlug: text("location_slug").notNull(),
+  mainRecipeId: integer("main_recipe_id").references(() => recipes.id, { onDelete: "cascade" }).notNull(),
+  sideRecipeId: integer("side_recipe_id").references(() => recipes.id, { onDelete: "cascade" }).notNull(),
+  pairingType: text("pairing_type").notNull(), // "main_starch" | "main_veggie"
+  rating: integer("rating").notNull(), // 1-5
+  comment: text("comment"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => [
+  index("idx_quiz_feedback_pairing").on(table.mainRecipeId, table.sideRecipeId, table.pairingType),
+  index("idx_quiz_feedback_created").on(table.createdAt),
+]);
+
+// === Phase 5: Pairing Scores (Aggregated) ===
+export const pairingScores = pgTable("pairing_scores", {
+  id: serial("id").primaryKey(),
+  mainRecipeId: integer("main_recipe_id").references(() => recipes.id, { onDelete: "cascade" }).notNull(),
+  sideRecipeId: integer("side_recipe_id").references(() => recipes.id, { onDelete: "cascade" }).notNull(),
+  pairingType: text("pairing_type").notNull(), // "main_starch" | "main_veggie"
+  avgScore: doublePrecision("avg_score").notNull().default(0),
+  weightedScore: doublePrecision("weighted_score").notNull().default(0),
+  ratingCount: integer("rating_count").notNull().default(0),
+  lastUpdated: timestamp("last_updated").notNull().defaultNow(),
+}, (table) => [
+  index("idx_pairing_scores_lookup").on(table.mainRecipeId, table.sideRecipeId, table.pairingType),
+]);
+
+// === Phase 5: Learned Rules ===
+export const learnedRules = pgTable("learned_rules", {
+  id: serial("id").primaryKey(),
+  mainRecipeId: integer("main_recipe_id").references(() => recipes.id, { onDelete: "cascade" }).notNull(),
+  ruleType: text("rule_type").notNull(), // "preferred_starch" | "forbidden_starch" | "preferred_veggie" | "general"
+  targetRecipeName: text("target_recipe_name").notNull(),
+  confidence: doublePrecision("confidence").notNull().default(0),
+  source: text("source").notNull().default("feedback"), // "feedback" | "ai" | "manual"
+  description: text("description"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // Audit Logs
 export const auditLogs = pgTable("audit_logs", {
   id: serial("id").primaryKey(),
@@ -410,6 +457,26 @@ export const updateRecipeMediaSchema = z.object({
 export const insertSupplierSchema = createInsertSchema(suppliers).omit({ id: true, createdAt: true });
 export const insertSubRecipeLinkSchema = createInsertSchema(subRecipeLinks).omit({ id: true });
 export const insertGuestAllergenProfileSchema = createInsertSchema(guestAllergenProfiles).omit({ id: true, createdAt: true });
+
+// Phase 5: Quiz feedback schemas
+export const insertQuizFeedbackSchema = createInsertSchema(quizFeedback).omit({ id: true, createdAt: true });
+export const insertPairingScoreSchema = createInsertSchema(pairingScores).omit({ id: true, lastUpdated: true });
+export const insertLearnedRuleSchema = createInsertSchema(learnedRules).omit({ id: true, createdAt: true });
+
+export const quizFeedbackBatchSchema = z.object({
+  templateId: z.number(),
+  weekNr: z.number(),
+  ratings: z.array(z.object({
+    dayOfWeek: z.number(),
+    meal: z.string(),
+    locationSlug: z.string(),
+    mainRecipeId: z.number(),
+    sideRecipeId: z.number(),
+    pairingType: z.enum(["main_starch", "main_veggie"]),
+    rating: z.number().min(1).max(5),
+    comment: z.string().optional(),
+  })),
+});
 
 // Update schemas (partial versions for PUT endpoints)
 export const updateUserSchema = z.object({
@@ -498,3 +565,11 @@ export type SubRecipeLink = typeof subRecipeLinks.$inferSelect;
 export type InsertSubRecipeLink = z.infer<typeof insertSubRecipeLinkSchema>;
 export type GuestAllergenProfile = typeof guestAllergenProfiles.$inferSelect;
 export type InsertGuestAllergenProfile = z.infer<typeof insertGuestAllergenProfileSchema>;
+
+// Phase 5: Quiz feedback types
+export type QuizFeedback = typeof quizFeedback.$inferSelect;
+export type InsertQuizFeedback = z.infer<typeof insertQuizFeedbackSchema>;
+export type PairingScore = typeof pairingScores.$inferSelect;
+export type InsertPairingScore = z.infer<typeof insertPairingScoreSchema>;
+export type LearnedRule = typeof learnedRules.$inferSelect;
+export type InsertLearnedRule = z.infer<typeof insertLearnedRuleSchema>;

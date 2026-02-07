@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, ChefHat, Printer, AlertTriangle } from "lucide-react";
+import { Loader2, ChefHat, Printer, AlertTriangle, Star } from "lucide-react";
 import { Link } from "wouter";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -239,6 +239,11 @@ export default function Rotation() {
             <span className="text-xs text-primary-foreground/70">
               KW {getISOWeek(new Date())} = W{currentRotationWeek}
             </span>
+            <Link href={`/rotation/quiz?template=${templateId}&week=${weekNr}`}>
+              <Button size="icon" variant="ghost" className="text-primary-foreground hover:bg-primary-foreground/10 h-8 w-8" title="Bewerten">
+                <Star className="h-4 w-4" />
+              </Button>
+            </Link>
             <Button
               size="icon"
               variant="ghost"

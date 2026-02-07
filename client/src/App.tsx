@@ -53,6 +53,10 @@ import EmailSettings from "@/pages/EmailSettings";
 import BackupRestore from "@/pages/BackupRestore";
 import GDPRExport from "@/pages/GDPRExport";
 
+// Phase 5: Quiz Feedback + Learning Dashboard
+import QuizFeedback from "@/pages/QuizFeedback";
+import LearningDashboard from "@/pages/analytics/LearningDashboard";
+
 // Phase 2: Public pages (no auth)
 import GuestMenu from "@/pages/public/GuestMenu";
 import DigitalSignage from "@/pages/public/DigitalSignage";
@@ -117,6 +121,9 @@ function AuthenticatedRoutes() {
       <Route path="/reports/waste-prediction">
         <Layout><WastePrediction /></Layout>
       </Route>
+      <Route path="/reports/learning">
+        <Layout><LearningDashboard /></Layout>
+      </Route>
       <Route path="/recipes/ai-import">
         <Layout><RecipeAIImport /></Layout>
       </Route>
@@ -146,6 +153,9 @@ function AuthenticatedRoutes() {
       </Route>
       <Route path="/settings/guest-profiles">
         <Layout><GuestProfiles /></Layout>
+      </Route>
+      <Route path="/rotation/quiz">
+        <Layout><QuizFeedback /></Layout>
       </Route>
       <Route path="/rotation/print">
         <Layout><RotationPrint /></Layout>

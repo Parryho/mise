@@ -37,6 +37,8 @@ import { handleGetSuggestions } from "./recipe-suggestions";
 import { handleGetWastePrediction } from "./waste-prediction";
 import { scaleRecipeHandler } from "./intelligent-scaling";
 import { detectAllergensHandler, suggestAllergensForRecipeHandler } from "./allergen-detection";
+// Phase 5: Quiz Feedback + Pairing Engine
+import { handleGetWeekCombos, handleSubmitFeedback, handleGetMyRatings, handleGetPairingScores, handleGetDashboardStats, handleGetLearnedRules, handleAIValidate } from "./quiz-feedback";
 // Phase 4: Email + Recipe Media + Push + Backup + GDPR + Monitoring
 import { sendEmail, sendHaccpAlert, initializeTransporter, verifySmtp, isSmtpConfigured } from "./email";
 import { recipeMediaUpload, handleUploadMedia, handleGetMedia, handleUpdateMedia, handleDeleteMedia, getUploadDir } from "./recipe-media";
@@ -2876,6 +2878,17 @@ export async function registerRoutes(
   // ==========================================
   app.get("/api/health/detailed", healthHandler);
   app.get("/api/metrics", metricsHandler);
+
+  // ==========================================
+  // Phase 5: Quiz Feedback & Adaptive Learning
+  // ==========================================
+  app.get("/api/quiz/week-combos/:templateId/:weekNr", requireAuth, handleGetWeekCombos);
+  app.post("/api/quiz/feedback", requireAuth, handleSubmitFeedback);
+  app.get("/api/quiz/my-ratings/:templateId/:weekNr", requireAuth, handleGetMyRatings);
+  app.get("/api/quiz/pairing-scores", requireAuth, handleGetPairingScores);
+  app.get("/api/quiz/dashboard-stats", requireAuth, handleGetDashboardStats);
+  app.get("/api/quiz/learned-rules", requireAuth, handleGetLearnedRules);
+  app.post("/api/quiz/ai-validate", requireAdmin, handleAIValidate);
 
   return httpServer;
 }

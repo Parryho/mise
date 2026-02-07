@@ -462,6 +462,10 @@
       "title": "Waste-Prediction",
       "description": "Verfallswarnung f\u00fcr geplante Zutaten mit Verwertungsvorschl\u00e4gen"
     },
+    "learning": {
+      "title": "Lern-Dashboard",
+      "description": "Feedback-Analyse, Top/Flop-Paarungen und gelernte Regeln"
+    },
     "calendarWeek": "Kalenderwoche",
     "prevWeek": "Vorherige Woche",
     "nextWeek": "N\u00e4chste Woche",
@@ -623,5 +627,35 @@
   },
   "guestMenu": {
     "title": "Speisekarte"
+  },
+  "quiz": {
+    "title": "Men\u00fc-Bewertung",
+    "noRatings": "Bitte mindestens eine Bewertung abgeben",
+    "submitted": "Bewertungen gespeichert",
+    "submittedDesc": "{{count}} Bewertungen gespeichert",
+    "submit": "Absenden",
+    "ratings": "Bewertungen",
+    "noCombos": "Keine Paarungen f\u00fcr diesen Tag",
+    "rate": "Bewerten"
+  },
+  "learning": {
+    "title": "Lern-Dashboard",
+    "totalRatings": "Bewertungen",
+    "avgScore": "\u00d8 Score",
+    "uniquePairings": "Paarungen",
+    "activeRules": "Regeln",
+    "explorationRate": "Explorationsrate",
+    "epsilonDesc": "Anteil zuf\u00e4lliger Auswahl beim Auto-Fill",
+    "topPairings": "Top 10 Paarungen",
+    "flopPairings": "Flop 10 Paarungen",
+    "distribution": "Verteilung",
+    "rules": "Regeln",
+    "scoreDistribution": "Score-Verteilung",
+    "ratingsOverTime": "Bewertungen \u00fcber Zeit",
+    "learnedRules": "Gelernte Regeln",
+    "aiAnalysis": "KI-Analyse",
+    "aiDone": "KI-Analyse abgeschlossen",
+    "noData": "Noch keine Daten vorhanden",
+    "noRules": "Noch keine Regeln vorhanden. Bewertungen abgeben oder KI-Analyse starten."
   }
 }

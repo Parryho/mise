@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import {
   TrendingUp, Thermometer, Star, DollarSign,
   AlertTriangle, CreditCard, QrCode, FileText, Download, Activity,
-  Brain, Sparkles, Trash2
+  Brain, Sparkles, Trash2, Lightbulb
 } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { Button } from "@/components/ui/button";
@@ -105,6 +105,14 @@ export default function Reports() {
       href: "/reports/waste-prediction",
       color: "text-lime-600",
       bgColor: "bg-lime-50",
+    },
+    {
+      titleKey: "reports.learning.title",
+      descKey: "reports.learning.description",
+      icon: Lightbulb,
+      href: "/reports/learning",
+      color: "text-yellow-600",
+      bgColor: "bg-yellow-50",
     },
   ];
 

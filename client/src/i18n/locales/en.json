@@ -462,6 +462,10 @@
       "title": "Waste Prediction",
       "description": "Expiry warnings for planned ingredients with usage suggestions"
     },
+    "learning": {
+      "title": "Learning Dashboard",
+      "description": "Feedback analysis, top/flop pairings and learned rules"
+    },
     "calendarWeek": "Calendar Week",
     "prevWeek": "Previous Week",
     "nextWeek": "Next Week",
@@ -623,5 +627,35 @@
   },
   "guestMenu": {
     "title": "Menu"
+  },
+  "quiz": {
+    "title": "Menu Rating",
+    "noRatings": "Please rate at least one pairing",
+    "submitted": "Ratings saved",
+    "submittedDesc": "{{count}} ratings saved",
+    "submit": "Submit",
+    "ratings": "ratings",
+    "noCombos": "No pairings for this day",
+    "rate": "Rate"
+  },
+  "learning": {
+    "title": "Learning Dashboard",
+    "totalRatings": "Ratings",
+    "avgScore": "Avg Score",
+    "uniquePairings": "Pairings",
+    "activeRules": "Rules",
+    "explorationRate": "Exploration Rate",
+    "epsilonDesc": "Proportion of random selection in auto-fill",
+    "topPairings": "Top 10 Pairings",
+    "flopPairings": "Flop 10 Pairings",
+    "distribution": "Distribution",
+    "rules": "Rules",
+    "scoreDistribution": "Score Distribution",
+    "ratingsOverTime": "Ratings Over Time",
+    "learnedRules": "Learned Rules",
+    "aiAnalysis": "AI Analysis",
+    "aiDone": "AI Analysis complete",
+    "noData": "No data available yet",
+    "noRules": "No rules yet. Submit ratings or run AI analysis."
   }
 }

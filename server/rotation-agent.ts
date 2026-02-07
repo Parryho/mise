@@ -1,7 +1,14 @@
 /**
- * Küchenchef-Agent v2: Kulinarische Regeln für Rotation-Slots.
+ * Küchenchef-Agent v3: Kulinarische Regeln + Adaptive Learning für Rotation-Slots.
  *
- * v2 Verbesserungen gegenüber v1:
+ * v3 Verbesserungen gegenüber v2:
+ * - Score-basierte Beilagen-Auswahl via `pickWeighted()` (Exploit/Explore)
+ * - Pairing-Scores aus Quiz-Feedback fließen in `pickStarchFor()` / `pickVeggieFor()` ein
+ * - Adaptive Epsilon: Bei wenigen Bewertungen mehr Exploration, mit der Zeit mehr Exploitation
+ * - DISH_META Regeln bleiben als Hard Constraints (preferred/forbidden)
+ * - Scoring ist additiv: erst filtern (DISH_META), dann gewichten (Scores)
+ *
+ * v2 Features (beibehalten):
  * - DISH_META: Rezept-spezifische Metadaten (selfContained, dessertMain, preferred/forbidden)
  * - Intelligente Stärke-Auswahl: preferred/forbidden statt blindes Round-Robin
  * - Self-contained Gerichte (Käsespätzle, Lasagne) bekommen KEINE Stärkebeilage
@@ -22,6 +29,8 @@
 import { storage } from "./storage";
 import type { Recipe, RotationSlot } from "@shared/schema";
 import type { MealSlotName } from "@shared/constants";
+import { loadAllScores } from "./pairing-engine";
+import { pool } from "./db";
 
 // ============================================================
 // Starch Groups — Kollisionsvermeidung innerhalb einer Mahlzeit
@@ -443,6 +452,46 @@ function pickRandom<T>(arr: T[]): T | null {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+/**
+ * v3: Pick with score-weighted probability (Explore/Exploit).
+ * - With probability epsilon → random pick (explore)
+ * - Otherwise → score^2 weighted random (exploit)
+ * - Unrated pairings default to 3.0
+ */
+function pickWeighted(
+  candidates: Recipe[],
+  scoreMap: Map<number, number> | undefined,
+  epsilon: number,
+): Recipe | null {
+  if (candidates.length === 0) return null;
+  if (!scoreMap || scoreMap.size === 0 || Math.random() < epsilon) {
+    return pickRandom(candidates);
+  }
+
+  // Score^2 weighting: 1→1, 3→9, 5→25
+  const weights = candidates.map(c => {
+    const score = scoreMap.get(c.id) ?? 3.0;
+    return score * score;
+  });
+  const totalWeight = weights.reduce((s, w) => s + w, 0);
+  if (totalWeight === 0) return pickRandom(candidates);
+
+  let roll = Math.random() * totalWeight;
+  for (let i = 0; i < candidates.length; i++) {
+    roll -= weights[i];
+    if (roll <= 0) return candidates[i];
+  }
+  return candidates[candidates.length - 1];
+}
+
+/**
+ * v3: Adaptive epsilon — more exploration with few ratings, converges to base.
+ */
+function getAdaptiveEpsilon(totalRatings: number, base = 0.2): number {
+  if (totalRatings < 50) return 0.5;
+  return base + (0.5 - base) * Math.exp(-0.01 * (totalRatings - 50));
+}
+
 // ============================================================
 // Intelligent Side-Dish Selection
 // ============================================================
@@ -461,6 +510,8 @@ function pickStarchFor(
   starchPool: Recipe[],
   usedIds: Set<number>,
   usedStarchGroups: Set<string>,
+  scoreMap?: Map<number, number>,
+  epsilon = 0.2,
 ): Recipe | null {
   if (starchPool.length === 0) return null;
 
@@ -478,24 +529,25 @@ function pickStarchFor(
     return true;
   });
 
-  // Step 3: Try preferred first
+  // Step 3: Try preferred first (DISH_META hard constraint)
   if (meta.preferredStarches && meta.preferredStarches.length > 0) {
     const preferredNames = new Set(meta.preferredStarches);
     const preferredCandidates = withoutUsed.filter(r => preferredNames.has(r.name));
     if (preferredCandidates.length > 0) {
-      return pickRandom(preferredCandidates);
+      // v3: Use score-weighted selection within preferred candidates
+      return pickWeighted(preferredCandidates, scoreMap, epsilon);
     }
   }
 
-  // Step 4: Any remaining (no collision)
+  // Step 4: Any remaining (no collision) — v3: score-weighted
   if (withoutUsed.length > 0) {
-    return pickRandom(withoutUsed);
+    return pickWeighted(withoutUsed, scoreMap, epsilon);
   }
 
   // Step 5: Fallback — relax starch-group constraint (still respect forbidden + usedIds)
   const relaxed = candidates.filter(r => !usedIds.has(r.id));
   if (relaxed.length > 0) {
-    return pickRandom(relaxed);
+    return pickWeighted(relaxed, scoreMap, epsilon);
   }
 
   // Final fallback: anything from pool
@@ -513,6 +565,8 @@ function pickVeggieFor(
   mainName: string,
   veggiePool: Recipe[],
   usedIds: Set<number>,
+  scoreMap?: Map<number, number>,
+  epsilon = 0.2,
 ): Recipe | null {
   if (veggiePool.length === 0) return null;
 
@@ -521,18 +575,19 @@ function pickVeggieFor(
   // Remove used IDs
   const available = veggiePool.filter(r => !usedIds.has(r.id));
 
-  // Try preferred first
+  // Try preferred first (DISH_META hard constraint)
   if (meta.preferredVeggies && meta.preferredVeggies.length > 0) {
     const preferredNames = new Set(meta.preferredVeggies);
     const preferredCandidates = available.filter(r => preferredNames.has(r.name));
     if (preferredCandidates.length > 0) {
-      return pickRandom(preferredCandidates);
+      // v3: Use score-weighted selection within preferred candidates
+      return pickWeighted(preferredCandidates, scoreMap, epsilon);
     }
   }
 
-  // Any remaining
+  // Any remaining — v3: score-weighted
   if (available.length > 0) {
-    return pickRandom(available);
+    return pickWeighted(available, scoreMap, epsilon);
   }
 
   // Fallback
@@ -544,16 +599,43 @@ function pickVeggieFor(
 // ============================================================
 interface AutoFillOptions {
   overwrite?: boolean;
+  useScores?: boolean;
 }
 
 export async function autoFillRotation(
   templateId: number,
   options: AutoFillOptions = {}
 ): Promise<{ filled: number; skipped: number }> {
-  const { overwrite = false } = options;
+  const { overwrite = false, useScores = true } = options;
 
   const recipes = await storage.getRecipes();
   const allSlots = await storage.getRotationSlots(templateId);
+
+  // v3: Load pairing scores and adaptive epsilon
+  let starchScores = new Map<number, Map<number, number>>();
+  let veggieScores = new Map<number, Map<number, number>>();
+  let epsilon = 0.2;
+
+  if (useScores) {
+    try {
+      const scores = await loadAllScores();
+      starchScores = scores.starch;
+      veggieScores = scores.veggie;
+
+      // Get total rating count for adaptive epsilon
+      const { rows: [countRow] } = await pool.query(`SELECT COUNT(*) AS total FROM quiz_feedback`);
+      const totalRatings = parseInt(countRow.total);
+
+      // Check for configured epsilon override
+      const { rows: epsilonRows } = await pool.query(`SELECT value FROM app_settings WHERE key = 'quiz_epsilon'`);
+      const baseEpsilon = epsilonRows.length > 0 ? parseFloat(epsilonRows[0].value) : 0.2;
+      epsilon = getAdaptiveEpsilon(totalRatings, baseEpsilon);
+
+      console.log(`[rotation-agent v3] Scores loaded: ${starchScores.size} starch mains, ${veggieScores.size} veggie mains, epsilon=${epsilon.toFixed(3)}`);
+    } catch (err) {
+      console.warn("[rotation-agent v3] Could not load scores, falling back to random:", err);
+    }
+  }
 
   // ── Build recipe pools by role ──
   const soups: Recipe[] = [];
@@ -777,7 +859,8 @@ export async function autoFillRotation(
                     skipped++;
                     continue;
                   }
-                  picked = pickStarchFor(main1Recipe.name, pools.starch, dayUsedIds, mealUsedStarchGroups);
+                  const mainScores = starchScores.get(main1Recipe.id);
+                  picked = pickStarchFor(main1Recipe.name, pools.starch, dayUsedIds, mealUsedStarchGroups, mainScores, epsilon);
                   if (picked) mealUsedStarchGroups.add(getStarchGroup(picked));
                 }
                 break;
@@ -795,7 +878,8 @@ export async function autoFillRotation(
                     skipped++;
                     continue;
                   }
-                  picked = pickVeggieFor(main1Recipe.name, pools.veg, dayUsedIds);
+                  const mainScores = veggieScores.get(main1Recipe.id);
+                  picked = pickVeggieFor(main1Recipe.name, pools.veg, dayUsedIds, mainScores, epsilon);
                 }
                 break;
               }
@@ -811,7 +895,8 @@ export async function autoFillRotation(
                     skipped++;
                     continue;
                   }
-                  picked = pickStarchFor(main2Recipe.name, pools.starch, dayUsedIds, mealUsedStarchGroups);
+                  const mainScores = starchScores.get(main2Recipe.id);
+                  picked = pickStarchFor(main2Recipe.name, pools.starch, dayUsedIds, mealUsedStarchGroups, mainScores, epsilon);
                   if (picked) mealUsedStarchGroups.add(getStarchGroup(picked));
                 }
                 break;
@@ -828,7 +913,8 @@ export async function autoFillRotation(
                     skipped++;
                     continue;
                   }
-                  picked = pickVeggieFor(main2Recipe.name, pools.veg, dayUsedIds);
+                  const mainScores = veggieScores.get(main2Recipe.id);
+                  picked = pickVeggieFor(main2Recipe.name, pools.veg, dayUsedIds, mainScores, epsilon);
                 }
                 break;
               }

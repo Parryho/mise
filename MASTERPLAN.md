@@ -118,21 +118,21 @@ mise hat bereits: React 19 + Express 5 + PostgreSQL + Drizzle ORM, Multi-Locatio
 
 ---
 
-### Phase 3: AI-POWERED (Woche 11-14)
+### Phase 3: AI-POWERED (Woche 11-14) ✅ ERLEDIGT
 > AI als echten Differentiator nutzen — mise hat bereits `rotation-agent.ts` als Fundament
 
-| # | Task | Aufwand |
-|---|------|---------|
-| 3.1 | **PAX-Forecasting** — ML-Modell auf historische guestCounts → Vorhersage nächste Woche | 12h |
-| 3.2 | **Smart Rotation** — Claude AI optimiert 6-Wochen-Rotation (Abwechslung, Saison, Kosten) | 8h |
-| 3.3 | **LLM Rezept-Import** — Unstrukturierten Text/Bild einfügen → AI strukturiert zu Rezept (Name, Zutaten, Schritte, Allergene) | 6h |
-| 3.4 | **Rezept-Vorschläge** — "Basierend auf Saison + verfügbaren Zutaten empfehle ich..." | 6h |
-| 3.5 | **Intelligentes Scaling** — Nicht-lineare Skalierung für Großküche (Salz, Gewürze, Backpulver) | 6h |
-| 3.6 | **HACCP Anomalie-Erkennung** — Ungewöhnliche Temperaturmuster automatisch flaggen | 6h |
-| 3.7 | **Allergen Auto-Detection** — Aus Zutatennamen automatisch Allergene vorschlagen | 4h |
-| 3.8 | **Waste-Prediction** — Welche Zutaten drohen zu verderben, Menüvorschläge zur Verwertung | 8h |
+| # | Task | Aufwand | Status |
+|---|------|---------|--------|
+| 3.1 | **PAX-Forecasting** — Statistische Vorhersage (Moving Average + Saisonalität + Wochentag-Pattern) mit MAPE | 12h | ✅ Done |
+| 3.2 | **Smart Rotation** — Claude AI analysiert und optimiert 6-Wochen-Rotation (Abwechslung, Saison, Kosten) | 8h | ✅ Done |
+| 3.3 | **LLM Rezept-Import** — Unstrukturierten Text/Bild per Claude Vision zu strukturiertem Rezept parsen | 6h | ✅ Done |
+| 3.4 | **Rezept-Vorschläge** — Scoring-System (Saison, Abwechslung, Kategorie-Balance) + optionale AI-Bewertung | 6h | ✅ Done |
+| 3.5 | **Intelligentes Scaling** — Nicht-lineare Skalierung für Großküche (Gewürze, Backpulver, Fette) | 6h | ✅ Done |
+| 3.6 | **HACCP Anomalie-Erkennung** — 5 Anomalie-Typen + Kühlschrank-Health-Score | 6h | ✅ Done |
+| 3.7 | **Allergen Auto-Detection** — 100+ deutsche Zutatennamen → 14 EU-Allergene Mapping | 4h | ✅ Done |
+| 3.8 | **Waste-Prediction** — Verfallswarnung für geplante Zutaten mit Verwertungsvorschlägen | 8h | ✅ Done |
 
-**Gesamt Phase 3: ~56h**
+**Gesamt Phase 3: ~56h** ✅ Abgeschlossen am 07.02.2026
 
 ---
 
@@ -163,7 +163,7 @@ mise hat bereits: React 19 + Express 5 + PostgreSQL + Drizzle ORM, Multi-Locatio
 | **0** | Security + Foundation Fix | ~31h | Woche 1-2 ✅ |
 | **1** | Core Polish | ~65h | Woche 3-5 ✅ |
 | **2** | Killer Features | ~82h | Woche 6-10 ✅ |
-| **3** | AI-Powered | ~56h | Woche 11-14 |
+| **3** | AI-Powered | ~56h | Woche 11-14 ✅ |
 | **4** | Professional Polish | ~72h | Woche 15-18 |
 | **TOTAL** | | **~314h** | **~18 Wochen** |
 
@@ -180,7 +180,7 @@ mise hat bereits: React 19 + Express 5 + PostgreSQL + Drizzle ORM, Multi-Locatio
 | PAX-Management | ✓ | ✗ | ✗ | ✗ | ✗ |
 | Dienstplan | ✓ | ✗ | ✗ | ✗ | ✗ |
 | Catering-Events | ✓ | ✗ | ✓ | ✗ | ✗ |
-| AI Menu Planning | ✓ (geplant) | ✗ | ✗ | ✗ | ✗ |
+| AI Menu Planning | ✓✓ | ✗ | ✗ | ✗ | ✗ |
 | Food-Cost-Analyse | ✓ | ✓ | ✓✓ | ✓ | ✗ |
 | Allergen-Karten | ✓ | ✓ | ✓ | ✗ | ✗ |
 | Digital Signage | ✓ | ✗ | ✗ | ✗ | ✗ |
@@ -220,4 +220,4 @@ Folgende Skills sind unter `.agents/skills/` installiert und sollten bei der Ums
 
 ## Nächster Schritt
 
-**Phase 0 + Phase 1 + Phase 2 abgeschlossen.** Nächster Schritt: Phase 3 (AI-Powered) — PAX-Forecasting, Smart Rotation, LLM Rezept-Import, HACCP Anomalie-Erkennung.
+**Phase 0 + Phase 1 + Phase 2 + Phase 3 abgeschlossen.** Nächster Schritt: Phase 4 (Professional Polish) — PWA Offline-Support, Push-Notifications, CI/CD, Test-Suite, Multi-Language.

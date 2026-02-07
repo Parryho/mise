@@ -345,13 +345,13 @@ export const recipeMedia = pgTable("recipe_media", {
 export const quizFeedback = pgTable("quiz_feedback", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id").references(() => users.id, { onDelete: "set null" }),
-  templateId: integer("template_id").references(() => rotationTemplates.id, { onDelete: "cascade" }).notNull(),
-  weekNr: integer("week_nr").notNull(),
-  dayOfWeek: integer("day_of_week").notNull(),
+  templateId: integer("template_id").references(() => rotationTemplates.id, { onDelete: "cascade" }),
+  weekNr: integer("week_nr"),
+  dayOfWeek: integer("day_of_week"),
   meal: text("meal").notNull(),
-  locationSlug: text("location_slug").notNull(),
-  mainRecipeId: integer("main_recipe_id").references(() => recipes.id, { onDelete: "cascade" }).notNull(),
-  sideRecipeId: integer("side_recipe_id").references(() => recipes.id, { onDelete: "cascade" }).notNull(),
+  locationSlug: text("location_slug"),
+  mainRecipeId: integer("main_recipe_id").references(() => recipes.id, { onDelete: "cascade" }),
+  sideRecipeId: integer("side_recipe_id").references(() => recipes.id, { onDelete: "cascade" }),
   pairingType: text("pairing_type").notNull(), // "main_starch" | "main_veggie"
   rating: integer("rating").notNull(), // 1-5
   comment: text("comment"),

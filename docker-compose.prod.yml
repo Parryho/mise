@@ -48,6 +48,20 @@ services:
       - certbot-conf:/etc/letsencrypt:ro
       - certbot-www:/var/www/certbot:ro
 
+  db-backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backups:/backups
+    environment:
+      PGUSER: ${PGUSER:-postgres}
+      PGPASSWORD: ${PGPASSWORD}
+      PGDATABASE: ${PGDATABASE:-mise}
+    entrypoint: "/bin/sh -c 'while true; do sleep 86400; echo \"[$(date)] Running backup...\"; pg_dump -h db -U $$PGUSER $$PGDATABASE | gzip > /backups/mise_$$(date +%Y%m%d_%H%M%S).sql.gz && echo \"[$(date)] Backup done.\"; find /backups -name \"mise_*.sql.gz\" -mtime +14 -delete && echo \"[$(date)] Old backups cleaned.\"; done'"
+
   certbot:
     image: certbot/certbot
     volumes:

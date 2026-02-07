@@ -7,7 +7,11 @@ import {
   insertGuestCountSchema, insertCateringEventSchema, insertStaffSchema, insertShiftTypeSchema, insertScheduleEntrySchema, insertMenuPlanSchema,
   registerUserSchema, loginUserSchema, insertTaskSchema, updateTaskStatusSchema,
   insertLocationSchema, insertRotationTemplateSchema, insertRotationSlotSchema,
-  insertMasterIngredientSchema, insertCateringMenuItemSchema, insertMenuPlanTemperatureSchema
+  insertMasterIngredientSchema, insertCateringMenuItemSchema, insertMenuPlanTemperatureSchema,
+  updateUserSchema, updateRecipeSchema, updateFridgeSchema, updateGuestCountSchema,
+  updateCateringEventSchema, updateStaffSchema, updateShiftTypeSchema, updateScheduleEntrySchema,
+  updateMenuPlanSchema, updateRotationTemplateSchema, updateRotationSlotSchema,
+  updateMasterIngredientSchema, updateSettingSchema, updateTaskTemplateSchema
 } from "@shared/schema";
 import { autoCategorize } from "@shared/categorizer";
 import { parseFelixText } from "./felix-parser";
@@ -129,6 +133,27 @@ export async function registerRoutes(
     }
   }));
 
+  // CSRF protection: verify Origin/Referer on mutation requests
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    if (["GET", "HEAD", "OPTIONS"].includes(req.method)) {
+      return next();
+    }
+    const origin = req.headers.origin || req.headers.referer;
+    if (!origin) {
+      // Allow requests without Origin (e.g., server-to-server, curl in dev)
+      if (!isProduction) return next();
+      return res.status(403).json({ error: "CSRF: Origin header required" });
+    }
+    try {
+      const url = new URL(origin);
+      const host = req.headers.host;
+      if (host && url.host === host) {
+        return next();
+      }
+    } catch {}
+    return res.status(403).json({ error: "CSRF: Origin mismatch" });
+  });
+
   // Create default admin account if none exists
   const existingAdmin = await storage.getUserByEmail("admin@mise.app");
   if (!existingAdmin) {
@@ -142,34 +167,71 @@ export async function registerRoutes(
       isApproved: true,
       position: "Admin"
     });
-    console.log("Default admin account created: admin@mise.app / admin123");
+    console.log("Default admin account created (admin@mise.app).");
   }
 
-  // Auth middleware – pass-through (app is public, no login required)
+  // Auth middleware — checks session for logged-in user
   const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
-    const admin = await storage.getUserByEmail("admin@mise.app");
-    if (admin) {
-      (req as any).user = admin;
+    const userId = req.session.userId;
+    if (!userId) {
+      return res.status(401).json({ error: "Nicht angemeldet" });
     }
+    const user = await storage.getUser(userId);
+    if (!user || !user.isApproved) {
+      return res.status(401).json({ error: "Nicht autorisiert" });
+    }
+    (req as any).user = user;
     next();
   };
 
   const requireAdmin = async (req: Request, res: Response, next: NextFunction) => {
-    const admin = await storage.getUserByEmail("admin@mise.app");
-    if (admin) {
-      (req as any).user = admin;
+    const userId = req.session.userId;
+    if (!userId) {
+      return res.status(401).json({ error: "Nicht angemeldet" });
     }
+    const user = await storage.getUser(userId);
+    if (!user || !user.isApproved) {
+      return res.status(401).json({ error: "Nicht autorisiert" });
+    }
+    if (user.role !== "admin") {
+      return res.status(403).json({ error: "Admin-Berechtigung erforderlich" });
+    }
+    (req as any).user = user;
     next();
   };
 
-  const requireRole = (..._roles: string[]) => {
+  const requireRole = (...roles: string[]) => {
     return async (req: Request, res: Response, next: NextFunction) => {
-      const admin = await storage.getUserByEmail("admin@mise.app");
-      if (admin) {
-        (req as any).user = admin;
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Nicht angemeldet" });
       }
+      const user = await storage.getUser(userId);
+      if (!user || !user.isApproved) {
+        return res.status(401).json({ error: "Nicht autorisiert" });
+      }
+      const userLevel = ROLE_PERMISSIONS[user.role] || 0;
+      const requiredLevel = Math.min(...roles.map(r => ROLE_PERMISSIONS[r] || 0));
+      if (userLevel < requiredLevel) {
+        return res.status(403).json({ error: "Unzureichende Berechtigung" });
+      }
+      (req as any).user = user;
       next();
     };
+  };
+
+  // Audit log helper
+  const audit = (req: Request, action: string, tableName: string, recordId?: string | number, before?: unknown, after?: unknown) => {
+    const user = (req as any).user;
+    storage.createAuditLog({
+      userId: user?.id ?? null,
+      userName: user?.name ?? null,
+      action,
+      tableName,
+      recordId: recordId != null ? String(recordId) : null,
+      before,
+      after,
+    }).catch(err => console.error("Audit log failed:", err));
   };
 
   // === AUTH ROUTES ===
@@ -227,18 +289,27 @@ export async function registerRoutes(
         return res.status(403).json({ error: "Ihr Konto wurde noch nicht freigeschaltet. Bitte warten Sie auf die Freischaltung." });
       }
       
-      // Set session
-      req.session.userId = user.id;
-      
-      res.json({ 
-        user: { 
-          id: user.id, 
-          name: user.name, 
-          email: user.email, 
-          position: user.position, 
-          role: user.role,
-          isApproved: user.isApproved
+      // Regenerate session to prevent fixation, then set userId
+      req.session.regenerate((err) => {
+        if (err) {
+          return res.status(500).json({ error: "Session-Fehler" });
         }
+        req.session.userId = user.id;
+        req.session.save((err) => {
+          if (err) {
+            return res.status(500).json({ error: "Session-Fehler" });
+          }
+          res.json({
+            user: {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              position: user.position,
+              role: user.role,
+              isApproved: user.isApproved
+            }
+          });
+        });
       });
     } catch (error: any) {
       res.status(400).json({ error: error.message });
@@ -255,20 +326,24 @@ export async function registerRoutes(
     });
   });
 
-  // Get current user – always return admin (no login required)
+  // Get current user from session
   app.get("/api/auth/me", async (req, res) => {
-    const admin = await storage.getUserByEmail("admin@mise.app");
-    if (!admin) {
-      return res.status(500).json({ error: "Admin-Benutzer nicht gefunden" });
+    const userId = req.session.userId;
+    if (!userId) {
+      return res.status(401).json({ error: "Nicht angemeldet" });
+    }
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(401).json({ error: "Benutzer nicht gefunden" });
     }
 
     res.json({
-      id: admin.id,
-      name: admin.name,
-      email: admin.email,
-      position: admin.position,
-      role: admin.role,
-      isApproved: admin.isApproved
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      position: user.position,
+      role: user.role,
+      isApproved: user.isApproved
     });
   });
 
@@ -301,13 +376,15 @@ export async function registerRoutes(
 
   // Update user (admin only)
   app.put("/api/admin/users/:id", requireAdmin, async (req, res) => {
-    const { role, isApproved, position } = req.body;
-    const updated = await storage.updateUser(getParam(req.params.id), { role, isApproved, position });
-    
+    const parsed = updateUserSchema.parse(req.body);
+    const before = await storage.getUser(getParam(req.params.id));
+    const updated = await storage.updateUser(getParam(req.params.id), parsed);
+
     if (!updated) {
       return res.status(404).json({ error: "Benutzer nicht gefunden" });
     }
-    
+
+    audit(req, "update", "users", updated.id, before, updated);
     res.json({
       id: updated.id,
       name: updated.name,
@@ -382,9 +459,21 @@ export async function registerRoutes(
   });
 
   app.put("/api/admin/settings/:key", requireAdmin, async (req, res) => {
-    const { value } = req.body;
+    const { value } = updateSettingSchema.parse(req.body);
     const setting = await storage.setSetting(getParam(req.params.key), value);
     res.json(setting);
+  });
+
+  // Audit log viewer (admin only)
+  app.get("/api/admin/audit-logs", requireAdmin, async (req, res) => {
+    try {
+      const limit = Math.min(parseInt(String(req.query.limit || "100")), 500);
+      const offset = parseInt(String(req.query.offset || "0"));
+      const logs = await storage.getAuditLogs(limit, offset);
+      res.json(logs);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
   });
 
   // Create initial admin user if none exists
@@ -466,10 +555,13 @@ export async function registerRoutes(
   app.put("/api/recipes/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(getParam(req.params.id), 10);
-      const recipe = await storage.updateRecipe(id, req.body);
+      const parsed = updateRecipeSchema.parse(req.body);
+      const before = await storage.getRecipe(id);
+      const recipe = await storage.updateRecipe(id, parsed);
       if (!recipe) {
         return res.status(404).json({ error: "Rezept nicht gefunden" });
       }
+      audit(req, "update", "recipes", id, { name: before?.name, category: before?.category }, { name: recipe.name, category: recipe.category });
 
       // Update ingredients if provided
       if (req.body.ingredientsList && Array.isArray(req.body.ingredientsList)) {
@@ -666,7 +758,8 @@ export async function registerRoutes(
   app.put("/api/fridges/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(getParam(req.params.id), 10);
-      const fridge = await storage.updateFridge(id, req.body);
+      const parsed = updateFridgeSchema.parse(req.body);
+      const fridge = await storage.updateFridge(id, parsed);
       if (!fridge) {
         return res.status(404).json({ error: "Kühlschrank nicht gefunden" });
       }
@@ -698,6 +791,7 @@ export async function registerRoutes(
     try {
       const parsed = insertHaccpLogSchema.parse(req.body);
       const log = await storage.createHaccpLog(parsed);
+      audit(req, "create", "haccp_logs", log.id, null, { fridgeId: log.fridgeId, temperature: log.temperature, status: log.status });
       res.status(201).json(log);
     } catch (error: any) {
       res.status(400).json({ error: error.message });
@@ -1104,7 +1198,8 @@ export async function registerRoutes(
   app.put("/api/guests/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(getParam(req.params.id), 10);
-      const updated = await storage.updateGuestCount(id, req.body);
+      const parsed = updateGuestCountSchema.parse(req.body);
+      const updated = await storage.updateGuestCount(id, parsed);
       if (!updated) return res.status(404).json({ error: "Nicht gefunden" });
       res.json(updated);
     } catch (error: any) {
@@ -1144,7 +1239,8 @@ export async function registerRoutes(
   app.put("/api/catering/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(getParam(req.params.id), 10);
-      const updated = await storage.updateCateringEvent(id, req.body);
+      const parsed = updateCateringEventSchema.parse(req.body);
+      const updated = await storage.updateCateringEvent(id, parsed);
       if (!updated) return res.status(404).json({ error: "Nicht gefunden" });
       res.json(updated);
     } catch (error: any) {
@@ -1184,7 +1280,8 @@ export async function registerRoutes(
   app.put("/api/staff/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(getParam(req.params.id), 10);
-      const updated = await storage.updateStaff(id, req.body);
+      const parsed = updateStaffSchema.parse(req.body);
+      const updated = await storage.updateStaff(id, parsed);
       if (!updated) return res.status(404).json({ error: "Mitarbeiter nicht gefunden" });
       res.json(updated);
     } catch (error: any) {
@@ -1217,7 +1314,8 @@ export async function registerRoutes(
   app.put("/api/shift-types/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(getParam(req.params.id), 10);
-      const updated = await storage.updateShiftType(id, req.body);
+      const parsed = updateShiftTypeSchema.parse(req.body);
+      const updated = await storage.updateShiftType(id, parsed);
       if (!updated) return res.status(404).json({ error: "Diensttyp nicht gefunden" });
       res.json(updated);
     } catch (error: any) {
@@ -1271,7 +1369,8 @@ export async function registerRoutes(
   app.put("/api/schedule/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(getParam(req.params.id), 10);
-      const updated = await storage.updateScheduleEntry(id, req.body);
+      const parsed = updateScheduleEntrySchema.parse(req.body);
+      const updated = await storage.updateScheduleEntry(id, parsed);
       if (!updated) return res.status(404).json({ error: "Schichteintrag nicht gefunden" });
       res.json(updated);
     } catch (error: any) {
@@ -1336,7 +1435,8 @@ export async function registerRoutes(
   app.put("/api/menu-plans/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(getParam(req.params.id), 10);
-      const updated = await storage.updateMenuPlan(id, req.body);
+      const parsed = updateMenuPlanSchema.parse(req.body);
+      const updated = await storage.updateMenuPlan(id, parsed);
       if (!updated) return res.status(404).json({ error: "Nicht gefunden" });
       res.json(updated);
     } catch (error: any) {
@@ -1927,10 +2027,10 @@ export async function registerRoutes(
 
   app.put("/api/task-templates/:id", requireAdmin, async (req, res) => {
     try {
-      const { name, items } = req.body;
+      const parsed = updateTaskTemplateSchema.parse(req.body);
       const update: any = {};
-      if (name) update.name = name;
-      if (items) update.items = JSON.stringify(items);
+      if (parsed.name) update.name = parsed.name;
+      if (parsed.items) update.items = JSON.stringify(parsed.items);
       const template = await storage.updateTaskTemplate(parseInt(getParam(req.params.id), 10), update);
       if (!template) {
         return res.status(404).json({ error: "Vorlage nicht gefunden" });
@@ -2042,7 +2142,8 @@ export async function registerRoutes(
 
   app.put("/api/rotation-templates/:id", requireRole("admin", "souschef"), async (req: Request, res: Response) => {
     try {
-      const updated = await storage.updateRotationTemplate(parseInt(String(req.params.id)), req.body);
+      const parsed = updateRotationTemplateSchema.parse(req.body);
+      const updated = await storage.updateRotationTemplate(parseInt(String(req.params.id)), parsed);
       if (!updated) return res.status(404).json({ error: "Nicht gefunden" });
       res.json(updated);
     } catch (error: any) {
@@ -2080,7 +2181,8 @@ export async function registerRoutes(
 
   app.put("/api/rotation-slots/:id", requireRole("admin", "souschef", "koch"), async (req: Request, res: Response) => {
     try {
-      const updated = await storage.updateRotationSlot(parseInt(String(req.params.id)), req.body);
+      const parsed = updateRotationSlotSchema.parse(req.body);
+      const updated = await storage.updateRotationSlot(parseInt(String(req.params.id)), parsed);
       if (!updated) return res.status(404).json({ error: "Nicht gefunden" });
       res.json(updated);
     } catch (error: any) {
@@ -2185,7 +2287,8 @@ export async function registerRoutes(
 
   app.put("/api/master-ingredients/:id", requireRole("admin", "souschef"), async (req: Request, res: Response) => {
     try {
-      const updated = await storage.updateMasterIngredient(parseInt(String(req.params.id)), req.body);
+      const parsed = updateMasterIngredientSchema.parse(req.body);
+      const updated = await storage.updateMasterIngredient(parseInt(String(req.params.id)), parsed);
       if (!updated) return res.status(404).json({ error: "Nicht gefunden" });
       res.json(updated);
     } catch (error: any) {

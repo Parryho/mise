@@ -3,9 +3,12 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { AppProvider } from "@/lib/store";
-import { AuthProvider } from "@/lib/auth";
+import { AuthProvider, useAuth } from "@/lib/auth";
 import Layout from "@/components/Layout";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { Loader2 } from "lucide-react";
 
+import Login from "@/pages/Login";
 import Recipes from "@/pages/Recipes";
 import HACCP from "@/pages/HACCP";
 import Reports from "@/pages/Reports";
@@ -23,12 +26,9 @@ import Print from "@/pages/Print";
 import Catering from "@/pages/Catering";
 import NotFound from "@/pages/not-found";
 
-function Router() {
+function AuthenticatedRoutes() {
   return (
     <Switch>
-      <Route path="/login">
-        <Redirect to="/today" />
-      </Route>
       <Route path="/">
         <Redirect to="/today" />
       </Route>
@@ -74,6 +74,9 @@ function Router() {
       <Route path="/print">
         <Layout><Print /></Layout>
       </Route>
+      <Route path="/login">
+        <Redirect to="/today" />
+      </Route>
       <Route>
         <NotFound />
       </Route>
@@ -81,16 +84,48 @@ function Router() {
   );
 }
 
+function Router() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-background">
+        <div className="text-center space-y-3">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+          <p className="text-sm text-muted-foreground">Laden...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <Switch>
+        <Route path="/login">
+          <Login />
+        </Route>
+        <Route>
+          <Redirect to="/login" />
+        </Route>
+      </Switch>
+    );
+  }
+
+  return <AuthenticatedRoutes />;
+}
+
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <AppProvider>
-          <Router />
-          <Toaster />
-        </AppProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <AppProvider>
+            <Router />
+            <Toaster />
+          </AppProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

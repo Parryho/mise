@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, serial, integer, doublePrecision, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, serial, integer, doublePrecision, timestamp, boolean, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -72,7 +72,9 @@ export const recipes = pgTable("recipes", {
   // NEW from A: season and prep instructions
   season: text("season").notNull().default("all"),
   prepInstructions: text("prep_instructions"),
-});
+}, (table) => [
+  index("idx_recipes_category").on(table.category),
+]);
 
 // Ingredients: Recipe ingredient items (per recipe)
 export const ingredients = pgTable("ingredients", {
@@ -114,7 +116,9 @@ export const haccpLogs = pgTable("haccp_logs", {
   user: text("user").notNull(),
   status: text("status").notNull(),
   notes: text("notes"),
-});
+}, (table) => [
+  index("idx_haccp_logs_fridge_ts").on(table.fridgeId, table.timestamp),
+]);
 
 // Guest counts per meal: MERGED A + B
 export const guestCounts = pgTable("guest_counts", {
@@ -126,7 +130,9 @@ export const guestCounts = pgTable("guest_counts", {
   notes: text("notes"),
   locationId: integer("location_id").references(() => locations.id, { onDelete: "set null" }),
   source: text("source").notNull().default("manual"),
-});
+}, (table) => [
+  index("idx_guest_counts_date_meal").on(table.date, table.meal),
+]);
 
 // === NEW: Rotation templates ===
 export const rotationTemplates = pgTable("rotation_templates", {
@@ -148,7 +154,9 @@ export const rotationSlots = pgTable("rotation_slots", {
   locationSlug: text("location_slug").notNull(),
   course: text("course").notNull(),
   recipeId: integer("recipe_id").references(() => recipes.id, { onDelete: "set null" }),
-});
+}, (table) => [
+  index("idx_rotation_slots_template_week").on(table.templateId, table.weekNr),
+]);
 
 // Catering events: MERGED A + B
 export const cateringEvents = pgTable("catering_events", {
@@ -212,7 +220,10 @@ export const scheduleEntries = pgTable("schedule_entries", {
   shiftTypeId: integer("shift_type_id").references(() => shiftTypes.id, { onDelete: "set null" }),
   shift: text("shift"),
   notes: text("notes"),
-});
+}, (table) => [
+  index("idx_schedule_entries_date").on(table.date),
+  index("idx_schedule_entries_staff_date").on(table.staffId, table.date),
+]);
 
 // Menu plans: MERGED A + B
 export const menuPlans = pgTable("menu_plans", {
@@ -225,7 +236,10 @@ export const menuPlans = pgTable("menu_plans", {
   notes: text("notes"),
   locationId: integer("location_id").references(() => locations.id, { onDelete: "set null" }),
   rotationWeekNr: integer("rotation_week_nr"),
-});
+}, (table) => [
+  index("idx_menu_plans_date").on(table.date),
+  index("idx_menu_plans_date_meal_loc").on(table.date, table.meal, table.locationId),
+]);
 
 // === NEW: Menu plan temperatures (HACCP per menu-plan slot) ===
 export const menuPlanTemperatures = pgTable("menu_plan_temperatures", {
@@ -257,6 +271,22 @@ export const taskTemplates = pgTable("task_templates", {
   items: text("items").notNull().default("[]"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
+
+// Audit Logs
+export const auditLogs = pgTable("audit_logs", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "set null" }),
+  userName: text("user_name"),
+  action: text("action").notNull(), // create, update, delete
+  tableName: text("table_name").notNull(),
+  recordId: text("record_id"),
+  before: text("before"), // JSON snapshot before change
+  after: text("after"), // JSON snapshot after change
+  timestamp: timestamp("timestamp").notNull().defaultNow(),
+}, (table) => [
+  index("idx_audit_logs_timestamp").on(table.timestamp),
+  index("idx_audit_logs_table_record").on(table.tableName, table.recordId),
+]);
 
 // ========================
 // Zod Schemas
@@ -295,6 +325,30 @@ export const insertMenuPlanTemperatureSchema = createInsertSchema(menuPlanTemper
 export const insertTaskSchema = createInsertSchema(tasks).omit({ id: true, createdAt: true });
 export const updateTaskStatusSchema = z.object({ status: z.enum(["open", "done"]) });
 export const insertTaskTemplateSchema = createInsertSchema(taskTemplates).omit({ id: true, createdAt: true });
+
+// Update schemas (partial versions for PUT endpoints)
+export const updateUserSchema = z.object({
+  role: z.string().optional(),
+  isApproved: z.boolean().optional(),
+  position: z.string().optional(),
+  name: z.string().optional(),
+});
+export const updateRecipeSchema = insertRecipeSchema.partial();
+export const updateFridgeSchema = insertFridgeSchema.partial();
+export const updateGuestCountSchema = insertGuestCountSchema.partial();
+export const updateCateringEventSchema = insertCateringEventSchema.partial();
+export const updateStaffSchema = insertStaffSchema.partial();
+export const updateShiftTypeSchema = insertShiftTypeSchema.partial();
+export const updateScheduleEntrySchema = insertScheduleEntrySchema.partial();
+export const updateMenuPlanSchema = insertMenuPlanSchema.partial();
+export const updateRotationTemplateSchema = insertRotationTemplateSchema.partial();
+export const updateRotationSlotSchema = z.object({ recipeId: z.number().nullable() });
+export const updateMasterIngredientSchema = insertMasterIngredientSchema.partial();
+export const updateSettingSchema = z.object({ value: z.string() });
+export const updateTaskTemplateSchema = z.object({
+  name: z.string().optional(),
+  items: z.array(z.any()).optional(),
+});
 
 // ========================
 // Types
@@ -342,3 +396,4 @@ export type Task = typeof tasks.$inferSelect;
 export type InsertTask = z.infer<typeof insertTaskSchema>;
 export type TaskTemplate = typeof taskTemplates.$inferSelect;
 export type InsertTaskTemplate = z.infer<typeof insertTaskTemplateSchema>;
+export type AuditLog = typeof auditLogs.$inferSelect;

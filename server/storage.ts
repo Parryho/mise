@@ -19,10 +19,11 @@ import {
   type Location, type InsertLocation,
   type RotationTemplate, type InsertRotationTemplate,
   type RotationSlot, type InsertRotationSlot,
+  type AuditLog,
   users, recipes, ingredients, masterIngredients, fridges, haccpLogs,
   guestCounts, cateringEvents, cateringMenuItems, staff, shiftTypes,
   scheduleEntries, menuPlans, menuPlanTemperatures, appSettings, tasks,
-  taskTemplates, locations, rotationTemplates, rotationSlots
+  taskTemplates, locations, rotationTemplates, rotationSlots, auditLogs
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, gte, lte } from "drizzle-orm";
@@ -425,6 +426,31 @@ export class DatabaseStorage {
   }
   async deleteTaskTemplate(id: number): Promise<void> {
     await db.delete(taskTemplates).where(eq(taskTemplates.id, id));
+  }
+
+  // === Audit Logs ===
+  async createAuditLog(log: {
+    userId?: string | null;
+    userName?: string | null;
+    action: string;
+    tableName: string;
+    recordId?: string | null;
+    before?: unknown;
+    after?: unknown;
+  }): Promise<AuditLog> {
+    const [created] = await db.insert(auditLogs).values({
+      userId: log.userId ?? null,
+      userName: log.userName ?? null,
+      action: log.action,
+      tableName: log.tableName,
+      recordId: log.recordId ?? null,
+      before: log.before ? JSON.stringify(log.before) : null,
+      after: log.after ? JSON.stringify(log.after) : null,
+    }).returning();
+    return created;
+  }
+  async getAuditLogs(limit = 100, offset = 0): Promise<AuditLog[]> {
+    return db.select().from(auditLogs).orderBy(desc(auditLogs.timestamp)).limit(limit).offset(offset);
   }
 }
 

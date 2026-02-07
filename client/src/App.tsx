@@ -56,6 +56,7 @@ import GDPRExport from "@/pages/GDPRExport";
 // Phase 5: Quiz Feedback + Learning Dashboard
 import QuizFeedback from "@/pages/QuizFeedback";
 import LearningDashboard from "@/pages/analytics/LearningDashboard";
+import MenuQuiz from "@/pages/MenuQuiz";
 
 // Phase 2: Public pages (no auth)
 import GuestMenu from "@/pages/public/GuestMenu";
@@ -72,6 +73,9 @@ function AuthenticatedRoutes() {
       </Route>
       <Route path="/recipes">
         <Layout><Recipes /></Layout>
+      </Route>
+      <Route path="/quiz">
+        <Layout><MenuQuiz /></Layout>
       </Route>
       <Route path="/haccp">
         <Layout><HACCP /></Layout>

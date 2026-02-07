@@ -384,6 +384,100 @@ Antworte NUR mit einem JSON-Array von Regeln:
   }
 }
 
+// ── POST /api/quiz/game-feedback ───────────────────────────────────────
+// Receives ratings from the card-based quiz game (by dish name, not ID)
+
+export async function handleGameFeedback(req: Request, res: Response) {
+  try {
+    const { hauptgericht, side, pairingType, rating } = req.body;
+
+    if (!hauptgericht || !side || !pairingType || !rating) {
+      return res.status(400).json({ error: "hauptgericht, side, pairingType, rating required" });
+    }
+
+    // Look up recipe IDs by name (case-insensitive partial match)
+    const { rows: mainRows } = await pool.query(
+      `SELECT id FROM recipes WHERE LOWER(name) = LOWER($1) LIMIT 1`, [hauptgericht]
+    );
+    const { rows: sideRows } = await pool.query(
+      `SELECT id FROM recipes WHERE LOWER(name) = LOWER($1) LIMIT 1`, [side]
+    );
+
+    // If recipes not found in DB, still store with null IDs — data is valuable
+    const mainId = mainRows.length > 0 ? mainRows[0].id : null;
+    const sideId = sideRows.length > 0 ? sideRows[0].id : null;
+    const userId = req.session?.userId || null;
+
+    await pool.query(`
+      INSERT INTO quiz_feedback (user_id, template_id, week_nr, day_of_week, meal, location_slug, main_recipe_id, side_recipe_id, pairing_type, rating, comment)
+      VALUES ($1, NULL, NULL, NULL, 'game', NULL, $2, $3, $4, $5, NULL)
+    `, [userId, mainId, sideId, pairingType, rating]);
+
+    // Trigger async aggregation if both IDs found
+    if (mainId && sideId) {
+      aggregatePairingScores().catch(err => console.error("[pairing-engine] Aggregation error:", err));
+    }
+
+    res.json({ ok: true, mainId, sideId });
+  } catch (error: any) {
+    console.error("[quiz-feedback] Game feedback error:", error);
+    res.status(500).json({ error: error.message });
+  }
+}
+
+// ── POST /api/quiz/ai-research ────────────────────────────────────────
+// AI analysis of a menu combo for the quiz game
+
+export async function handleAIResearch(req: Request, res: Response) {
+  try {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      return res.status(400).json({ error: "ANTHROPIC_API_KEY not configured" });
+    }
+
+    const { suppe, combo } = req.body;
+    if (!combo) {
+      return res.status(400).json({ error: "combo required" });
+    }
+
+    const { default: Anthropic } = await import("@anthropic-ai/sdk");
+    const anthropic = new Anthropic({ apiKey });
+
+    const prompt = `Du bist ein erfahrener österreichischer Küchenchef.
+Bewerte diese Menü-Kombination kurz und knapp:
+
+Suppe: ${suppe || "keine"}
+Hauptgang: ${combo}
+
+Antworte NUR mit einem JSON-Objekt (kein Markdown):
+{
+  "score": 1-5 (Sterne),
+  "verdict": "1-2 Sätze Bewertung",
+  "problem": "Problem falls score <= 2, sonst null",
+  "suggestion": "Bessere Alternative falls score <= 3, sonst null",
+  "classic": "Klassische österreichische Variante falls relevant, sonst null"
+}`;
+
+    const message = await anthropic.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 500,
+      messages: [{ role: "user", content: prompt }],
+    });
+
+    const text = message.content[0].type === "text" ? message.content[0].text : "";
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      return res.json({ score: 3, verdict: "Konnte nicht analysiert werden", problem: null, suggestion: null, classic: null });
+    }
+
+    const result = JSON.parse(jsonMatch[0]);
+    res.json(result);
+  } catch (error: any) {
+    console.error("[quiz-feedback] AI research error:", error);
+    res.status(500).json({ error: error.message });
+  }
+}
+
 // ── Helper: Adaptive Epsilon ────────────────────────────────────────────
 
 export function getAdaptiveEpsilon(totalRatings: number, base = 0.2): number {

@@ -38,7 +38,7 @@ import { handleGetWastePrediction } from "./waste-prediction";
 import { scaleRecipeHandler } from "./intelligent-scaling";
 import { detectAllergensHandler, suggestAllergensForRecipeHandler } from "./allergen-detection";
 // Phase 5: Quiz Feedback + Pairing Engine
-import { handleGetWeekCombos, handleSubmitFeedback, handleGetMyRatings, handleGetPairingScores, handleGetDashboardStats, handleGetLearnedRules, handleAIValidate } from "./quiz-feedback";
+import { handleGetWeekCombos, handleSubmitFeedback, handleGetMyRatings, handleGetPairingScores, handleGetDashboardStats, handleGetLearnedRules, handleAIValidate, handleGameFeedback, handleAIResearch } from "./quiz-feedback";
 // Phase 4: Email + Recipe Media + Push + Backup + GDPR + Monitoring
 import { sendEmail, sendHaccpAlert, initializeTransporter, verifySmtp, isSmtpConfigured } from "./email";
 import { recipeMediaUpload, handleUploadMedia, handleGetMedia, handleUpdateMedia, handleDeleteMedia, getUploadDir } from "./recipe-media";
@@ -2889,6 +2889,8 @@ export async function registerRoutes(
   app.get("/api/quiz/dashboard-stats", requireAuth, handleGetDashboardStats);
   app.get("/api/quiz/learned-rules", requireAuth, handleGetLearnedRules);
   app.post("/api/quiz/ai-validate", requireAdmin, handleAIValidate);
+  app.post("/api/quiz/game-feedback", requireAuth, handleGameFeedback);
+  app.post("/api/quiz/ai-research", requireAuth, handleAIResearch);
 
   return httpServer;
 }

@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { ChefHat, Users, CalendarDays, RefreshCw, Thermometer } from "lucide-react";
+import { ChefHat, Users, CalendarDays, RefreshCw, Thermometer, Dices } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -9,6 +9,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { icon: CalendarDays, label: "Plan", href: "/menu" },
     { icon: RefreshCw, label: "Rotation", href: "/rotation" },
     { icon: ChefHat, label: "Rezepte", href: "/recipes" },
+    { icon: Dices, label: "Quiz", href: "/quiz" },
     { icon: Thermometer, label: "HACCP", href: "/haccp" },
     { icon: Users, label: "Personal", href: "/schedule" },
   ];

@@ -26,8 +26,17 @@ import { getDishCost, getWeeklyCostReport } from "./costs";
 import { resolveRecipeIngredients, wouldCreateCycle } from "./sub-recipes";
 import { getDailyAllergenMatrix, getWeeklyAllergenMatrix } from "./allergens";
 import { getPaxTrends, getHaccpCompliance, getPopularDishes } from "./analytics";
+import { detectAnomalies, getFridgeHealthScore } from "./haccp-anomaly";
 import { getBuffetCards, getBuffetCardsForDate } from "./buffet-cards";
 import { getPublicMenu } from "./public-menu";
+// Phase 3: AI-Powered
+import { handlePaxForecast } from "./pax-forecast";
+import { handleOptimizeRotation, handleGetAnalysis } from "./smart-rotation";
+import { handleAIRecipeImport } from "./llm-recipe-import";
+import { handleGetSuggestions } from "./recipe-suggestions";
+import { handleGetWastePrediction } from "./waste-prediction";
+import { scaleRecipeHandler } from "./intelligent-scaling";
+import { detectAllergensHandler, suggestAllergensForRecipeHandler } from "./allergen-detection";
 import multer from "multer";
 import { createRequire } from "module";
 const _require = createRequire(typeof __filename !== "undefined" ? __filename : import.meta.url);
@@ -2661,6 +2670,44 @@ export async function registerRoutes(
       res.status(500).json({ error: error.message });
     }
   });
+
+  // HACCP Anomaly Detection
+  app.get("/api/haccp/anomalies", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const locationId = req.query.locationId ? parseInt(String(req.query.locationId)) : undefined;
+      const startDate = req.query.startDate ? String(req.query.startDate) : undefined;
+      const endDate = req.query.endDate ? String(req.query.endDate) : undefined;
+      const result = await detectAnomalies(locationId, startDate, endDate);
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/haccp/fridge-health", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const fridgeId = parseInt(String(req.query.fridgeId));
+      if (!fridgeId) return res.status(400).json({ error: "fridgeId required" });
+      const days = req.query.days ? parseInt(String(req.query.days)) : 30;
+      const result = await getFridgeHealthScore(fridgeId, days);
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ==========================================
+  // Phase 3: AI-Powered
+  // ==========================================
+  app.get("/api/analytics/pax-forecast", requireAuth, handlePaxForecast);
+  app.post("/api/rotation/optimize", requireRole("admin", "souschef"), handleOptimizeRotation);
+  app.get("/api/rotation/:templateId/analysis", requireAuth, handleGetAnalysis);
+  app.post("/api/recipes/ai-import", requireAuth, handleAIRecipeImport);
+  app.get("/api/recipes/suggestions", requireAuth, handleGetSuggestions);
+  app.get("/api/analytics/waste-prediction", requireAuth, handleGetWastePrediction);
+  app.post("/api/recipes/scale", requireAuth, scaleRecipeHandler);
+  app.post("/api/allergens/detect", requireAuth, detectAllergensHandler);
+  app.post("/api/allergens/suggest-recipe", requireAuth, suggestAllergensForRecipeHandler);
 
   // ==========================================
   // Phase 2: Public Menu (Batch 5) — NO AUTH

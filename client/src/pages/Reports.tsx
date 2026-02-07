@@ -2,7 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "wouter";
 import {
   TrendingUp, Thermometer, Star, DollarSign,
-  AlertTriangle, CreditCard, QrCode, FileText, Download
+  AlertTriangle, CreditCard, QrCode, FileText, Download, Activity,
+  Brain, Sparkles, Trash2
 } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,14 @@ const reportCards = [
     bgColor: "bg-red-50",
   },
   {
+    title: "Anomalie-Erkennung",
+    description: "Automatische Erkennung ungewöhnlicher Temperaturmuster",
+    icon: Activity,
+    href: "/reports/haccp-anomalies",
+    color: "text-rose-600",
+    bgColor: "bg-rose-50",
+  },
+  {
     title: "Beliebteste Gerichte",
     description: "Häufigkeitsranking aus Menüplänen und Rotation",
     icon: Star,
@@ -66,6 +75,30 @@ const reportCards = [
     href: "/reports/qr-codes",
     color: "text-teal-600",
     bgColor: "bg-teal-50",
+  },
+  {
+    title: "PAX-Prognose",
+    description: "KI-gestützte Gästezahlen-Vorhersage für die nächste Woche",
+    icon: Brain,
+    href: "/reports/pax-forecast",
+    color: "text-indigo-600",
+    bgColor: "bg-indigo-50",
+  },
+  {
+    title: "Rezept-Vorschläge",
+    description: "Saisonale & abwechslungsreiche Rezeptempfehlungen für den Menüplan",
+    icon: Sparkles,
+    href: "/recipes/suggestions",
+    color: "text-pink-600",
+    bgColor: "bg-pink-50",
+  },
+  {
+    title: "Waste-Prediction",
+    description: "Verfallswarnung für geplante Zutaten mit Verwertungsvorschlägen",
+    icon: Trash2,
+    href: "/reports/waste-prediction",
+    color: "text-lime-600",
+    bgColor: "bg-lime-50",
   },
 ];
 

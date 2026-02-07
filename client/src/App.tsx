@@ -36,8 +36,16 @@ import BuffetCards from "@/pages/BuffetCards";
 import QRGenerator from "@/pages/QRGenerator";
 import PaxTrends from "@/pages/analytics/PaxTrends";
 import HaccpCompliance from "@/pages/analytics/HaccpCompliance";
+import HaccpAnomalies from "@/pages/analytics/HaccpAnomalies";
 import PopularDishes from "@/pages/analytics/PopularDishes";
 import FoodCost from "@/pages/analytics/FoodCost";
+
+// Phase 3: AI-Powered pages
+import PaxForecast from "@/pages/analytics/PaxForecast";
+import WastePrediction from "@/pages/analytics/WastePrediction";
+import SmartRotation from "@/pages/SmartRotation";
+import RecipeAIImport from "@/pages/RecipeAIImport";
+import RecipeSuggestions from "@/pages/RecipeSuggestions";
 
 // Phase 2: Public pages (no auth)
 import GuestMenu from "@/pages/public/GuestMenu";
@@ -79,6 +87,9 @@ function AuthenticatedRoutes() {
       <Route path="/reports/haccp-compliance">
         <Layout><HaccpCompliance /></Layout>
       </Route>
+      <Route path="/reports/haccp-anomalies">
+        <Layout><HaccpAnomalies /></Layout>
+      </Route>
       <Route path="/reports/popular-dishes">
         <Layout><PopularDishes /></Layout>
       </Route>
@@ -93,6 +104,21 @@ function AuthenticatedRoutes() {
       </Route>
       <Route path="/reports/qr-codes">
         <Layout><QRGenerator /></Layout>
+      </Route>
+      <Route path="/reports/pax-forecast">
+        <Layout><PaxForecast /></Layout>
+      </Route>
+      <Route path="/reports/waste-prediction">
+        <Layout><WastePrediction /></Layout>
+      </Route>
+      <Route path="/recipes/ai-import">
+        <Layout><RecipeAIImport /></Layout>
+      </Route>
+      <Route path="/recipes/suggestions">
+        <Layout><RecipeSuggestions /></Layout>
+      </Route>
+      <Route path="/rotation/smart">
+        <Layout><SmartRotation /></Layout>
       </Route>
       <Route path="/settings">
         <Layout><Settings /></Layout>

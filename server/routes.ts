@@ -2855,11 +2855,11 @@ export async function registerRoutes(
   // ==========================================
   // Phase 4: Backup & Restore (4.10)
   // ==========================================
-  app.get("/api/backups", requireAdmin, handleListBackups);
-  app.post("/api/backups", requireAdmin, handleCreateBackup);
-  app.get("/api/backups/:filename/download", requireAdmin, handleDownloadBackup);
-  app.post("/api/backups/:filename/restore", requireAdmin, handleRestoreBackup);
-  app.delete("/api/backups/:filename", requireAdmin, handleDeleteBackup);
+  app.get("/api/admin/backups", requireAdmin, handleListBackups);
+  app.post("/api/admin/backups", requireAdmin, handleCreateBackup);
+  app.get("/api/admin/backups/:filename", requireAdmin, handleDownloadBackup);
+  app.post("/api/admin/backups/:filename/restore", requireAdmin, handleRestoreBackup);
+  app.delete("/api/admin/backups/:filename", requireAdmin, handleDeleteBackup);
 
   // ==========================================
   // Phase 4: GDPR / DSGVO (4.9)

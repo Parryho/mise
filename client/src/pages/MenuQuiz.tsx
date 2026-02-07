@@ -97,6 +97,117 @@ interface HistoryEntry {
   swap: string | null;
 }
 
+// ═══════════════════════════════════════════════════════════════
+// LOKALE KULINARISCHE REGELN (aus Rotation-Agent DISH_META)
+// ═══════════════════════════════════════════════════════════════
+
+const KNÖDEL = ["Semmelknödel", "Serviettenknödel"];
+const POMMES_ETC = ["Pommes", "Kroketten"];
+
+interface KombiRegel {
+  preferred?: string[];
+  forbidden?: string[];
+  preferredVeggies?: string[];
+  tips?: string[];
+}
+
+const KOMBI_REGELN: Record<string, KombiRegel> = {
+  paniert: {
+    preferred: ["Pommes", "Erdäpfelpüree", "Reis", "Petersilkartoffeln"],
+    forbidden: KNÖDEL,
+    tips: ["Paniertes nie mit Knödel — die Panade wird matschig.", "Klassisch: Erdäpfelsalat, Petersilkartoffeln oder Reis."],
+  },
+  braten: {
+    preferred: ["Semmelknödel", "Serviettenknödel"],
+    forbidden: POMMES_ETC,
+    preferredVeggies: ["Sauerkraut", "Rotkraut"],
+    tips: ["Braten braucht Knödel — der Saft muss aufgesaugt werden!", "Schweinsbraten + Sauerkraut + Semmelknödel = Österreich pur."],
+  },
+  gulasch: {
+    preferred: ["Semmelknödel", "Spätzle", "Serviettenknödel"],
+    tips: ["Gulaschsaft braucht einen Saucenfänger: Knödel oder Spätzle."],
+  },
+  ragout: {
+    preferred: ["Spätzle", "Reis", "Butternockerl"],
+    tips: ["Geschnetzeltes/Ragout: Spätzle oder Reis sind ideal."],
+  },
+  gebraten: {
+    preferred: ["Erdäpfelpüree", "Petersilkartoffeln", "Bratkartoffeln"],
+    tips: ["Gebratenes (Laberl, Leberkäse) passt zu Erdäpfelpüree."],
+  },
+  überbacken: {
+    preferred: ["Reis", "Petersilkartoffeln", "Bratkartoffeln"],
+    tips: ["Überbackenes braucht eine leichte Beilage."],
+  },
+};
+
+interface Evaluation {
+  score: number;
+  verdict: string;
+  problem: string | null;
+  suggestion: string | null;
+  classic: string | null;
+}
+
+function evaluateCombo(quiz: Quiz): Evaluation {
+  const h = quiz.hauptgericht;
+
+  // Dessert-Mains → always good with their garnishes
+  if (h.type === "dessert_main") {
+    return { score: 4, verdict: "Mehlspeisen-Hauptgang mit Garnitur — passt immer!", problem: null, suggestion: null, classic: `${h.name} mit ${quiz.dessert_sides?.join(" & ")}` };
+  }
+
+  // Self-contained → just check veggie
+  if (h.self_contained) {
+    return { score: 4, verdict: `${h.name} ist ein eigenständiges Gericht — braucht keine Stärkebeilage.`, problem: null, suggestion: null, classic: null };
+  }
+
+  const regeln = KOMBI_REGELN[h.type];
+  if (!regeln) {
+    return { score: 3, verdict: "Unbekannter Typ — keine speziellen Regeln.", problem: null, suggestion: null, classic: null };
+  }
+
+  const starch = quiz.starch || "";
+
+  // Check forbidden
+  if (regeln.forbidden?.some(f => starch.toLowerCase().includes(f.toLowerCase()))) {
+    const better = regeln.preferred?.slice(0, 2).join(" oder ");
+    return {
+      score: 1,
+      verdict: `${h.name} + ${starch} — das passt nicht!`,
+      problem: regeln.tips?.[0] || `${starch} passt nicht zu ${h.type}.`,
+      suggestion: better ? `Besser: ${better}` : null,
+      classic: null,
+    };
+  }
+
+  // Check preferred
+  if (regeln.preferred?.some(p => starch.toLowerCase().includes(p.toLowerCase()))) {
+    const tip = regeln.tips?.[regeln.tips.length - 1] || null;
+    const veggieTip = regeln.preferredVeggies
+      ? (regeln.preferredVeggies.some(v => quiz.veggie?.toLowerCase().includes(v.toLowerCase()))
+        ? null
+        : `Tipp: ${regeln.preferredVeggies.join(" oder ")} wäre ideal dazu.`)
+      : null;
+    return {
+      score: 5,
+      verdict: `Perfekte Kombination! ${h.name} + ${starch} ist ein Klassiker.`,
+      problem: null,
+      suggestion: veggieTip,
+      classic: tip,
+    };
+  }
+
+  // Neutral — not forbidden, not preferred
+  return {
+    score: 3,
+    verdict: `${h.name} + ${starch} — geht, aber es gibt bessere Optionen.`,
+    problem: null,
+    suggestion: regeln.preferred ? `Klassisch wäre: ${regeln.preferred.slice(0, 2).join(" oder ")}` : null,
+    classic: regeln.tips?.[0] || null,
+  };
+}
+
 const pick = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
 
 function generateQuiz(): Quiz {
@@ -143,19 +254,21 @@ const TYPE_LABELS: Record<string, { l: string; c: string; bg: string }> = {
   gröstl: { l: "Gröstl", c: "#4e342e", bg: "#efebe9" },
 };
 
-// ── AI Research ──
-function AIResearch({ quiz, visible }: { quiz: Quiz; visible: boolean }) {
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-  const searched = useRef(false);
+// ── Regel-Check (lokal + optional KI) ──
+function RegelCheck({ quiz, visible }: { quiz: Quiz; visible: boolean }) {
+  const [aiData, setAiData] = useState<Evaluation | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiErr, setAiErr] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!visible || searched.current) return;
-    searched.current = true;
-    setLoading(true);
-    setErr(null);
+  if (!visible) return null;
 
+  // Sofortige lokale Auswertung
+  const local = evaluateCombo(quiz);
+  const stars = "⭐".repeat(local.score) + "☆".repeat(5 - local.score);
+
+  const fetchAI = () => {
+    setAiLoading(true);
+    setAiErr(null);
     const combo = formatCombo(quiz);
     fetch("/api/quiz/ai-research", {
       method: "POST",
@@ -164,57 +277,79 @@ function AIResearch({ quiz, visible }: { quiz: Quiz; visible: boolean }) {
     })
       .then(r => r.json())
       .then(d => {
-        if (d.error) { setErr(d.error); return; }
-        setData(d);
+        if (d.error) { setAiErr(d.error); return; }
+        setAiData(d);
       })
-      .catch(() => setErr("Recherche fehlgeschlagen"))
-      .finally(() => setLoading(false));
-  }, [visible, quiz]);
-
-  if (!visible) return null;
-
-  if (loading) return (
-    <div className="bg-muted/30 border border-border rounded-2xl p-4 mt-3 animate-in fade-in">
-      <div className="flex items-center gap-2 mb-3">
-        <span className="text-base">🔍</span>
-        <span className="font-semibold text-sm">Recherche ...</span>
-      </div>
-      <div className="flex gap-2 justify-center py-3">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-      </div>
-    </div>
-  );
-
-  if (err) return (
-    <div className="bg-destructive/5 border border-destructive/20 rounded-2xl p-4 mt-3">
-      <span className="text-destructive font-semibold text-sm">⚠️ {err}</span>
-    </div>
-  );
-
-  if (!data) return null;
-  const stars = "\u2B50".repeat(data.score) + "\u2606".repeat(5 - data.score);
+      .catch(() => setAiErr("KI nicht verfügbar"))
+      .finally(() => setAiLoading(false));
+  };
 
   return (
     <div className="bg-muted/30 border border-border rounded-2xl p-4 mt-3 animate-in fade-in space-y-2">
+      {/* Lokale Regeln — sofort */}
       <div className="flex items-center gap-2 text-[15px]">
-        <span>🧑‍🍳</span>
-        <span className="font-bold">KI-Küchenchef</span>
+        <span>📋</span>
+        <span className="font-bold">Regel-Check</span>
         <span className="ml-auto">{stars}</span>
       </div>
-      <p className="text-sm leading-relaxed text-foreground">{data.verdict}</p>
-      {data.problem && (
+      <p className="text-sm leading-relaxed text-foreground">{local.verdict}</p>
+      {local.problem && (
         <div className="bg-destructive/5 border border-destructive/20 rounded-xl px-3.5 py-2.5 text-[13px] leading-relaxed">
-          <span className="font-bold">⚠️ Problem:</span> {data.problem}
+          <span className="font-bold">⚠️ Problem:</span> {local.problem}
         </div>
       )}
-      {data.suggestion && (
+      {local.suggestion && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl px-3.5 py-2.5 text-[13px] leading-relaxed">
-          <span className="font-bold">💡 Besser:</span> {data.suggestion}
+          <span className="font-bold">💡 Tipp:</span> {local.suggestion}
         </div>
       )}
-      {data.classic && (
+      {local.classic && (
         <div className="bg-green-50 border border-green-200 rounded-xl px-3.5 py-2.5 text-[13px] leading-relaxed">
-          <span className="font-bold">📖 Klassisch:</span> {data.classic}
+          <span className="font-bold">📖 Klassisch:</span> {local.classic}
+        </div>
+      )}
+
+      {/* Optional: KI-Tiefenanalyse */}
+      {!aiData && !aiLoading && !aiErr && (
+        <button
+          onClick={fetchAI}
+          className="w-full mt-1 py-2 px-4 border border-dashed border-border rounded-xl bg-transparent text-[12px] font-semibold text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+        >
+          🤖 KI-Analyse (optional)
+        </button>
+      )}
+      {aiLoading && (
+        <div className="flex items-center gap-2 py-2">
+          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          <span className="text-xs text-muted-foreground">KI analysiert...</span>
+        </div>
+      )}
+      {aiErr && (
+        <p className="text-[11px] text-muted-foreground/50 text-center">{aiErr}</p>
+      )}
+      {aiData && (
+        <div className="border-t border-border/50 pt-2 mt-2 space-y-1.5">
+          <div className="flex items-center gap-2 text-[13px]">
+            <span>🤖</span>
+            <span className="font-bold">KI-Küchenchef</span>
+            <span className="ml-auto">{"⭐".repeat(aiData.score)}{"☆".repeat(5 - aiData.score)}</span>
+          </div>
+          <p className="text-[13px] leading-relaxed text-foreground">{aiData.verdict}</p>
+          {aiData.problem && (
+            <div className="bg-destructive/5 border border-destructive/20 rounded-xl px-3 py-2 text-[12px]">
+              <span className="font-bold">⚠️</span> {aiData.problem}
+            </div>
+          )}
+          {aiData.suggestion && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 text-[12px]">
+              <span className="font-bold">💡</span> {aiData.suggestion}
+            </div>
+          )}
+          {aiData.classic && (
+            <div className="bg-green-50 border border-green-200 rounded-xl px-3 py-2 text-[12px]">
+              <span className="font-bold">📖</span> {aiData.classic}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -477,16 +612,16 @@ export default function MenuQuiz() {
             <span>{h.cuisine === "klassiker" ? "🇦🇹 Klassiker" : h.cuisine === "mehlspeise" ? "🍰 Mehlspeise" : h.cuisine === "vegetarisch" ? "🌱 Vegetarisch" : "🌍 International"}</span>
           </div>
 
-          {/* AI Research */}
+          {/* Regel-Check */}
           {!showAI && (
             <button
               onClick={() => setShowAI(true)}
               className="w-full mt-3.5 py-2.5 px-5 border-2 border-dashed border-border rounded-xl bg-transparent text-[13px] font-semibold text-muted-foreground hover:border-primary hover:text-primary transition-colors"
             >
-              🔍 KI-Recherche starten
+              📋 Regel-Check
             </button>
           )}
-          <AIResearch quiz={quiz} visible={showAI} />
+          <RegelCheck quiz={quiz} visible={showAI} />
 
           <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent my-4" />
 

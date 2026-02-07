@@ -426,24 +426,9 @@ export async function handleGameFeedback(req: Request, res: Response) {
 }
 
 // ── POST /api/quiz/ai-research ────────────────────────────────────────
-// AI analysis of a menu combo for the quiz game
+// AI analysis of a menu combo — tries Google Gemini (free), then Anthropic as fallback
 
-export async function handleAIResearch(req: Request, res: Response) {
-  try {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
-      return res.status(400).json({ error: "ANTHROPIC_API_KEY not configured" });
-    }
-
-    const { suppe, combo } = req.body;
-    if (!combo) {
-      return res.status(400).json({ error: "combo required" });
-    }
-
-    const { default: Anthropic } = await import("@anthropic-ai/sdk");
-    const anthropic = new Anthropic({ apiKey });
-
-    const prompt = `Du bist ein erfahrener österreichischer Küchenchef.
+const AI_PROMPT_TEMPLATE = (suppe: string, combo: string) => `Du bist ein erfahrener österreichischer Küchenchef.
 Bewerte diese Menü-Kombination kurz und knapp:
 
 Suppe: ${suppe || "keine"}
@@ -458,20 +443,58 @@ Antworte NUR mit einem JSON-Objekt (kein Markdown):
   "classic": "Klassische österreichische Variante falls relevant, sonst null"
 }`;
 
-    const message = await anthropic.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 500,
-      messages: [{ role: "user", content: prompt }],
-    });
+function parseAIResponse(text: string) {
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) return null;
+  return JSON.parse(jsonMatch[0]);
+}
 
-    const text = message.content[0].type === "text" ? message.content[0].text : "";
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      return res.json({ score: 3, verdict: "Konnte nicht analysiert werden", problem: null, suggestion: null, classic: null });
+export async function handleAIResearch(req: Request, res: Response) {
+  try {
+    const { suppe, combo } = req.body;
+    if (!combo) {
+      return res.status(400).json({ error: "combo required" });
     }
 
-    const result = JSON.parse(jsonMatch[0]);
-    res.json(result);
+    const prompt = AI_PROMPT_TEMPLATE(suppe, combo);
+
+    // Try 1: Google Gemini (free tier)
+    const googleKey = process.env.GOOGLE_AI_API_KEY;
+    if (googleKey) {
+      try {
+        const { GoogleGenerativeAI } = await import("@google/generative-ai");
+        const genAI = new GoogleGenerativeAI(googleKey);
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+        const result = await model.generateContent(prompt);
+        const text = result.response.text();
+        const parsed = parseAIResponse(text);
+        if (parsed) return res.json(parsed);
+      } catch (e: any) {
+        console.warn("[quiz-feedback] Gemini failed, trying fallback:", e.message);
+      }
+    }
+
+    // Try 2: Anthropic (paid)
+    const anthropicKey = process.env.ANTHROPIC_API_KEY;
+    if (anthropicKey) {
+      try {
+        const { default: Anthropic } = await import("@anthropic-ai/sdk");
+        const anthropic = new Anthropic({ apiKey: anthropicKey });
+        const message = await anthropic.messages.create({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 500,
+          messages: [{ role: "user", content: prompt }],
+        });
+        const text = message.content[0].type === "text" ? message.content[0].text : "";
+        const parsed = parseAIResponse(text);
+        if (parsed) return res.json(parsed);
+      } catch (e: any) {
+        console.warn("[quiz-feedback] Anthropic failed:", e.message);
+      }
+    }
+
+    // No AI configured
+    return res.status(400).json({ error: "Kein KI-Provider konfiguriert (GOOGLE_AI_API_KEY oder ANTHROPIC_API_KEY in .env setzen)" });
   } catch (error: any) {
     console.error("[quiz-feedback] AI research error:", error);
     res.status(500).json({ error: error.message });

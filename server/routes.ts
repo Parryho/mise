@@ -2665,7 +2665,7 @@ export async function registerRoutes(
   // ==========================================
   // Phase 2: Public Menu (Batch 5) — NO AUTH
   // ==========================================
-  app.get("/api/public/menu/:locationSlug/:date?", async (req: Request, res: Response) => {
+  app.get("/api/public/menu/:locationSlug{/:date}", async (req: Request, res: Response) => {
     try {
       const locationSlug = getParam(req.params.locationSlug);
       const date = req.params.date ? getParam(req.params.date) : undefined;

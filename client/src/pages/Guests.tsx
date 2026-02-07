@@ -8,6 +8,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useToast } from "@/hooks/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import LocationSwitcher from "@/components/LocationSwitcher";
+import { useLocationFilter } from "@/lib/location-context";
 
 interface GuestCount {
   id: number;
@@ -60,7 +62,10 @@ const WEEKDAYS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 export default function Guests() {
   return (
     <div className="p-4 space-y-4 pb-24">
-      <h1 className="text-2xl font-heading font-bold">Gästezahlen</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-heading font-bold">Gästezahlen</h1>
+      </div>
+      <LocationSwitcher />
       <GuestCountsView />
     </div>
   );
@@ -72,6 +77,7 @@ function GuestCountsView() {
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"day" | "week" | "month">("week");
   const { toast } = useToast();
+  const { selectedLocationId } = useLocationFilter();
 
   const getDates = () => {
     if (viewMode === "day") return [baseDate];
@@ -86,7 +92,8 @@ function GuestCountsView() {
   const fetchCounts = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/guests?start=${startDate}&end=${endDate}`);
+      const locParam = selectedLocationId ? `&locationId=${selectedLocationId}` : "";
+      const res = await fetch(`/api/guests?start=${startDate}&end=${endDate}${locParam}`);
       const data = await res.json();
       setCounts(data);
     } catch (error) {
@@ -99,7 +106,7 @@ function GuestCountsView() {
 
   useEffect(() => {
     fetchCounts();
-  }, [startDate, endDate]);
+  }, [startDate, endDate, selectedLocationId]);
 
   const getCount = (date: string, meal: string) => {
     return counts.find(c => c.date === date && c.meal === meal);

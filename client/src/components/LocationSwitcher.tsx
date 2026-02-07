@@ -1,41 +1,44 @@
-import { useState, useEffect } from "react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
-interface Location {
-  id: number;
-  slug: string;
-  name: string;
-  defaultPax: number;
-  isActive: boolean;
-}
+import { useLocationFilter } from "@/lib/location-context";
+import { cn } from "@/lib/utils";
 
 interface LocationSwitcherProps {
-  value?: string;
-  onChange: (slug: string) => void;
-  showAll?: boolean;
+  className?: string;
+  variant?: "default" | "header"; // header = white/transparent for orange header
 }
 
-export default function LocationSwitcher({ value, onChange, showAll = false }: LocationSwitcherProps) {
-  const [locations, setLocations] = useState<Location[]>([]);
+export default function LocationSwitcher({ className, variant = "default" }: LocationSwitcherProps) {
+  const { locations, selectedSlug, setSelectedSlug } = useLocationFilter();
 
-  useEffect(() => {
-    fetch("/api/locations")
-      .then(r => r.json())
-      .then(data => setLocations(data))
-      .catch(() => {});
-  }, []);
+  const options = [
+    { slug: "all", label: "Alle" },
+    ...locations.map(l => ({ slug: l.slug, label: l.name })),
+  ];
+
+  const isHeader = variant === "header";
 
   return (
-    <Select value={value || ""} onValueChange={onChange}>
-      <SelectTrigger className="w-[140px] h-8 text-xs">
-        <SelectValue placeholder="Standort" />
-      </SelectTrigger>
-      <SelectContent>
-        {showAll && <SelectItem value="all">Alle Standorte</SelectItem>}
-        {locations.map(loc => (
-          <SelectItem key={loc.slug} value={loc.slug}>{loc.name}</SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <div className={cn("flex gap-1", className)}>
+      {options.map(opt => {
+        const isActive = selectedSlug === opt.slug;
+        return (
+          <button
+            key={opt.slug}
+            onClick={() => setSelectedSlug(opt.slug)}
+            className={cn(
+              "px-2.5 py-1 rounded-full text-xs font-medium transition-colors",
+              isHeader
+                ? isActive
+                  ? "bg-white text-primary"
+                  : "bg-white/20 text-primary-foreground hover:bg-white/30"
+                : isActive
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+            )}
+          >
+            {opt.label}
+          </button>
+        );
+      })}
+    </div>
   );
 }

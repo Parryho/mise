@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Loader2, ChefHat, Printer } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, ChefHat, Printer, AlertTriangle } from "lucide-react";
 import { Link } from "wouter";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -84,13 +85,26 @@ export default function Rotation() {
     }).catch(() => setLoading(false));
   }, []);
 
+  // allSlots tracks all weeks for per-week completeness badges
+  const [allSlots, setAllSlots] = useState<RotationSlot[]>([]);
+
   useEffect(() => {
     if (!templateId) return;
+    // Load current week slots for display
     fetch(`/api/rotation-slots/${templateId}?weekNr=${weekNr}`)
       .then(r => r.json())
       .then(data => setSlots(data))
       .catch(() => {});
   }, [templateId, weekNr]);
+
+  // Load ALL slots for completeness stats per week (once)
+  useEffect(() => {
+    if (!templateId) return;
+    fetch(`/api/rotation-slots/${templateId}`)
+      .then(r => r.json())
+      .then(data => setAllSlots(data))
+      .catch(() => {});
+  }, [templateId]);
 
   const recipeMap = useMemo(() => {
     const m = new Map<number, Recipe>();
@@ -104,6 +118,54 @@ export default function Rotation() {
       s => s.dayOfWeek === dbDow && s.meal === meal && s.locationSlug === locationSlug && s.course === course
     );
   };
+
+  // Keep allSlots in sync when current week's slots change
+  useEffect(() => {
+    if (slots.length > 0) {
+      setAllSlots(prev => {
+        const otherWeeks = prev.filter(s => s.weekNr !== weekNr);
+        return [...otherWeeks, ...slots];
+      });
+    }
+  }, [slots, weekNr]);
+
+  // Completeness stats for current week
+  const weekStats = useMemo(() => {
+    const total = slots.length;
+    const filled = slots.filter(s => s.recipeId !== null || s.course === "dessert").length;
+    return { total, filled, pct: total > 0 ? Math.round((filled / total) * 100) : 0 };
+  }, [slots]);
+
+  // Per-week completeness from allSlots
+  const perWeekStats = useMemo(() => {
+    const stats = new Map<number, { total: number; filled: number }>();
+    for (let w = 1; w <= weekCount; w++) {
+      const wSlots = allSlots.filter(s => s.weekNr === w);
+      const total = wSlots.length;
+      const filled = wSlots.filter(s => s.recipeId !== null || s.course === "dessert").length;
+      stats.set(w, { total, filled });
+    }
+    return stats;
+  }, [allSlots, weekCount]);
+
+  // Duplicate detection: same recipe on same day across different meals/locations (excluding dessert)
+  const duplicates = useMemo(() => {
+    const dupes = new Set<number>(); // slot IDs with duplicates
+    for (let dayIdx = 0; dayIdx < 7; dayIdx++) {
+      const dbDow = uiIndexToDbDow(dayIdx);
+      const daySlots = slots.filter(s => s.dayOfWeek === dbDow && s.recipeId !== null && s.course !== "dessert");
+      const seen = new Map<number, number[]>(); // recipeId -> [slotId, ...]
+      for (const s of daySlots) {
+        const existing = seen.get(s.recipeId!) || [];
+        existing.push(s.id);
+        seen.set(s.recipeId!, existing);
+      }
+      for (const [, ids] of seen) {
+        if (ids.length > 1) ids.forEach(id => dupes.add(id));
+      }
+    }
+    return dupes;
+  }, [slots]);
 
   const handleAutoFill = async (overwrite: boolean) => {
     if (!templateId) return;
@@ -171,6 +233,9 @@ export default function Rotation() {
         <div className="flex items-center justify-between">
           <h1 className="font-heading text-xl font-bold uppercase tracking-wide">6-Wochen-Rotation</h1>
           <div className="flex items-center gap-2">
+            <Badge variant="outline" className="text-primary-foreground border-primary-foreground/30 text-[10px] py-0 h-5">
+              {weekStats.filled}/{weekStats.total} ({weekStats.pct}%)
+            </Badge>
             <span className="text-xs text-primary-foreground/70">
               KW {getISOWeek(new Date())} = W{currentRotationWeek}
             </span>
@@ -194,20 +259,28 @@ export default function Rotation() {
 
       {/* Week Selector Buttons */}
       <div className="flex gap-2 px-4 pt-3 pb-2">
-        {weekButtons.map(w => (
-          <Button
-            key={w}
-            variant={weekNr === w ? "default" : "outline"}
-            size="sm"
-            className="relative flex-1"
-            onClick={() => setWeekNr(w)}
-          >
-            W{w}
-            {w === currentRotationWeek && (
-              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-status-info border-2 border-background" />
-            )}
-          </Button>
-        ))}
+        {weekButtons.map(w => {
+          const ws = perWeekStats.get(w);
+          const isFull = ws && ws.total > 0 && ws.filled === ws.total;
+          const isEmpty = !ws || ws.total === 0 || ws.filled === 0;
+          return (
+            <Button
+              key={w}
+              variant={weekNr === w ? "default" : "outline"}
+              size="sm"
+              className="relative flex-1"
+              onClick={() => setWeekNr(w)}
+            >
+              W{w}
+              {w === currentRotationWeek && (
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-status-info border-2 border-background" />
+              )}
+              {ws && ws.total > 0 && (
+                <span className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full ${isFull ? "bg-green-500" : isEmpty ? "bg-red-400" : "bg-amber-400"}`} />
+              )}
+            </Button>
+          );
+        })}
       </div>
 
       {/* Week Table */}
@@ -237,9 +310,11 @@ export default function Rotation() {
                           const slot = getSlot(dayIdx, col.meal, col.locationSlug, course);
                           const recipe = slot?.recipeId ? recipeMap.get(slot.recipeId) : null;
                           const isDessert = course === "dessert";
+                          const isDuplicate = slot && duplicates.has(slot.id);
+                          const isEmpty = !recipe && !isDessert;
 
                           return (
-                            <div key={course} className="flex items-baseline gap-1 min-h-[14px]">
+                            <div key={course} className={`flex items-baseline gap-1 min-h-[14px] ${isEmpty ? "bg-amber-50 rounded-sm" : ""}`}>
                               <span className="text-[9px] text-muted-foreground font-medium w-10 shrink-0">
                                 {COURSE_SHORT[course]}:
                               </span>
@@ -255,9 +330,10 @@ export default function Rotation() {
                               ) : recipe ? (
                                 <button
                                   onClick={() => slot && openEditDialog(slot)}
-                                  className="text-left hover:text-primary truncate cursor-pointer"
-                                  title={`${recipe.name} (klicken zum Ändern)`}
+                                  className={`text-left hover:text-primary truncate cursor-pointer ${isDuplicate ? "text-red-600" : ""}`}
+                                  title={isDuplicate ? `⚠ Doppelt: ${recipe.name}` : `${recipe.name} (klicken zum Ändern)`}
                                 >
+                                  {isDuplicate && <AlertTriangle className="inline h-2.5 w-2.5 mr-0.5 text-red-500" />}
                                   <span className="truncate">{recipe.name}</span>
                                   {recipe.allergens && recipe.allergens.length > 0 && (
                                     <span className="ml-1 text-[9px] text-orange-600 font-medium">
@@ -268,7 +344,7 @@ export default function Rotation() {
                               ) : (
                                 <button
                                   onClick={() => slot && openEditDialog(slot)}
-                                  className="text-muted-foreground/40 cursor-pointer hover:text-primary"
+                                  className="text-amber-400 cursor-pointer hover:text-primary"
                                 >
                                   —
                                 </button>
@@ -285,6 +361,14 @@ export default function Rotation() {
           </table>
         </div>
       </div>
+
+      {/* Duplicate warning */}
+      {duplicates.size > 0 && (
+        <div className="mx-4 mt-2 px-3 py-2 bg-red-50 border border-red-200 rounded-md flex items-center gap-2 text-xs text-red-700">
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+          <span>{duplicates.size / 2} doppelte Gerichte am selben Tag gefunden</span>
+        </div>
+      )}
 
       {/* Slot Edit Dialog */}
       <Dialog open={!!editSlot} onOpenChange={(open) => { if (!open) setEditSlot(null); }}>

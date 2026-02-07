@@ -26,7 +26,7 @@ import {
   taskTemplates, locations, rotationTemplates, rotationSlots, auditLogs
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, gte, lte } from "drizzle-orm";
+import { eq, desc, and, gte, lte, sql } from "drizzle-orm";
 
 export class DatabaseStorage {
   // === Users ===
@@ -129,6 +129,10 @@ export class DatabaseStorage {
   async getIngredients(recipeId: number): Promise<Ingredient[]> {
     return db.select().from(ingredients).where(eq(ingredients.recipeId, recipeId));
   }
+  async getIngredientsByRecipeIds(recipeIds: number[]): Promise<Ingredient[]> {
+    if (recipeIds.length === 0) return [];
+    return db.select().from(ingredients).where(sql`${ingredients.recipeId} = ANY(${recipeIds})`);
+  }
   async createIngredient(ingredient: InsertIngredient): Promise<Ingredient> {
     const [created] = await db.insert(ingredients).values(ingredient).returning();
     return created;
@@ -178,11 +182,21 @@ export class DatabaseStorage {
   }
 
   // === HACCP Logs ===
-  async getHaccpLogs(): Promise<HaccpLog[]> {
-    return db.select().from(haccpLogs).orderBy(desc(haccpLogs.timestamp));
+  async getHaccpLogs(options?: { limit?: number; offset?: number }): Promise<HaccpLog[]> {
+    let query = db.select().from(haccpLogs).orderBy(desc(haccpLogs.timestamp));
+    if (options?.limit) query = query.limit(options.limit) as typeof query;
+    if (options?.offset) query = query.offset(options.offset) as typeof query;
+    return query;
   }
-  async getHaccpLogsByFridge(fridgeId: number): Promise<HaccpLog[]> {
-    return db.select().from(haccpLogs).where(eq(haccpLogs.fridgeId, fridgeId)).orderBy(desc(haccpLogs.timestamp));
+  async getHaccpLogCount(): Promise<number> {
+    const result = await db.select({ count: sql<number>`count(*)::int` }).from(haccpLogs);
+    return result[0]?.count ?? 0;
+  }
+  async getHaccpLogsByFridge(fridgeId: number, options?: { limit?: number; offset?: number }): Promise<HaccpLog[]> {
+    let query = db.select().from(haccpLogs).where(eq(haccpLogs.fridgeId, fridgeId)).orderBy(desc(haccpLogs.timestamp));
+    if (options?.limit) query = query.limit(options.limit) as typeof query;
+    if (options?.offset) query = query.offset(options.offset) as typeof query;
+    return query;
   }
   async createHaccpLog(log: InsertHaccpLog): Promise<HaccpLog> {
     const [created] = await db.insert(haccpLogs).values(log).returning();
@@ -190,8 +204,10 @@ export class DatabaseStorage {
   }
 
   // === Guest counts ===
-  async getGuestCounts(startDate: string, endDate: string): Promise<GuestCount[]> {
-    return db.select().from(guestCounts).where(and(gte(guestCounts.date, startDate), lte(guestCounts.date, endDate)));
+  async getGuestCounts(startDate: string, endDate: string, locationId?: number): Promise<GuestCount[]> {
+    const conditions = [gte(guestCounts.date, startDate), lte(guestCounts.date, endDate)];
+    if (locationId) conditions.push(eq(guestCounts.locationId, locationId));
+    return db.select().from(guestCounts).where(and(...conditions));
   }
   async getGuestCountByDateMeal(date: string, meal: string): Promise<GuestCount | undefined> {
     const [count] = await db.select().from(guestCounts).where(and(eq(guestCounts.date, date), eq(guestCounts.meal, meal)));

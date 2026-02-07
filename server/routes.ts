@@ -724,6 +724,15 @@ export async function registerRoutes(
     res.json(ingredients);
   });
 
+  // Bulk ingredients for multiple recipes (avoids N+1)
+  app.get("/api/ingredients/bulk", requireAuth, async (req, res) => {
+    const { recipeIds } = req.query;
+    if (!recipeIds) return res.json([]);
+    const ids = (recipeIds as string).split(",").map(id => parseInt(id, 10)).filter(id => !isNaN(id));
+    const ingredients = await storage.getIngredientsByRecipeIds(ids);
+    res.json(ingredients);
+  });
+
   // === OCR PDF Extraction ===
   const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
@@ -741,8 +750,11 @@ export async function registerRoutes(
 
   // === FRIDGES ===
   app.get("/api/fridges", requireAuth, async (req, res) => {
-    const fridges = await storage.getFridges();
-    res.json(fridges);
+    const { locationId } = req.query;
+    const locId = locationId ? parseInt(locationId as string, 10) : undefined;
+    const allFridges = await storage.getFridges();
+    const filtered = locId ? allFridges.filter(f => f.locationId === locId) : allFridges;
+    res.json(filtered);
   });
 
   app.post("/api/fridges", requireAuth, async (req, res) => {
@@ -777,7 +789,14 @@ export async function registerRoutes(
 
   // === HACCP LOGS ===
   app.get("/api/haccp-logs", requireAuth, async (req, res) => {
-    const logs = await storage.getHaccpLogs();
+    const { limit, offset } = req.query;
+    const lim = limit ? parseInt(limit as string, 10) : undefined;
+    const off = offset ? parseInt(offset as string, 10) : undefined;
+    const logs = await storage.getHaccpLogs({ limit: lim, offset: off });
+    if (lim) {
+      const total = await storage.getHaccpLogCount();
+      return res.json({ logs, total, limit: lim, offset: off || 0 });
+    }
     res.json(logs);
   });
 
@@ -790,6 +809,21 @@ export async function registerRoutes(
   app.post("/api/haccp-logs", requireAuth, async (req, res) => {
     try {
       const parsed = insertHaccpLogSchema.parse(req.body);
+
+      // Auto-calculate status server-side based on fridge thresholds
+      const fridge = await storage.getFridge(parsed.fridgeId);
+      if (fridge) {
+        const temp = parsed.temperature;
+        const deviation = Math.max(fridge.tempMin - temp, temp - fridge.tempMax, 0);
+        if (deviation === 0) {
+          parsed.status = "OK";
+        } else if (deviation > 2) {
+          parsed.status = "CRITICAL";
+        } else {
+          parsed.status = "WARNING";
+        }
+      }
+
       const log = await storage.createHaccpLog(parsed);
       audit(req, "create", "haccp_logs", log.id, null, { fridgeId: log.fridgeId, temperature: log.temperature, status: log.status });
       res.status(201).json(log);
@@ -1173,10 +1207,11 @@ export async function registerRoutes(
 
   // === GUEST COUNTS ===
   app.get("/api/guests", requireAuth, async (req, res) => {
-    const { start, end } = req.query;
+    const { start, end, locationId } = req.query;
     const startDate = (start as string) || new Date().toISOString().split('T')[0];
     const endDate = (end as string) || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    const counts = await storage.getGuestCounts(startDate, endDate);
+    const locId = locationId ? parseInt(locationId as string, 10) : undefined;
+    const counts = await storage.getGuestCounts(startDate, endDate, locId);
     res.json(counts);
   });
 
@@ -1215,8 +1250,11 @@ export async function registerRoutes(
 
   // === CATERING EVENTS ===
   app.get("/api/catering", requireAuth, async (req, res) => {
+    const { locationId } = req.query;
+    const locId = locationId ? parseInt(locationId as string, 10) : undefined;
     const events = await storage.getCateringEvents();
-    res.json(events);
+    const filtered = locId ? events.filter(e => e.locationId === locId) : events;
+    res.json(filtered);
   });
 
   app.get("/api/catering/:id", requireAuth, async (req, res) => {
@@ -1256,8 +1294,11 @@ export async function registerRoutes(
 
   // === STAFF ===
   app.get("/api/staff", requireAuth, async (req, res) => {
+    const { locationId } = req.query;
+    const locId = locationId ? parseInt(locationId as string, 10) : undefined;
     const members = await storage.getStaff();
-    res.json(members);
+    const filtered = locId ? members.filter(s => s.locationId === locId) : members;
+    res.json(filtered);
   });
 
   app.get("/api/staff/:id", requireAuth, async (req, res) => {

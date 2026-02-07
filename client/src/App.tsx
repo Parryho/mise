@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { AppProvider } from "@/lib/store";
 import { AuthProvider, useAuth } from "@/lib/auth";
+import { LocationProvider } from "@/lib/location-context";
 import Layout from "@/components/Layout";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Loader2 } from "lucide-react";
@@ -24,6 +25,7 @@ import ProductionList from "@/pages/ProductionList";
 import ShoppingList from "@/pages/ShoppingList";
 import Print from "@/pages/Print";
 import Catering from "@/pages/Catering";
+import MasterIngredients from "@/pages/MasterIngredients";
 import NotFound from "@/pages/not-found";
 
 function AuthenticatedRoutes() {
@@ -31,6 +33,9 @@ function AuthenticatedRoutes() {
     <Switch>
       <Route path="/">
         <Redirect to="/today" />
+      </Route>
+      <Route path="/recipes/ingredients">
+        <Layout><MasterIngredients /></Layout>
       </Route>
       <Route path="/recipes">
         <Layout><Recipes /></Layout>
@@ -120,8 +125,10 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <AppProvider>
-            <Router />
-            <Toaster />
+            <LocationProvider>
+              <Router />
+              <Toaster />
+            </LocationProvider>
           </AppProvider>
         </AuthProvider>
       </QueryClientProvider>

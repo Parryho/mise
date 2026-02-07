@@ -1,21 +1,37 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useApp, Fridge } from "@/lib/store";
 import { useTranslation } from "@/lib/i18n";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ThermometerSnowflake, History, Loader2, PlusCircle, Pencil, Trash2, Download } from "lucide-react";
+import { ThermometerSnowflake, History, Loader2, PlusCircle, Pencil, Trash2, Download, AlertTriangle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import LocationSwitcher from "@/components/LocationSwitcher";
+import { useLocationFilter } from "@/lib/location-context";
 
 export default function HACCP() {
-  const { fridges, logs, loading } = useApp();
+  const { fridges: allFridges, logs, loading } = useApp();
   const { t } = useTranslation();
-  
+  const { selectedLocationId } = useLocationFilter();
+
+  const fridges = selectedLocationId
+    ? allFridges.filter(f => f.locationId === selectedLocationId)
+    : allFridges;
+
   const getLatestLog = (fridgeId: number) => {
     return logs.find(l => l.fridgeId === fridgeId);
   };
+
+  // Today's alerts (warnings + critical)
+  const todayAlerts = useMemo(() => {
+    const today = new Date().toDateString();
+    return logs.filter(l => {
+      const logDate = new Date(l.timestamp).toDateString();
+      return logDate === today && (l.status === "WARNING" || l.status === "CRITICAL");
+    });
+  }, [logs]);
 
   if (loading) {
     return (
@@ -31,9 +47,9 @@ export default function HACCP() {
         <h1 className="text-2xl font-heading font-bold">{t("haccp")}</h1>
         <div className="flex gap-2">
           <AddFridgeDialog />
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             className="h-8 gap-1"
             onClick={() => window.open('/api/haccp-logs/export', '_blank')}
           >
@@ -41,6 +57,35 @@ export default function HACCP() {
           </Button>
         </div>
       </div>
+      <LocationSwitcher />
+
+      {/* Alert banner for today's out-of-range readings */}
+      {todayAlerts.length > 0 && (
+        <div className={`px-3 py-2.5 rounded-lg border flex items-start gap-2 ${
+          todayAlerts.some(a => a.status === "CRITICAL")
+            ? "bg-red-50 border-red-300 text-red-800"
+            : "bg-amber-50 border-amber-300 text-amber-800"
+        }`}>
+          <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+          <div className="text-sm">
+            <span className="font-semibold">
+              {todayAlerts.length} {todayAlerts.length === 1 ? "Abweichung" : "Abweichungen"} heute
+            </span>
+            <div className="text-xs mt-0.5 space-y-0.5">
+              {todayAlerts.slice(0, 3).map(a => {
+                const fname = allFridges.find(f => f.id === a.fridgeId)?.name || "?";
+                return (
+                  <div key={a.id}>
+                    {fname}: <span className="font-mono font-bold">{a.temperature}°C</span>
+                    {a.status === "CRITICAL" && <span className="ml-1 text-red-600 font-bold">KRITISCH</span>}
+                  </div>
+                );
+              })}
+              {todayAlerts.length > 3 && <div>+{todayAlerts.length - 3} weitere</div>}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-4">
         {fridges.length === 0 ? (
@@ -50,10 +95,11 @@ export default function HACCP() {
         ) : (
           fridges.map(fridge => {
             const latest = getLatestLog(fridge.id);
+            const isCritical = latest?.status === "CRITICAL";
             const isWarning = latest && (latest.status === "WARNING" || latest.status === "CRITICAL");
 
             return (
-              <Card key={fridge.id} className={`overflow-hidden border-l-4 ${isWarning ? 'border-l-destructive' : 'border-l-green-500'}`}>
+              <Card key={fridge.id} className={`overflow-hidden border-l-4 ${isCritical ? 'border-l-red-600' : isWarning ? 'border-l-amber-500' : 'border-l-green-500'}`}>
                 <CardContent className="p-4">
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex-1">
@@ -63,9 +109,16 @@ export default function HACCP() {
                       </div>
                       <p className="text-xs text-muted-foreground">{t("range")}: {fridge.tempMin}°C bis {fridge.tempMax}°C</p>
                     </div>
-                    <div className={`px-2 py-1 rounded text-xs font-bold flex items-center gap-1 ${isWarning ? 'bg-destructive/10 text-destructive' : 'bg-green-100 text-green-700'}`}>
+                    <div className={`px-2 py-1 rounded text-xs font-bold flex items-center gap-1 ${
+                      isCritical ? 'bg-red-100 text-red-700' :
+                      isWarning ? 'bg-amber-100 text-amber-700' :
+                      'bg-green-100 text-green-700'
+                    }`}>
                       {latest ? (
-                        <span className="text-lg">{latest.temperature}°C</span>
+                        <>
+                          <span className="text-lg">{latest.temperature}°C</span>
+                          {isCritical && <AlertTriangle className="h-4 w-4 text-red-600" />}
+                        </>
                       ) : (
                         t("noData")
                       )}
@@ -249,15 +302,27 @@ function LogDialog({ fridge }: { fridge: Fridge }) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
 
+  // Live status preview
+  const previewStatus = (() => {
+    const val = parseFloat(temp);
+    if (isNaN(val) || temp === "" || temp === "-") return null;
+    const deviation = Math.max(fridge.tempMin - val, val - fridge.tempMax, 0);
+    if (deviation === 0) return "OK";
+    if (deviation > 2) return "CRITICAL";
+    return "WARNING";
+  })();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const val = parseFloat(temp);
     if (isNaN(val)) return;
 
     setSaving(true);
     try {
-      const status = (val >= fridge.tempMin && val <= fridge.tempMax) ? "OK" : "WARNING";
+      // Status is calculated server-side, but send client guess for display
+      const deviation = Math.max(fridge.tempMin - val, val - fridge.tempMax, 0);
+      const status = deviation === 0 ? "OK" : deviation > 2 ? "CRITICAL" : "WARNING";
 
       await addLog({
         fridgeId: fridge.id,
@@ -268,11 +333,24 @@ function LogDialog({ fridge }: { fridge: Fridge }) {
         notes: null
       });
 
-      toast({
-        title: status === "OK" ? t("temperatureRecorded") : t("warningRecorded"),
-        description: `${val}°C für ${fridge.name} erfasst`,
-        variant: status === "OK" ? "default" : "destructive",
-      });
+      if (status === "CRITICAL") {
+        toast({
+          title: "KRITISCH: Temperatur stark abweichend!",
+          description: `${val}°C für ${fridge.name} (Grenze: ${fridge.tempMin}°C – ${fridge.tempMax}°C)`,
+          variant: "destructive",
+        });
+      } else if (status === "WARNING") {
+        toast({
+          title: t("warningRecorded"),
+          description: `${val}°C für ${fridge.name} (Grenze: ${fridge.tempMin}°C – ${fridge.tempMax}°C)`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: t("temperatureRecorded"),
+          description: `${val}°C für ${fridge.name} erfasst`,
+        });
+      }
 
       setOpen(false);
       setTemp("");
@@ -300,9 +378,21 @@ function LogDialog({ fridge }: { fridge: Fridge }) {
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
-          <div className="flex items-center justify-center p-6 bg-secondary/20 rounded-xl border border-dashed">
-            <span className="text-4xl font-mono font-bold">{temp || "--"}</span>
-            <span className="text-muted-foreground ml-1">°C</span>
+          <div className={`flex flex-col items-center justify-center p-6 rounded-xl border border-dashed ${
+            previewStatus === "CRITICAL" ? "bg-red-100 border-red-400" :
+            previewStatus === "WARNING" ? "bg-amber-100 border-amber-400" :
+            previewStatus === "OK" ? "bg-green-50 border-green-400" :
+            "bg-secondary/20"
+          }`}>
+            <div className="flex items-baseline">
+              <span className="text-4xl font-mono font-bold">{temp || "--"}</span>
+              <span className="text-muted-foreground ml-1">°C</span>
+            </div>
+            {previewStatus && previewStatus !== "OK" && (
+              <span className={`text-xs font-semibold mt-1 ${previewStatus === "CRITICAL" ? "text-red-600" : "text-amber-600"}`}>
+                {previewStatus === "CRITICAL" ? "KRITISCH" : "Warnung"} (Grenze: {fridge.tempMin}° – {fridge.tempMax}°)
+              </span>
+            )}
           </div>
           
           <div className="grid grid-cols-3 gap-2">

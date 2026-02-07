@@ -1,17 +1,21 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useApp } from "@/lib/store";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, ChevronLeft, ChevronRight, Trash2, ShoppingCart, Download, FileSpreadsheet, FileText, CalendarDays } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, Trash2, ShoppingCart, Download, FileSpreadsheet, FileText, CalendarDays, Users, GripVertical, BookOpen, X, Search } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { getISOWeek, MEAL_SLOT_LABELS, type MealSlotName } from "@shared/constants";
+import { RECIPE_CATEGORIES } from "@shared/schema";
 import { cn } from "@/lib/utils";
+import LocationSwitcher from "@/components/LocationSwitcher";
+import { useLocationFilter } from "@/lib/location-context";
+import { DndContext, DragOverlay, useDraggable, useDroppable, type DragEndEvent, type DragStartEvent, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 
 interface MenuPlanEntry {
   id: number;
@@ -21,6 +25,16 @@ interface MenuPlanEntry {
   recipeId: number | null;
   portions: number;
   notes: string | null;
+}
+
+interface GuestCount {
+  id: number;
+  date: string;
+  meal: string;
+  adults: number;
+  children: number;
+  notes: string | null;
+  locationId: number | null;
 }
 
 const MEALS = [
@@ -68,10 +82,23 @@ export default function MenuPlan() {
   const [loading, setLoading] = useState(true);
   const [showShoppingList, setShowShoppingList] = useState(false);
   const [selectedDay, setSelectedDay] = useState(getTodayDayIndex());
+  const [guestCounts, setGuestCounts] = useState<GuestCount[]>([]);
+  const { selectedLocationId } = useLocationFilter();
   const { toast } = useToast();
 
   const weekDates = weekFrom ? getWeekDatesFromRange(weekFrom) : [];
   const isCurrentWeek = year === now.getFullYear() && week === getISOWeek(now);
+
+  const fetchGuestCounts = async (from: string, to: string) => {
+    try {
+      const locParam = selectedLocationId ? `&locationId=${selectedLocationId}` : "";
+      const res = await fetch(`/api/guests?start=${from}&end=${to}${locParam}`);
+      const data = await res.json();
+      setGuestCounts(data);
+    } catch (error) {
+      console.error('Failed to fetch guest counts:', error);
+    }
+  };
 
   const fetchWeekPlan = async (y: number, w: number) => {
     setLoading(true);
@@ -82,6 +109,10 @@ export default function MenuPlan() {
       setRotationWeekNr(data.rotationWeekNr || 0);
       setWeekFrom(data.from || "");
       setWeekTo(data.to || "");
+      // Fetch guest counts for this week
+      if (data.from && data.to) {
+        fetchGuestCounts(data.from, data.to);
+      }
     } catch (error) {
       console.error('Failed to fetch week plan:', error);
     } finally {
@@ -91,7 +122,22 @@ export default function MenuPlan() {
 
   useEffect(() => {
     fetchWeekPlan(year, week);
-  }, [year, week]);
+  }, [year, week, selectedLocationId]);
+
+  const getPax = (date: string, meal: string): { adults: number; children: number; total: number } | null => {
+    const count = guestCounts.find(c => c.date === date && c.meal === meal);
+    if (!count) return null;
+    return { adults: count.adults, children: count.children, total: count.adults + count.children };
+  };
+
+  const getWeekPaxSummary = () => {
+    let lunchTotal = 0, dinnerTotal = 0;
+    for (const c of guestCounts) {
+      if (c.meal === "lunch") lunchTotal += c.adults + c.children;
+      if (c.meal === "dinner") dinnerTotal += c.adults + c.children;
+    }
+    return { lunch: lunchTotal, dinner: dinnerTotal, total: lunchTotal + dinnerTotal };
+  };
 
   const getPlan = (date: string, meal: string, course: string) => {
     return plans.find(p => p.date === date && p.meal === meal && p.course === course);
@@ -127,15 +173,67 @@ export default function MenuPlan() {
     setSelectedDay(getTodayDayIndex());
   };
 
+  const [recipePanelOpen, setRecipePanelOpen] = useState(false);
+  const [draggedRecipe, setDraggedRecipe] = useState<{ id: number; name: string } | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
+  );
+
+  const handleDragStart = (event: DragStartEvent) => {
+    const { active } = event;
+    const recipeId = active.data.current?.recipeId;
+    const recipeName = active.data.current?.recipeName;
+    if (recipeId) setDraggedRecipe({ id: recipeId, name: recipeName });
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { over } = event;
+    setDraggedRecipe(null);
+
+    if (!over || !draggedRecipe) return;
+
+    const dropData = over.data.current;
+    if (!dropData) return;
+
+    const { date: dropDate, meal: dropMeal, course: dropCourse } = dropData as { date: string; meal: string; course: string };
+    const existingPlan = getPlan(dropDate, dropMeal, dropCourse);
+
+    try {
+      if (existingPlan) {
+        await fetch(`/api/menu-plans/${existingPlan.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ recipeId: draggedRecipe.id, portions: existingPlan.portions })
+        });
+      } else {
+        await fetch('/api/menu-plans', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ date: dropDate, meal: dropMeal, course: dropCourse, recipeId: draggedRecipe.id, portions: 1 })
+        });
+      }
+      toast({ title: `${draggedRecipe.name} zugewiesen` });
+      fetchWeekPlan(year, week);
+    } catch (error: any) {
+      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+    }
+  };
+
   const selectedDate = weekDates[selectedDay];
   const selectedDateStr = selectedDate ? formatDate(selectedDate) : "";
 
   return (
+    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
     <div className="flex flex-col pb-24">
       {/* Orange Header */}
       <div className="bg-primary text-primary-foreground px-4 pt-4 pb-3">
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-2">
           <h1 className="font-heading text-xl font-bold uppercase tracking-wide">Wochenplan</h1>
+          <LocationSwitcher variant="header" />
+        </div>
+        <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="icon" className="h-8 w-8 text-primary-foreground hover:bg-white/20" onClick={prevWeek}>
               <ChevronLeft className="h-5 w-5" />
@@ -146,6 +244,21 @@ export default function MenuPlan() {
             </Button>
           </div>
         </div>
+
+        {/* PAX summary banner */}
+        {guestCounts.length > 0 && (() => {
+          const paxSummary = getWeekPaxSummary();
+          return (
+            <div className="flex items-center gap-3 bg-white/15 rounded-lg px-3 py-1.5 mb-2">
+              <Users className="h-3.5 w-3.5 text-primary-foreground/80 shrink-0" />
+              <div className="flex items-center gap-3 text-xs text-primary-foreground/90">
+                <span>Mittag: <strong className="text-primary-foreground">{paxSummary.lunch}</strong></span>
+                <span>Abend: <strong className="text-primary-foreground">{paxSummary.dinner}</strong></span>
+                <span className="text-primary-foreground/60">Woche: {paxSummary.total}</span>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Actions row */}
         <div className="flex items-center justify-between">
@@ -162,6 +275,14 @@ export default function MenuPlan() {
             )}
           </div>
           <div className="flex gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn("h-7 text-xs text-primary-foreground hover:bg-white/20 gap-1", recipePanelOpen && "bg-white/20")}
+              onClick={() => setRecipePanelOpen(!recipePanelOpen)}
+            >
+              <BookOpen className="h-3.5 w-3.5" />
+            </Button>
             <Button variant="ghost" size="sm" className="h-7 text-xs text-primary-foreground hover:bg-white/20 gap-1" onClick={() => setShowShoppingList(true)}>
               <ShoppingCart className="h-3.5 w-3.5" />
             </Button>
@@ -227,12 +348,22 @@ export default function MenuPlan() {
         </div>
       ) : (
         <div className="px-4 space-y-5 pt-1">
-          {MEALS.map(meal => (
+          {MEALS.map(meal => {
+            const pax = getPax(selectedDateStr, meal.key);
+            return (
             <div key={meal.key} className="space-y-2">
               {/* Section header */}
-              <h2 className="font-heading text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                {DAY_NAMES_LONG[selectedDay]} — {meal.de}
-              </h2>
+              <div className="flex items-center justify-between">
+                <h2 className="font-heading text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                  {DAY_NAMES_LONG[selectedDay]} — {meal.de}
+                </h2>
+                {pax && (
+                  <Badge variant="outline" className="gap-1 text-xs font-normal">
+                    <Users className="h-3 w-3" />
+                    {pax.total} PAX
+                  </Badge>
+                )}
+              </div>
 
               {/* Course cards */}
               <div className="space-y-2">
@@ -253,13 +384,15 @@ export default function MenuPlan() {
                       recipeName={recipeName}
                       recipes={recipes}
                       hasRotation={rotationWeekNr > 0}
+                      pax={pax?.total ?? null}
                       onSave={() => fetchWeekPlan(year, week)}
                     />
                   );
                 })}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -269,11 +402,26 @@ export default function MenuPlan() {
         plans={plans}
         recipes={recipes}
       />
+
+      {/* Recipe Panel (DnD source) */}
+      {recipePanelOpen && (
+        <RecipePanel recipes={recipes} onClose={() => setRecipePanelOpen(false)} />
+      )}
+
+      {/* Drag Overlay */}
+      <DragOverlay>
+        {draggedRecipe && (
+          <div className="bg-primary text-primary-foreground px-3 py-2 rounded-lg shadow-lg text-sm font-medium max-w-[200px] truncate opacity-90">
+            {draggedRecipe.name}
+          </div>
+        )}
+      </DragOverlay>
     </div>
+    </DndContext>
   );
 }
 
-function CourseCard({ date, dayName, dayNum, meal, course, courseLabel, plan, recipeName, recipes, hasRotation, onSave }: {
+function CourseCard({ date, dayName, dayNum, meal, course, courseLabel, plan, recipeName, recipes, hasRotation, pax, onSave }: {
   date: string;
   dayName: string;
   dayNum: number;
@@ -284,6 +432,7 @@ function CourseCard({ date, dayName, dayNum, meal, course, courseLabel, plan, re
   recipeName: string | null;
   recipes: any[];
   hasRotation: boolean;
+  pax: number | null;
   onSave: () => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -363,12 +512,23 @@ function CourseCard({ date, dayName, dayNum, meal, course, courseLabel, plan, re
     );
   }
 
+  const { setNodeRef, isOver } = useDroppable({
+    id: `drop-${date}-${meal}-${course}`,
+    data: { date, meal, course },
+  });
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Card className="cursor-pointer hover:bg-muted/50 transition-colors active:scale-[0.98]">
+        <Card
+          ref={setNodeRef}
+          className={cn(
+            "cursor-pointer hover:bg-muted/50 transition-colors active:scale-[0.98]",
+            isOver && "ring-2 ring-primary bg-primary/10"
+          )}
+        >
           <CardContent className="flex items-center justify-between p-3">
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
                 {courseLabel}
               </div>
@@ -376,7 +536,12 @@ function CourseCard({ date, dayName, dayNum, meal, course, courseLabel, plan, re
                 {recipeName || <span className="text-muted-foreground">—</span>}
               </div>
             </div>
-            {statusBadge}
+            <div className="flex items-center gap-1.5 shrink-0">
+              {plan && plan.recipeId && pax && pax > 0 && plan.portions !== pax && (
+                <span className="text-[10px] text-amber-600 font-medium">{plan.portions}/{pax}</span>
+              )}
+              {statusBadge}
+            </div>
           </CardContent>
         </Card>
       </DialogTrigger>
@@ -402,7 +567,20 @@ function CourseCard({ date, dayName, dayNum, meal, course, courseLabel, plan, re
 
           <div className="space-y-2">
             <Label>Portionen</Label>
-            <Input type="number" value={portions} onChange={(e) => setPortions(e.target.value)} min="1" />
+            <div className="flex gap-2">
+              <Input type="number" value={portions} onChange={(e) => setPortions(e.target.value)} min="1" className="flex-1" />
+              {pax && pax > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0 text-xs gap-1"
+                  onClick={() => setPortions(String(pax))}
+                >
+                  <Users className="h-3 w-3" />
+                  {pax} PAX
+                </Button>
+              )}
+            </div>
           </div>
 
           <div className="flex gap-2">
@@ -436,18 +614,21 @@ function ShoppingListDialog({ open, onOpenChange, plans, recipes }: {
     const ingredientMap = new Map<string, { amount: number; unit: string }>();
 
     try {
+      const recipeIds = [...new Set(plans.filter(p => p.recipeId).map(p => p.recipeId!))];
+      if (recipeIds.length === 0) { setIngredients(ingredientMap); return; }
+
+      const res = await fetch(`/api/ingredients/bulk?recipeIds=${recipeIds.join(",")}`);
+      const allIngs: { recipeId: number; name: string; amount: number; unit: string }[] = await res.json();
+
       for (const plan of plans) {
         if (!plan.recipeId) continue;
-
         const recipe = recipes.find((r: any) => r.id === plan.recipeId);
         if (!recipe) continue;
 
-        const res = await fetch(`/api/recipes/${plan.recipeId}/ingredients`);
-        const ings = await res.json();
-
+        const planIngs = allIngs.filter(i => i.recipeId === plan.recipeId);
         const scaleFactor = plan.portions / recipe.portions;
 
-        for (const ing of ings) {
+        for (const ing of planIngs) {
           const key = `${ing.name.toLowerCase()}_${ing.unit}`;
           const scaledAmount = ing.amount * scaleFactor;
 
@@ -509,5 +690,102 @@ function ShoppingListDialog({ open, onOpenChange, plans, recipes }: {
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/* === Recipe Panel (DnD Source) === */
+
+function RecipePanel({ recipes, onClose }: { recipes: any[]; onClose: () => void }) {
+  const [search, setSearch] = useState("");
+  const [catFilter, setCatFilter] = useState("all");
+
+  const filtered = recipes.filter(r => {
+    const matchSearch = !search || r.name.toLowerCase().includes(search.toLowerCase());
+    const matchCat = catFilter === "all" || r.category === catFilter;
+    return matchSearch && matchCat;
+  });
+
+  return (
+    <div className="fixed bottom-16 left-0 right-0 bg-background border-t shadow-lg z-50 max-h-[45vh] flex flex-col">
+      {/* Panel header */}
+      <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/30">
+        <span className="text-sm font-semibold">Rezepte ziehen</span>
+        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onClose}>
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {/* Search + filter */}
+      <div className="px-3 py-2 space-y-2 border-b">
+        <div className="relative">
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Suche..."
+            className="h-8 text-sm pl-8"
+          />
+        </div>
+        <div className="flex gap-1 overflow-x-auto pb-1 no-scrollbar">
+          <Button
+            variant={catFilter === "all" ? "default" : "outline"}
+            size="sm"
+            className="h-6 text-[10px] shrink-0"
+            onClick={() => setCatFilter("all")}
+          >
+            Alle
+          </Button>
+          {RECIPE_CATEGORIES.map(cat => (
+            <Button
+              key={cat.id}
+              variant={catFilter === cat.id ? "default" : "outline"}
+              size="sm"
+              className="h-6 text-[10px] shrink-0"
+              onClick={() => setCatFilter(cat.id)}
+            >
+              {cat.symbol} {cat.label}
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      {/* Recipe list */}
+      <div className="flex-1 overflow-y-auto px-3 py-1">
+        {filtered.length === 0 ? (
+          <div className="text-center py-4 text-sm text-muted-foreground">Keine Rezepte gefunden</div>
+        ) : (
+          <div className="space-y-1">
+            {filtered.map(recipe => (
+              <DraggableRecipe key={recipe.id} recipe={recipe} />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DraggableRecipe({ recipe }: { recipe: any }) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `recipe-${recipe.id}`,
+    data: { recipeId: recipe.id, recipeName: recipe.name },
+  });
+
+  const cat = RECIPE_CATEGORIES.find(c => c.id === recipe.category);
+
+  return (
+    <div
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      className={cn(
+        "flex items-center gap-2 px-2 py-1.5 rounded-md border bg-background cursor-grab active:cursor-grabbing touch-none",
+        isDragging && "opacity-50"
+      )}
+    >
+      <GripVertical className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+      <span className="text-xs shrink-0">{cat?.symbol || "🍽"}</span>
+      <span className="text-sm truncate flex-1">{recipe.name}</span>
+    </div>
   );
 }

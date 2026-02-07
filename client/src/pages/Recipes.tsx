@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, Clock, Users, PlusCircle, Link2, Loader2, ArrowLeft, Camera, FileUp, X } from "lucide-react";
+import { Search, Clock, Users, PlusCircle, Link2, Loader2, ArrowLeft, Camera, FileUp, X, Package } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { RECIPE_CATEGORIES } from "@shared/schema";
 import RecipeDetailDialog from "@/components/RecipeDetailDialog";
+import { Link } from "wouter";
 
 // Debounce hook
 function useDebounce<T>(value: T, delay: number): T {
@@ -182,7 +183,14 @@ export default function Recipes() {
     <div className="p-4 space-y-4 pb-24">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-heading font-bold">{t("recipes")}</h1>
-        <AddRecipeDialog />
+        <div className="flex gap-2">
+          <Link href="/recipes/ingredients">
+            <Button variant="outline" size="sm" className="gap-1 text-xs">
+              <Package className="h-3.5 w-3.5" /> Stammdaten
+            </Button>
+          </Link>
+          <AddRecipeDialog />
+        </div>
       </div>
 
       {/* Global Search */}

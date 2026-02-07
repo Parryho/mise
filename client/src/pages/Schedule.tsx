@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, ChevronLeft, ChevronRight, PlusCircle, Pencil, Trash2, UserPlus, Calendar, Palmtree, Pill, X, Download, FileSpreadsheet } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, X, Trash2, Download, FileSpreadsheet } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
@@ -11,6 +10,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import LocationSwitcher from "@/components/LocationSwitcher";
+import { useLocationFilter } from "@/lib/location-context";
+import StaffView from "./ScheduleStaff";
+import ShiftTypesView from "./ScheduleShifts";
 
 interface Staff {
   id: number;
@@ -84,7 +87,10 @@ const COLORS = ["#3b82f6", "#ef4444", "#22c55e", "#f59e0b", "#8b5cf6", "#ec4899"
 export default function Schedule() {
   return (
     <div className="p-4 space-y-4 pb-24">
-      <h1 className="text-2xl font-heading font-bold">Dienstplan</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-heading font-bold">Dienstplan</h1>
+      </div>
+      <LocationSwitcher />
       
       <Tabs defaultValue="schedule" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
@@ -117,6 +123,7 @@ function ScheduleView() {
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"day" | "week" | "month">("week");
   const { toast } = useToast();
+  const { selectedLocationId } = useLocationFilter();
 
   const getDates = () => {
     if (viewMode === "day") return [baseDate];
@@ -131,9 +138,11 @@ function ScheduleView() {
   const fetchData = async () => {
     setLoading(true);
     try {
+      const locParam = selectedLocationId ? `&locationId=${selectedLocationId}` : "";
+      const staffLocParam = selectedLocationId ? `?locationId=${selectedLocationId}` : "";
       const [staffRes, entriesRes, shiftTypesRes] = await Promise.all([
-        fetch('/api/staff'),
-        fetch(`/api/schedule?start=${startDate}&end=${endDate}`),
+        fetch(`/api/staff${staffLocParam}`),
+        fetch(`/api/schedule?start=${startDate}&end=${endDate}${locParam}`),
         fetch('/api/shift-types')
       ]);
       const staffData = await staffRes.json();
@@ -152,7 +161,7 @@ function ScheduleView() {
 
   useEffect(() => {
     fetchData();
-  }, [startDate, endDate]);
+  }, [startDate, endDate, selectedLocationId]);
   
   const getShiftType = (id: number | null) => {
     return shiftTypes.find(st => st.id === id);
@@ -660,533 +669,10 @@ function ScheduleCell({ staffId, date, entry, staffColor, isToday, isWeekend, sh
   );
 }
 
-function StaffView() {
-  const [staffList, setStaffList] = useState<Staff[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
-
-  const fetchStaff = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/staff');
-      const data = await res.json();
-      setStaffList(data);
-    } catch (error) {
-      console.error('Failed to fetch staff:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchStaff();
-  }, []);
-
-  const handleDelete = async (id: number) => {
-    if (!confirm("Mitarbeiter wirklich löschen? Alle zugehörigen Dienstplan-Einträge werden ebenfalls gelöscht.")) return;
-    try {
-      await fetch(`/api/staff/${id}`, { method: 'DELETE' });
-      toast({ title: "Gelöscht" });
-      fetchStaff();
-    } catch (error: any) {
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
-    }
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="flex justify-end">
-        <AddStaffDialog onSave={fetchStaff} />
-      </div>
-
-      {loading ? (
-        <div className="flex justify-center py-8">
-          <Loader2 className="h-6 w-6 animate-spin" />
-        </div>
-      ) : staffList.length === 0 ? (
-        <div className="text-center py-8 text-muted-foreground">
-          Keine Mitarbeiter vorhanden
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {staffList.map(member => (
-            <Card key={member.id}>
-              <CardContent className="p-3 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm" style={{ backgroundColor: member.color }}>
-                    {member.name.charAt(0).toUpperCase()}
-                  </div>
-                  <div>
-                    <div className="font-medium">{member.name}</div>
-                    <div className="text-xs text-muted-foreground">{member.role}</div>
-                  </div>
-                </div>
-                <div className="flex gap-1">
-                  <EditStaffDialog member={member} onSave={fetchStaff} />
-                  <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => handleDelete(member.id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function AddStaffDialog({ onSave }: { onSave: () => void }) {
-  const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [role, setRole] = useState("Koch");
-  const [color, setColor] = useState(COLORS[0]);
-  const [saving, setSaving] = useState(false);
-  const { toast } = useToast();
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    try {
-      await fetch('/api/staff', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, role, color })
-      });
-      toast({ title: "Mitarbeiter hinzugefügt" });
-      setOpen(false);
-      setName("");
-      onSave();
-    } catch (error: any) {
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm" className="gap-1">
-          <UserPlus className="h-4 w-4" /> Neuer Mitarbeiter
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle>Mitarbeiter hinzufügen</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label>Name</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Max Mustermann" required />
-          </div>
-          <div className="space-y-2">
-            <Label>Rolle</Label>
-            <Select value={role} onValueChange={setRole}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Koch">Koch</SelectItem>
-                <SelectItem value="Sous-Chef">Sous-Chef</SelectItem>
-                <SelectItem value="Küchenchef">Küchenchef</SelectItem>
-                <SelectItem value="Beikoch">Beikoch</SelectItem>
-                <SelectItem value="Auszubildender">Auszubildender</SelectItem>
-                <SelectItem value="Küchenhilfe">Küchenhilfe</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label>Farbe</Label>
-            <div className="flex gap-2 flex-wrap">
-              {COLORS.map(c => (
-                <button
-                  key={c}
-                  type="button"
-                  className={`w-8 h-8 rounded-full border-2 ${color === c ? 'border-foreground' : 'border-transparent'}`}
-                  style={{ backgroundColor: c }}
-                  onClick={() => setColor(c)}
-                />
-              ))}
-            </div>
-          </div>
-          <Button type="submit" className="w-full" disabled={saving}>
-            {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-            Speichern
-          </Button>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function EditStaffDialog({ member, onSave }: { member: Staff; onSave: () => void }) {
-  const [open, setOpen] = useState(false);
-  const [name, setName] = useState(member.name);
-  const [role, setRole] = useState(member.role);
-  const [color, setColor] = useState(member.color);
-  const [saving, setSaving] = useState(false);
-  const { toast } = useToast();
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    try {
-      await fetch(`/api/staff/${member.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, role, color })
-      });
-      toast({ title: "Gespeichert" });
-      setOpen(false);
-      onSave();
-    } catch (error: any) {
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="icon" variant="ghost" className="h-8 w-8">
-          <Pencil className="h-4 w-4" />
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle>Mitarbeiter bearbeiten</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label>Name</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} required />
-          </div>
-          <div className="space-y-2">
-            <Label>Rolle</Label>
-            <Select value={role} onValueChange={setRole}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Koch">Koch</SelectItem>
-                <SelectItem value="Sous-Chef">Sous-Chef</SelectItem>
-                <SelectItem value="Küchenchef">Küchenchef</SelectItem>
-                <SelectItem value="Beikoch">Beikoch</SelectItem>
-                <SelectItem value="Auszubildender">Auszubildender</SelectItem>
-                <SelectItem value="Küchenhilfe">Küchenhilfe</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label>Farbe</Label>
-            <div className="flex gap-2 flex-wrap">
-              {COLORS.map(c => (
-                <button
-                  key={c}
-                  type="button"
-                  className={`w-8 h-8 rounded-full border-2 ${color === c ? 'border-foreground' : 'border-transparent'}`}
-                  style={{ backgroundColor: c }}
-                  onClick={() => setColor(c)}
-                />
-              ))}
-            </div>
-          </div>
-          <Button type="submit" className="w-full" disabled={saving}>
-            {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-            Speichern
-          </Button>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 function getWeekNumber(date: Date): number {
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
   const dayNum = d.getUTCDay() || 7;
   d.setUTCDate(d.getUTCDate() + 4 - dayNum);
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
   return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
-}
-
-function ShiftTypesView() {
-  const [shiftTypes, setShiftTypes] = useState<ShiftType[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showAdd, setShowAdd] = useState(false);
-  const { toast } = useToast();
-
-  const fetchShiftTypes = async () => {
-    try {
-      const res = await fetch('/api/shift-types');
-      const data = await res.json();
-      setShiftTypes(data);
-    } catch (error) {
-      console.error('Failed to fetch shift types:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchShiftTypes();
-  }, []);
-
-  const handleDelete = async (id: number) => {
-    if (!confirm('Diesen Dienst wirklich löschen?')) return;
-    try {
-      await fetch(`/api/shift-types/${id}`, { method: 'DELETE' });
-      toast({ title: 'Dienst gelöscht' });
-      fetchShiftTypes();
-    } catch (error) {
-      toast({ title: 'Fehler beim Löschen', variant: 'destructive' });
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex justify-center py-8">
-        <Loader2 className="h-6 w-6 animate-spin" />
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <p className="text-sm text-muted-foreground">
-          Hier können Sie eigene Dienste mit Namen und Zeiten erstellen.
-        </p>
-        <Button size="sm" onClick={() => setShowAdd(true)} className="gap-1">
-          <PlusCircle className="h-4 w-4" /> Neuer Dienst
-        </Button>
-      </div>
-
-      {shiftTypes.length === 0 ? (
-        <Card>
-          <CardContent className="py-8 text-center text-muted-foreground">
-            Keine Dienste vorhanden. Erstellen Sie Ihren ersten Dienst.
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-3">
-          {shiftTypes.map(st => (
-            <Card key={st.id}>
-              <CardContent className="p-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div 
-                    className="w-4 h-4 rounded-full" 
-                    style={{ backgroundColor: st.color }} 
-                  />
-                  <div>
-                    <div className="font-medium">{st.name}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {st.startTime.substring(0, 5)} - {st.endTime.substring(0, 5)}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <ShiftTypeEditDialog shiftType={st} onSave={fetchShiftTypes} />
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    onClick={() => handleDelete(st.id)}
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      <ShiftTypeAddDialog 
-        open={showAdd} 
-        onOpenChange={setShowAdd} 
-        onSave={() => { setShowAdd(false); fetchShiftTypes(); }} 
-      />
-    </div>
-  );
-}
-
-function ShiftTypeAddDialog({ open, onOpenChange, onSave }: { 
-  open: boolean; 
-  onOpenChange: (open: boolean) => void; 
-  onSave: () => void; 
-}) {
-  const [name, setName] = useState('');
-  const [startTime, setStartTime] = useState('08:00');
-  const [endTime, setEndTime] = useState('16:30');
-  const [color, setColor] = useState('#F37021');
-  const [saving, setSaving] = useState(false);
-  const { toast } = useToast();
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim()) {
-      toast({ title: 'Name erforderlich', variant: 'destructive' });
-      return;
-    }
-    setSaving(true);
-    try {
-      await fetch('/api/shift-types', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, startTime, endTime, color })
-      });
-      toast({ title: 'Dienst erstellt' });
-      setName('');
-      setStartTime('08:00');
-      setEndTime('16:30');
-      onSave();
-    } catch (error) {
-      toast({ title: 'Fehler', variant: 'destructive' });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Neuen Dienst erstellen</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label>Name</Label>
-            <Input 
-              value={name} 
-              onChange={e => setName(e.target.value)} 
-              placeholder="z.B. Frühstück, Kochen Mittag..."
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Beginn</Label>
-              <Input 
-                type="time" 
-                value={startTime} 
-                onChange={e => setStartTime(e.target.value)} 
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Ende</Label>
-              <Input 
-                type="time" 
-                value={endTime} 
-                onChange={e => setEndTime(e.target.value)} 
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label>Farbe</Label>
-            <div className="flex gap-2 flex-wrap">
-              {COLORS.map(c => (
-                <button
-                  key={c}
-                  type="button"
-                  className={`w-8 h-8 rounded-full border-2 ${color === c ? 'border-foreground' : 'border-transparent'}`}
-                  style={{ backgroundColor: c }}
-                  onClick={() => setColor(c)}
-                />
-              ))}
-              <button
-                type="button"
-                className={`w-8 h-8 rounded-full border-2 ${color === '#F37021' ? 'border-foreground' : 'border-transparent'}`}
-                style={{ backgroundColor: '#F37021' }}
-                onClick={() => setColor('#F37021')}
-              />
-            </div>
-          </div>
-          <Button type="submit" className="w-full" disabled={saving}>
-            {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-            Erstellen
-          </Button>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function ShiftTypeEditDialog({ shiftType, onSave }: { shiftType: ShiftType; onSave: () => void }) {
-  const [open, setOpen] = useState(false);
-  const [name, setName] = useState(shiftType.name);
-  const [startTime, setStartTime] = useState(shiftType.startTime.substring(0, 5));
-  const [endTime, setEndTime] = useState(shiftType.endTime.substring(0, 5));
-  const [color, setColor] = useState(shiftType.color);
-  const [saving, setSaving] = useState(false);
-  const { toast } = useToast();
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    try {
-      await fetch(`/api/shift-types/${shiftType.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, startTime, endTime, color })
-      });
-      toast({ title: 'Gespeichert' });
-      setOpen(false);
-      onSave();
-    } catch (error) {
-      toast({ title: 'Fehler', variant: 'destructive' });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="ghost" size="icon">
-          <Pencil className="h-4 w-4" />
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Dienst bearbeiten</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label>Name</Label>
-            <Input value={name} onChange={e => setName(e.target.value)} />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Beginn</Label>
-              <Input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label>Ende</Label>
-              <Input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label>Farbe</Label>
-            <div className="flex gap-2 flex-wrap">
-              {COLORS.map(c => (
-                <button
-                  key={c}
-                  type="button"
-                  className={`w-8 h-8 rounded-full border-2 ${color === c ? 'border-foreground' : 'border-transparent'}`}
-                  style={{ backgroundColor: c }}
-                  onClick={() => setColor(c)}
-                />
-              ))}
-              <button
-                type="button"
-                className={`w-8 h-8 rounded-full border-2 ${color === '#F37021' ? 'border-foreground' : 'border-transparent'}`}
-                style={{ backgroundColor: '#F37021' }}
-                onClick={() => setColor('#F37021')}
-              />
-            </div>
-          </div>
-          <Button type="submit" className="w-full" disabled={saving}>
-            {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-            Speichern
-          </Button>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
 }

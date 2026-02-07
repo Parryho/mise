@@ -13,6 +13,8 @@ import {
   Crown, Wine, BookOpen, Circle, RefreshCw, Users, CalendarDays,
   TrendingUp, Clock, User, DoorOpen,
 } from "lucide-react";
+import LocationSwitcher from "@/components/LocationSwitcher";
+import { useLocationFilter } from "@/lib/location-context";
 
 interface CateringEvent {
   id: number;
@@ -83,11 +85,13 @@ export default function Catering() {
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<{ synced: number; created: number; updated: number; errors: string[] } | null>(null);
   const { toast } = useToast();
+  const { selectedLocationId } = useLocationFilter();
 
   const fetchEvents = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/catering");
+      const locParam = selectedLocationId ? `?locationId=${selectedLocationId}` : "";
+      const res = await fetch(`/api/catering${locParam}`);
       const data = await res.json();
       setEvents(data);
     } catch (error) {
@@ -103,7 +107,7 @@ export default function Catering() {
       .then((r) => r.json())
       .then(setAirtableStatus)
       .catch(() => {});
-  }, []);
+  }, [selectedLocationId]);
 
   const handleDelete = async (id: number) => {
     if (!confirm("Event wirklich löschen?")) return;
@@ -240,6 +244,7 @@ export default function Catering() {
           <PlusCircle className="h-4 w-4" /> Neues Event
         </Button>
       </div>
+      <LocationSwitcher />
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">

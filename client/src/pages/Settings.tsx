@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Users, Shield, Settings2, Check, Globe, Trash2, UserCheck, UserX, LogOut, UserPlus } from "lucide-react";
+import { Loader2, Users, Shield, Settings2, Check, Globe, Trash2, UserCheck, UserX, LogOut, UserPlus, Mail, ChevronRight, HardDrive, Database, Activity } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -74,6 +74,60 @@ export default function SettingsPage() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Admin Quick Links */}
+      {isAdmin && (
+        <div className="grid grid-cols-1 gap-2">
+          <Card className="cursor-pointer hover:bg-secondary/30 transition-colors" onClick={() => setLocation("/settings/email")}>
+            <CardContent className="p-3 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Mail className="h-5 w-5 text-primary" />
+                <div>
+                  <div className="font-medium text-sm">E-Mail Benachrichtigungen</div>
+                  <div className="text-xs text-muted-foreground">SMTP-Konfiguration und Alerts</div>
+                </div>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </CardContent>
+          </Card>
+          <Card className="cursor-pointer hover:bg-secondary/30 transition-colors" onClick={() => setLocation("/settings/backup")}>
+            <CardContent className="p-3 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Database className="h-5 w-5 text-primary" />
+                <div>
+                  <div className="font-medium text-sm">Backup & Restore</div>
+                  <div className="text-xs text-muted-foreground">Datenbank-Sicherung und Wiederherstellung</div>
+                </div>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </CardContent>
+          </Card>
+          <Card className="cursor-pointer hover:bg-secondary/30 transition-colors" onClick={() => setLocation("/settings/gdpr")}>
+            <CardContent className="p-3 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Shield className="h-5 w-5 text-primary" />
+                <div>
+                  <div className="font-medium text-sm">DSGVO / Datenschutz</div>
+                  <div className="text-xs text-muted-foreground">Datenexport und Löschung</div>
+                </div>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </CardContent>
+          </Card>
+          <Card className="cursor-pointer hover:bg-secondary/30 transition-colors" onClick={() => setLocation("/settings/server-status")}>
+            <CardContent className="p-3 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Activity className="h-5 w-5 text-primary" />
+                <div>
+                  <div className="font-medium text-sm">Server-Status</div>
+                  <div className="text-xs text-muted-foreground">Monitoring und Systemgesundheit</div>
+                </div>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </CardContent>
+          </Card>
+        </div>
       )}
 
       <Tabs defaultValue="general" className="w-full">

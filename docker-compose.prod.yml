@@ -27,6 +27,9 @@ services:
         condition: service_healthy
     expose:
       - "3000"
+    volumes:
+      - ./backups:/backups
+      - recipe-uploads:/app/uploads/recipes
     environment:
       DATABASE_URL: postgresql://${PGUSER:-postgres}:${PGPASSWORD}@db:5432/${PGDATABASE:-mise}
       PORT: 3000
@@ -69,7 +72,43 @@ services:
       - certbot-www:/var/www/certbot
     entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
 
+  # ── Monitoring (Optional) ──────────────────────────────────────────
+  # Uncomment to add Prometheus + Grafana for metrics visualization.
+  #
+  # prometheus:
+  #   image: prom/prometheus:latest
+  #   restart: unless-stopped
+  #   volumes:
+  #     - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+  #     - prometheus-data:/prometheus
+  #   ports:
+  #     - "9090:9090"
+  #   depends_on:
+  #     - app
+  #   # prometheus.yml should contain:
+  #   #   scrape_configs:
+  #   #     - job_name: 'mise-app'
+  #   #       scrape_interval: 15s
+  #   #       metrics_path: /api/metrics
+  #   #       static_configs:
+  #   #         - targets: ['app:3000']
+  #
+  # grafana:
+  #   image: grafana/grafana:latest
+  #   restart: unless-stopped
+  #   volumes:
+  #     - grafana-data:/var/lib/grafana
+  #   ports:
+  #     - "3001:3000"
+  #   environment:
+  #     GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+  #   depends_on:
+  #     - prometheus
+
 volumes:
   pgdata:
+  recipe-uploads:
   certbot-conf:
   certbot-www:
+  # prometheus-data:
+  # grafana-data:

@@ -5,8 +5,18 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "node",
-    include: ["**/*.test.ts"],
+    include: ["**/*.test.ts", "tests/**/*.test.ts"],
     exclude: ["node_modules", "dist", "e2e"],
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "html", "lcov"],
+      include: ["server/**/*.ts", "shared/**/*.ts"],
+      exclude: ["server/index.ts", "server/vite.ts", "server/static.ts", "**/*.test.ts"],
+      thresholds: {
+        statements: 60,
+        branches: 50,
+      },
+    },
   },
   resolve: {
     alias: {

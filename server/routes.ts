@@ -37,6 +37,15 @@ import { handleGetSuggestions } from "./recipe-suggestions";
 import { handleGetWastePrediction } from "./waste-prediction";
 import { scaleRecipeHandler } from "./intelligent-scaling";
 import { detectAllergensHandler, suggestAllergensForRecipeHandler } from "./allergen-detection";
+// Phase 4: Email + Recipe Media + Push + Backup + GDPR + Monitoring
+import { sendEmail, sendHaccpAlert, initializeTransporter, verifySmtp, isSmtpConfigured } from "./email";
+import { recipeMediaUpload, handleUploadMedia, handleGetMedia, handleUpdateMedia, handleDeleteMedia, getUploadDir } from "./recipe-media";
+import { handleGetVapidPublicKey, handlePushSubscribe, handlePushUnsubscribe, handlePushTest } from "./push-notifications";
+import { handleListBackups, handleCreateBackup, handleDownloadBackup, handleRestoreBackup, handleDeleteBackup } from "./backup";
+import { handleGdprExportOwn, handleGdprExportUser, handleGdprCountsOwn, handleGdprCountsUser, handleGdprDeleteOwn, handleGdprDeleteUser } from "./gdpr";
+import { healthHandler } from "./health";
+import { metricsHandler, metricsMiddleware } from "./metrics";
+import express from "express";
 import multer from "multer";
 import { createRequire } from "module";
 const _require = createRequire(typeof __filename !== "undefined" ? __filename : import.meta.url);
@@ -2723,6 +2732,150 @@ export async function registerRoutes(
       res.status(500).json({ error: error.message });
     }
   });
+
+  // ==========================================
+  // Phase 4: Email Notifications (4.3)
+  // ==========================================
+
+  // Serve uploaded recipe media files
+  app.use("/uploads", express.static(getUploadDir()));
+
+  // Email: test sending
+  app.post("/api/email/test", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { to } = req.body;
+      const recipient = to || (req as any).user?.email;
+      if (!recipient) {
+        return res.status(400).json({ error: "Keine E-Mail-Adresse angegeben" });
+      }
+      const result = await sendEmail(
+        recipient,
+        "Test-E-Mail von mise.at",
+        `<div style="font-family: sans-serif; padding: 20px;">
+          <h2 style="color: #F37021;">mise.at - Test-E-Mail</h2>
+          <p>Diese E-Mail bestaetigt, dass Ihr SMTP-Server korrekt konfiguriert ist.</p>
+          <p style="color: #6b7280; font-size: 13px;">Gesendet am ${new Date().toLocaleString("de-AT")}</p>
+        </div>`
+      );
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Email: get settings
+  app.get("/api/email/settings", requireAdmin, async (_req: Request, res: Response) => {
+    try {
+      const settings: Record<string, string> = {};
+      const rows = await storage.getAllSettings();
+      for (const row of rows) {
+        if (row.key.startsWith("email_") || row.key.startsWith("smtp_")) {
+          settings[row.key] = row.key === "smtp_pass" ? "********" : row.value;
+        }
+      }
+      settings["smtp_configured"] = isSmtpConfigured() ? "true" : "false";
+      res.json(settings);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Email: save settings
+  app.put("/api/email/settings", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { smtp_host, smtp_port, smtp_user, smtp_pass, smtp_from,
+              email_haccp_alerts, email_schedule_changes, email_catering_confirmations, email_weekly_report } = req.body;
+
+      // Save SMTP settings to app_settings
+      const settingsToSave: Record<string, string> = {
+        smtp_host: smtp_host || "",
+        smtp_port: String(smtp_port || 587),
+        smtp_user: smtp_user || "",
+        smtp_from: smtp_from || "",
+        email_haccp_alerts: email_haccp_alerts || "false",
+        email_schedule_changes: email_schedule_changes || "false",
+        email_catering_confirmations: email_catering_confirmations || "false",
+        email_weekly_report: email_weekly_report || "false",
+      };
+
+      // Only update password if not masked
+      if (smtp_pass && smtp_pass !== "********") {
+        settingsToSave.smtp_pass = smtp_pass;
+      }
+
+      for (const [key, value] of Object.entries(settingsToSave)) {
+        await storage.setSetting(key, value);
+      }
+
+      // Re-initialize transporter with new settings
+      const savedPass = smtp_pass === "********"
+        ? (await storage.getSetting("smtp_pass"))?.value || ""
+        : smtp_pass || "";
+
+      initializeTransporter({
+        host: smtp_host || "",
+        port: parseInt(smtp_port || "587", 10),
+        user: smtp_user || "",
+        pass: savedPass,
+        from: smtp_from || "",
+      });
+
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Email: verify SMTP connection
+  app.post("/api/email/verify", requireAdmin, async (_req: Request, res: Response) => {
+    try {
+      const result = await verifySmtp();
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ==========================================
+  // Phase 4: Recipe Media (4.4)
+  // ==========================================
+  app.post("/api/recipes/:id/media", requireAuth, recipeMediaUpload.array("files", 10), handleUploadMedia);
+  app.get("/api/recipes/:id/media", requireAuth, handleGetMedia);
+  app.put("/api/recipes/:id/media/:mediaId", requireAuth, handleUpdateMedia);
+  app.delete("/api/recipes/:id/media/:mediaId", requireAuth, handleDeleteMedia);
+
+  // ==========================================
+  // Phase 4: Push Notifications (4.2)
+  // ==========================================
+  app.get("/api/push/vapid-public-key", requireAuth, handleGetVapidPublicKey);
+  app.post("/api/push/subscribe", requireAuth, handlePushSubscribe);
+  app.post("/api/push/unsubscribe", requireAuth, handlePushUnsubscribe);
+  app.post("/api/push/test", requireAuth, handlePushTest);
+
+  // ==========================================
+  // Phase 4: Backup & Restore (4.10)
+  // ==========================================
+  app.get("/api/backups", requireAdmin, handleListBackups);
+  app.post("/api/backups", requireAdmin, handleCreateBackup);
+  app.get("/api/backups/:filename/download", requireAdmin, handleDownloadBackup);
+  app.post("/api/backups/:filename/restore", requireAdmin, handleRestoreBackup);
+  app.delete("/api/backups/:filename", requireAdmin, handleDeleteBackup);
+
+  // ==========================================
+  // Phase 4: GDPR / DSGVO (4.9)
+  // ==========================================
+  app.get("/api/gdpr/export", requireAuth, handleGdprExportOwn);
+  app.get("/api/gdpr/export/:userId", requireAdmin, handleGdprExportUser);
+  app.get("/api/gdpr/counts", requireAuth, handleGdprCountsOwn);
+  app.get("/api/gdpr/counts/:userId", requireAdmin, handleGdprCountsUser);
+  app.delete("/api/gdpr/delete", requireAuth, handleGdprDeleteOwn);
+  app.delete("/api/gdpr/delete/:userId", requireAdmin, handleGdprDeleteUser);
+
+  // ==========================================
+  // Phase 4: Monitoring & Health (4.6)
+  // ==========================================
+  app.get("/api/health/detailed", healthHandler);
+  app.get("/api/metrics", metricsHandler);
 
   return httpServer;
 }

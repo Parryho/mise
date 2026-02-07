@@ -12,6 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RECIPE_CATEGORIES } from "@shared/schema";
+import RecipeMediaGallery from "@/components/RecipeMediaGallery";
+import RecipeMediaUpload from "@/components/RecipeMediaUpload";
 
 const CATEGORIES = RECIPE_CATEGORIES;
 
@@ -288,6 +290,12 @@ export default function RecipeDetailDialog({ recipe, open, onOpenChange, readOnl
                   placeholder="Schritt 1&#10;Schritt 2&#10;Schritt 3"
                 />
               </div>
+
+              {/* Recipe Media Upload (edit mode) */}
+              <RecipeMediaUpload
+                recipeId={recipe.id}
+                steps={editSteps.split('\n').filter(s => s.trim())}
+              />
             </div>
           ) : (
             <>
@@ -376,6 +384,9 @@ export default function RecipeDetailDialog({ recipe, open, onOpenChange, readOnl
                   )}
                 </ol>
               </div>
+
+              {/* Recipe Media Gallery (read mode) */}
+              <RecipeMediaGallery recipeId={recipe.id} steps={recipe.steps} />
             </>
           )}
         </div>

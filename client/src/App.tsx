@@ -47,6 +47,12 @@ import SmartRotation from "@/pages/SmartRotation";
 import RecipeAIImport from "@/pages/RecipeAIImport";
 import RecipeSuggestions from "@/pages/RecipeSuggestions";
 
+// Phase 4: Monitoring + Email + GDPR + Backup
+import ServerStatus from "@/pages/ServerStatus";
+import EmailSettings from "@/pages/EmailSettings";
+import BackupRestore from "@/pages/BackupRestore";
+import GDPRExport from "@/pages/GDPRExport";
+
 // Phase 2: Public pages (no auth)
 import GuestMenu from "@/pages/public/GuestMenu";
 import DigitalSignage from "@/pages/public/DigitalSignage";
@@ -122,6 +128,18 @@ function AuthenticatedRoutes() {
       </Route>
       <Route path="/settings">
         <Layout><Settings /></Layout>
+      </Route>
+      <Route path="/settings/server-status">
+        <Layout><ServerStatus /></Layout>
+      </Route>
+      <Route path="/settings/email">
+        <Layout><EmailSettings /></Layout>
+      </Route>
+      <Route path="/settings/backup">
+        <Layout><BackupRestore /></Layout>
+      </Route>
+      <Route path="/settings/gdpr">
+        <Layout><GDPRExport /></Layout>
       </Route>
       <Route path="/settings/suppliers">
         <Layout><Suppliers /></Layout>

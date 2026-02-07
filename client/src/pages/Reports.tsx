@@ -8,103 +8,105 @@ import {
 import { useApp } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 import jsPDF from "jspdf";
 import { format } from "date-fns";
-
-const reportCards = [
-  {
-    title: "Food-Cost-Analyse",
-    description: "Kosten pro Gericht, Woche & Monat mit Kategorie-Aufschlüsselung",
-    icon: DollarSign,
-    href: "/reports/food-cost",
-    color: "text-green-600",
-    bgColor: "bg-green-50",
-  },
-  {
-    title: "PAX-Trends",
-    description: "Gästezahlen-Charts, Wochentag-Muster und Saison-Vergleich",
-    icon: TrendingUp,
-    href: "/reports/pax-trends",
-    color: "text-blue-600",
-    bgColor: "bg-blue-50",
-  },
-  {
-    title: "HACCP-Compliance",
-    description: "Lückenanalyse, Temperatur-Trends und Compliance-Prozent",
-    icon: Thermometer,
-    href: "/reports/haccp-compliance",
-    color: "text-red-600",
-    bgColor: "bg-red-50",
-  },
-  {
-    title: "Anomalie-Erkennung",
-    description: "Automatische Erkennung ungewöhnlicher Temperaturmuster",
-    icon: Activity,
-    href: "/reports/haccp-anomalies",
-    color: "text-rose-600",
-    bgColor: "bg-rose-50",
-  },
-  {
-    title: "Beliebteste Gerichte",
-    description: "Häufigkeitsranking aus Menüplänen und Rotation",
-    icon: Star,
-    href: "/reports/popular-dishes",
-    color: "text-amber-600",
-    bgColor: "bg-amber-50",
-  },
-  {
-    title: "Allergen-Übersicht",
-    description: "Tages-Matrix aller Gerichte mit Allergenen und Gast-Warnungen",
-    icon: AlertTriangle,
-    href: "/reports/allergens",
-    color: "text-orange-600",
-    bgColor: "bg-orange-50",
-  },
-  {
-    title: "Buffet-Allergenkarten",
-    description: "Druckbare Karten pro Gericht mit Allergen-Kennzeichnung",
-    icon: CreditCard,
-    href: "/reports/buffet-cards",
-    color: "text-purple-600",
-    bgColor: "bg-purple-50",
-  },
-  {
-    title: "QR-Code Generator",
-    description: "QR-Codes für digitale Speisekarten pro Standort",
-    icon: QrCode,
-    href: "/reports/qr-codes",
-    color: "text-teal-600",
-    bgColor: "bg-teal-50",
-  },
-  {
-    title: "PAX-Prognose",
-    description: "KI-gestützte Gästezahlen-Vorhersage für die nächste Woche",
-    icon: Brain,
-    href: "/reports/pax-forecast",
-    color: "text-indigo-600",
-    bgColor: "bg-indigo-50",
-  },
-  {
-    title: "Rezept-Vorschläge",
-    description: "Saisonale & abwechslungsreiche Rezeptempfehlungen für den Menüplan",
-    icon: Sparkles,
-    href: "/recipes/suggestions",
-    color: "text-pink-600",
-    bgColor: "bg-pink-50",
-  },
-  {
-    title: "Waste-Prediction",
-    description: "Verfallswarnung für geplante Zutaten mit Verwertungsvorschlägen",
-    icon: Trash2,
-    href: "/reports/waste-prediction",
-    color: "text-lime-600",
-    bgColor: "bg-lime-50",
-  },
-];
 
 export default function Reports() {
   const { logs, fridges } = useApp();
   const { toast } = useToast();
+  const { t } = useTranslation();
+
+  const reportCards = [
+    {
+      titleKey: "reports.foodCost.title",
+      descKey: "reports.foodCost.description",
+      icon: DollarSign,
+      href: "/reports/food-cost",
+      color: "text-green-600",
+      bgColor: "bg-green-50",
+    },
+    {
+      titleKey: "reports.paxTrends.title",
+      descKey: "reports.paxTrends.description",
+      icon: TrendingUp,
+      href: "/reports/pax-trends",
+      color: "text-blue-600",
+      bgColor: "bg-blue-50",
+    },
+    {
+      titleKey: "reports.haccpCompliance.title",
+      descKey: "reports.haccpCompliance.description",
+      icon: Thermometer,
+      href: "/reports/haccp-compliance",
+      color: "text-red-600",
+      bgColor: "bg-red-50",
+    },
+    {
+      titleKey: "reports.anomalies.title",
+      descKey: "reports.anomalies.description",
+      icon: Activity,
+      href: "/reports/haccp-anomalies",
+      color: "text-rose-600",
+      bgColor: "bg-rose-50",
+    },
+    {
+      titleKey: "reports.popularDishes.title",
+      descKey: "reports.popularDishes.description",
+      icon: Star,
+      href: "/reports/popular-dishes",
+      color: "text-amber-600",
+      bgColor: "bg-amber-50",
+    },
+    {
+      titleKey: "reports.allergens.title",
+      descKey: "reports.allergens.description",
+      icon: AlertTriangle,
+      href: "/reports/allergens",
+      color: "text-orange-600",
+      bgColor: "bg-orange-50",
+    },
+    {
+      titleKey: "reports.buffetCards.title",
+      descKey: "reports.buffetCards.description",
+      icon: CreditCard,
+      href: "/reports/buffet-cards",
+      color: "text-purple-600",
+      bgColor: "bg-purple-50",
+    },
+    {
+      titleKey: "reports.qrCodes.title",
+      descKey: "reports.qrCodes.description",
+      icon: QrCode,
+      href: "/reports/qr-codes",
+      color: "text-teal-600",
+      bgColor: "bg-teal-50",
+    },
+    {
+      titleKey: "reports.paxForecast.title",
+      descKey: "reports.paxForecast.description",
+      icon: Brain,
+      href: "/reports/pax-forecast",
+      color: "text-indigo-600",
+      bgColor: "bg-indigo-50",
+    },
+    {
+      titleKey: "reports.recipeSuggestions.title",
+      descKey: "reports.recipeSuggestions.description",
+      icon: Sparkles,
+      href: "/recipes/suggestions",
+      color: "text-pink-600",
+      bgColor: "bg-pink-50",
+    },
+    {
+      titleKey: "reports.wastePrediction.title",
+      descKey: "reports.wastePrediction.description",
+      icon: Trash2,
+      href: "/reports/waste-prediction",
+      color: "text-lime-600",
+      bgColor: "bg-lime-50",
+    },
+  ];
 
   const handleExportHaccpPDF = () => {
     const doc = new jsPDF();
@@ -128,7 +130,7 @@ export default function Reports() {
 
       fridgeLogs.forEach(log => {
         doc.setFont("helvetica", "normal");
-        const line = `${format(new Date(log.timestamp), "yyyy-MM-dd HH:mm")} | ${log.temperature}°C | ${log.user} | ${log.status}`;
+        const line = `${format(new Date(log.timestamp), "yyyy-MM-dd HH:mm")} | ${log.temperature}\u00b0C | ${log.user} | ${log.status}`;
         doc.text(line, 20, y);
         y += 5;
       });
@@ -137,12 +139,12 @@ export default function Reports() {
     });
 
     doc.save("haccp-report.pdf");
-    toast({ title: "Export fertig", description: "HACCP Report wurde heruntergeladen." });
+    toast({ title: t("reports.exportDone"), description: t("reports.haccpReportDownloaded") });
   };
 
   return (
     <div className="p-4 space-y-6">
-      <h1 className="text-2xl font-heading font-bold">Reports & Analysen</h1>
+      <h1 className="text-2xl font-heading font-bold">{t("reports.title")}</h1>
 
       <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
         {reportCards.map((card) => (
@@ -153,8 +155,8 @@ export default function Reports() {
                   <card.icon className={`h-5 w-5 ${card.color}`} />
                 </div>
                 <div className="min-w-0">
-                  <h3 className="font-semibold text-sm">{card.title}</h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">{card.description}</p>
+                  <h3 className="font-semibold text-sm">{t(card.titleKey)}</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">{t(card.descKey)}</p>
                 </div>
               </CardContent>
             </Card>
@@ -167,13 +169,13 @@ export default function Reports() {
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            Schnell-Export
+            {t("reports.quickExport")}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <Button onClick={handleExportHaccpPDF} variant="outline" className="w-full">
             <Download className="mr-2 h-4 w-4" />
-            HACCP-Report als PDF
+            {t("reports.haccpReportPdf")}
           </Button>
         </CardContent>
       </Card>

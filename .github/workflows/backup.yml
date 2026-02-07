@@ -1,0 +1,48 @@
+name: Weekly Backup
+
+on:
+  schedule:
+    # Every Sunday at 3:00 AM UTC
+    - cron: '0 3 * * 0'
+  workflow_dispatch:
+
+jobs:
+  backup:
+    name: Database Backup
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Trigger backup via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /opt/mise
+            TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+            BACKUP_FILE="backups/mise_weekly_${TIMESTAMP}.sql.gz"
+
+            echo "[$(date)] Running weekly backup..."
+            docker compose -f docker-compose.prod.yml exec -T db \
+              pg_dump -U ${PGUSER:-postgres} ${PGDATABASE:-mise} | gzip > "$BACKUP_FILE"
+
+            FILESIZE=$(stat -f%z "$BACKUP_FILE" 2>/dev/null || stat -c%s "$BACKUP_FILE" 2>/dev/null)
+            echo "[$(date)] Backup complete: $BACKUP_FILE ($FILESIZE bytes)"
+
+            # Keep only last 8 weekly backups
+            ls -t backups/mise_weekly_*.sql.gz | tail -n +9 | xargs -r rm --
+            echo "[$(date)] Old weekly backups cleaned."
+
+      # Optional: Upload backup as artifact
+      # Uncomment to enable — requires scp or rsync step to download first
+      # - name: Download backup
+      #   run: |
+      #     scp -i ${{ secrets.SSH_PRIVATE_KEY }} \
+      #       ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/opt/mise/backups/mise_weekly_*.sql.gz ./
+      # - name: Upload backup artifact
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: db-backup-${{ github.run_id }}
+      #     path: "*.sql.gz"
+      #     retention-days: 30

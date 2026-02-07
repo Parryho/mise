@@ -312,6 +312,35 @@ export const guestAllergenProfiles = pgTable("guest_allergen_profiles", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// === Phase 4: Push Subscriptions ===
+export const pushSubscriptions = pgTable("push_subscriptions", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  endpoint: text("endpoint").notNull(),
+  p256dh: text("p256dh").notNull(),
+  auth: text("auth").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => [
+  index("idx_push_subscriptions_user").on(table.userId),
+  index("idx_push_subscriptions_endpoint").on(table.endpoint),
+]);
+
+// === Phase 4: Recipe Media (Photo Upload) ===
+export const recipeMedia = pgTable("recipe_media", {
+  id: serial("id").primaryKey(),
+  recipeId: integer("recipe_id").references(() => recipes.id, { onDelete: "cascade" }).notNull(),
+  filename: text("filename").notNull(),
+  originalName: text("original_name").notNull(),
+  mimeType: text("mime_type").notNull(),
+  size: integer("size").notNull(),
+  sortOrder: integer("sort_order").notNull().default(0),
+  caption: text("caption"),
+  step: integer("step"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => [
+  index("idx_recipe_media_recipe").on(table.recipeId),
+]);
+
 // Audit Logs
 export const auditLogs = pgTable("audit_logs", {
   id: serial("id").primaryKey(),
@@ -365,6 +394,17 @@ export const insertMenuPlanTemperatureSchema = createInsertSchema(menuPlanTemper
 export const insertTaskSchema = createInsertSchema(tasks).omit({ id: true, createdAt: true });
 export const updateTaskStatusSchema = z.object({ status: z.enum(["open", "done"]) });
 export const insertTaskTemplateSchema = createInsertSchema(taskTemplates).omit({ id: true, createdAt: true });
+
+// Phase 4: Push subscription schema
+export const insertPushSubscriptionSchema = createInsertSchema(pushSubscriptions).omit({ id: true, createdAt: true });
+
+// Phase 4: Recipe media schema
+export const insertRecipeMediaSchema = createInsertSchema(recipeMedia).omit({ id: true, createdAt: true });
+export const updateRecipeMediaSchema = z.object({
+  caption: z.string().nullable().optional(),
+  sortOrder: z.number().optional(),
+  step: z.number().nullable().optional(),
+});
 
 // Phase 2: New insert schemas
 export const insertSupplierSchema = createInsertSchema(suppliers).omit({ id: true, createdAt: true });
@@ -444,6 +484,12 @@ export type InsertTask = z.infer<typeof insertTaskSchema>;
 export type TaskTemplate = typeof taskTemplates.$inferSelect;
 export type InsertTaskTemplate = z.infer<typeof insertTaskTemplateSchema>;
 export type AuditLog = typeof auditLogs.$inferSelect;
+
+// Phase 4 types
+export type PushSubscription = typeof pushSubscriptions.$inferSelect;
+export type InsertPushSubscription = z.infer<typeof insertPushSubscriptionSchema>;
+export type RecipeMedia = typeof recipeMedia.$inferSelect;
+export type InsertRecipeMedia = z.infer<typeof insertRecipeMediaSchema>;
 
 // Phase 2 types
 export type Supplier = typeof suppliers.$inferSelect;

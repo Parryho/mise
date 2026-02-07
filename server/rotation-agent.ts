@@ -1,31 +1,34 @@
 /**
  * Küchenchef-Agent: Rule-based auto-fill for rotation slots.
- * Maps recipe categories to meal slot types and distributes recipes
- * across the 6-week rotation using round-robin with collision avoidance.
  *
- * Rules:
- * - No salads in the menu (salads are self-service buffet)
- * - Dessert is always "Dessertvariation" (not auto-filled)
- * - Each location gets an independent recipe rotation
- * - Same recipe should not appear on the same day across meals
- * - Beilagen (sides) are only from the Sides category
+ * Kulinarische Regeln:
+ * - side1a/side2a = NUR Stärkebeilage (Reis, Knödel, Kartoffeln, Spätzle etc.)
+ * - side1b/side2b = NUR Gemüsebeilage (Bratgemüse, Rotkraut, Sauerkraut etc.)
+ * - Alles mit Tag "kein-rotation" wird IGNORIERT (Salate, Jause, Aufstriche, Frühstück)
+ * - Dessert ist immer "Dessertvariation" (nicht auto-filled)
+ * - Keine 2× gleiche Beilagen-Art am selben Tag (z.B. nicht Pommes + Bratkartoffeln)
+ * - Keine Wiederholung am selben Tag (Mittag ≠ Abend)
+ * - Jeder Standort bekommt unabhängige Rezept-Rotation
  */
 
 import { storage } from "./storage";
 import type { Recipe, RotationSlot } from "@shared/schema";
 import type { MealSlotName } from "@shared/constants";
 
-// Map each course slot to matching recipe categories
-// NO Salads, NO Desserts (dessert is hardcoded "Dessertvariation")
-const SLOT_CATEGORY_MAP: Partial<Record<MealSlotName, string[]>> = {
-  soup: ["ClearSoups", "CreamSoups"],
-  main1: ["MainMeat", "MainFish"],
-  side1a: ["Sides"],
-  side1b: ["Sides"],
-  main2: ["MainVegan"],
-  side2a: ["Sides"],
-  side2b: ["Sides"],
-  // dessert: intentionally omitted — always "Dessertvariation A,C,G"
+// ============================================================
+// Kulinarische Gruppen für Stärkebeilagen (Kollisionsvermeidung)
+// ============================================================
+const STARCH_GROUPS: Record<string, string> = {
+  "Reis": "reis",
+  "Spätzle": "teig",
+  "Butternockerl": "teig",
+  "Semmelknödel": "knödel",
+  "Serviettenknödel": "knödel",
+  "Petersilkartoffeln": "kartoffel",
+  "Bratkartoffeln": "kartoffel",
+  "Erdäpfelpüree": "kartoffel",
+  "Pommes Frites": "kartoffel",
+  "Kroketten": "kartoffel",
 };
 
 /** Shuffle array in place (Fisher-Yates) */
@@ -37,24 +40,60 @@ function shuffle<T>(arr: T[]): T[] {
   return arr;
 }
 
-/** Create fresh round-robin iterators for a given recipe pool */
-function buildIterators(recipesByCategory: Map<string, Recipe[]>) {
-  const iterators = new Map<string, { pool: Recipe[]; idx: number }>();
-  for (const [course, categories] of Object.entries(SLOT_CATEGORY_MAP)) {
-    const pool: Recipe[] = [];
-    for (const cat of categories!) {
-      const catRecipes = recipesByCategory.get(cat) || [];
-      pool.push(...catRecipes);
-    }
-    // Each location gets a fresh shuffle
-    shuffle(pool);
-    iterators.set(course, { pool: [...pool], idx: 0 });
-  }
-  return iterators;
+/** Get the starch group of a recipe (for collision avoidance) */
+function getStarchGroup(recipe: Recipe): string {
+  return STARCH_GROUPS[recipe.name] || recipe.name.toLowerCase();
 }
 
+// ============================================================
+// Pool-based iterator with collision avoidance
+// ============================================================
+interface RecipePool {
+  recipes: Recipe[];
+  idx: number;
+}
+
+function createPool(recipes: Recipe[]): RecipePool {
+  return { recipes: shuffle([...recipes]), idx: 0 };
+}
+
+/**
+ * Pick next recipe from pool, avoiding:
+ * - Same recipe used today (usedIds)
+ * - Same starch group used today for starch pools (usedStarchGroups)
+ */
+function pickNext(
+  pool: RecipePool,
+  usedIds: Set<number>,
+  usedStarchGroups?: Set<string>,
+): Recipe | null {
+  if (pool.recipes.length === 0) return null;
+
+  for (let attempt = 0; attempt < pool.recipes.length; attempt++) {
+    const recipe = pool.recipes[pool.idx % pool.recipes.length];
+    pool.idx++;
+
+    if (usedIds.has(recipe.id)) continue;
+
+    // For starch sides: avoid same group (no 2× Kartoffel, no 2× Knödel)
+    if (usedStarchGroups) {
+      const group = getStarchGroup(recipe);
+      if (usedStarchGroups.has(group)) continue;
+    }
+
+    return recipe;
+  }
+
+  // Fallback: just pick one (all collide)
+  const recipe = pool.recipes[pool.idx % pool.recipes.length];
+  pool.idx++;
+  return recipe;
+}
+
+// ============================================================
+// Main auto-fill logic
+// ============================================================
 interface AutoFillOptions {
-  /** If true, overwrite existing recipe assignments */
   overwrite?: boolean;
 }
 
@@ -67,43 +106,67 @@ export async function autoFillRotation(
   const recipes = await storage.getRecipes();
   const allSlots = await storage.getRotationSlots(templateId);
 
-  // Group recipes by category
-  const recipesByCategory = new Map<string, Recipe[]>();
+  // ── Build recipe pools by role ──
+  const soups: Recipe[] = [];
+  const mainsMeat: Recipe[] = [];
+  const mainsVegan: Recipe[] = [];
+  const sidesStarch: Recipe[] = [];
+  const sidesVeg: Recipe[] = [];
+
   for (const r of recipes) {
-    const list = recipesByCategory.get(r.category) || [];
-    list.push(r);
-    recipesByCategory.set(r.category, list);
-  }
+    // Skip anything tagged kein-rotation
+    if (r.tags && r.tags.includes("kein-rotation")) continue;
 
-  // Create SEPARATE iterators per location so each gets different recipes
-  const locationSlugs = [...new Set(allSlots.map(s => s.locationSlug))];
-  const iteratorsByLocation = new Map<string, Map<string, { pool: Recipe[]; idx: number }>>();
-  for (const loc of locationSlugs) {
-    iteratorsByLocation.set(loc, buildIterators(recipesByCategory));
-  }
-
-  // Helper: get next recipe from location-specific iterator
-  function nextRecipe(locSlug: string, course: string, usedToday: Set<number>): number | null {
-    const locIterators = iteratorsByLocation.get(locSlug);
-    if (!locIterators) return null;
-    const iter = locIterators.get(course);
-    if (!iter || iter.pool.length === 0) return null;
-
-    // Try each recipe in pool once, avoiding same-day collisions
-    for (let attempt = 0; attempt < iter.pool.length; attempt++) {
-      const recipe = iter.pool[iter.idx % iter.pool.length];
-      iter.idx++;
-      if (!usedToday.has(recipe.id)) {
-        return recipe.id;
-      }
+    switch (r.category) {
+      case "ClearSoups":
+      case "CreamSoups":
+        soups.push(r);
+        break;
+      case "MainMeat":
+      case "MainFish":
+        mainsMeat.push(r);
+        break;
+      case "MainVegan":
+        mainsVegan.push(r);
+        break;
+      case "Sides":
+        // Only use tagged sides
+        if (r.tags && r.tags.includes("stärke")) {
+          sidesStarch.push(r);
+        } else if (r.tags && r.tags.includes("gemüse")) {
+          sidesVeg.push(r);
+        }
+        // Untagged sides are skipped (safety net)
+        break;
+      // Salads, Sauces, Desserts = not used in rotation
     }
-    // If all collide, just pick the current one
-    const recipe = iter.pool[iter.idx % iter.pool.length];
-    iter.idx++;
-    return recipe.id;
   }
 
-  // Group slots for lookup
+  console.log(`[rotation-agent] Pools: ${soups.length} Suppen, ${mainsMeat.length} Fleisch, ${mainsVegan.length} Vegan, ${sidesStarch.length} Stärke, ${sidesVeg.length} Gemüse`);
+
+  // ── Create per-location pools ──
+  const locationSlugs = Array.from(new Set(allSlots.map(s => s.locationSlug)));
+
+  type LocationPools = {
+    soup: RecipePool;
+    main1: RecipePool;
+    main2: RecipePool;
+    starch: RecipePool;
+    veg: RecipePool;
+  };
+
+  const poolsByLocation = new Map<string, LocationPools>();
+  for (const loc of locationSlugs) {
+    poolsByLocation.set(loc, {
+      soup: createPool(soups),
+      main1: createPool(mainsMeat),
+      main2: createPool(mainsVegan),
+      starch: createPool(sidesStarch),
+      veg: createPool(sidesVeg),
+    });
+  }
+
+  // ── Group slots for lookup ──
   const slotGroups = new Map<string, RotationSlot[]>();
   for (const slot of allSlots) {
     const key = `${slot.weekNr}-${slot.dayOfWeek}-${slot.locationSlug}-${slot.meal}`;
@@ -115,26 +178,33 @@ export async function autoFillRotation(
   let filled = 0;
   let skipped = 0;
 
-  const weekNrs = [...new Set(allSlots.map(s => s.weekNr))].sort();
-  const daysOfWeek = [...new Set(allSlots.map(s => s.dayOfWeek))].sort();
+  const weekNrs = Array.from(new Set(allSlots.map(s => s.weekNr))).sort();
+  const daysOfWeek = Array.from(new Set(allSlots.map(s => s.dayOfWeek))).sort();
 
   for (const weekNr of weekNrs) {
     for (const dow of daysOfWeek) {
-      // Track used recipes per day per location (to avoid lunch=dinner same dish)
-      const usedByLocation = new Map<string, Set<number>>();
-      for (const loc of locationSlugs) usedByLocation.set(loc, new Set());
-
       for (const locSlug of locationSlugs) {
-        const usedToday = usedByLocation.get(locSlug)!;
+        const pools = poolsByLocation.get(locSlug)!;
+
+        // Track per-day collisions
+        const usedIds = new Set<number>();
+        const usedStarchGroups = new Set<string>();
 
         for (const meal of ["lunch", "dinner"]) {
           const key = `${weekNr}-${dow}-${locSlug}-${meal}`;
           const groupSlots = slotGroups.get(key) || [];
 
-          for (const slot of groupSlots) {
-            // Skip dessert — always "Dessertvariation A,C,G" (handled in UI)
+          // Sort slots so we fill in order: soup → main1 → side1a → side1b → main2 → side2a → side2b → dessert
+          const slotOrder: MealSlotName[] = ["soup", "main1", "side1a", "side1b", "main2", "side2a", "side2b", "dessert"];
+          const sorted = [...groupSlots].sort((a, b) => {
+            const ai = slotOrder.indexOf(a.course as MealSlotName);
+            const bi = slotOrder.indexOf(b.course as MealSlotName);
+            return ai - bi;
+          });
+
+          for (const slot of sorted) {
+            // Dessert = always "Dessertvariation" (handled in UI, not auto-filled)
             if (slot.course === "dessert") {
-              // Clear dessert slot if overwriting
               if (overwrite && slot.recipeId !== null) {
                 await storage.updateRotationSlot(slot.id, { recipeId: null });
               }
@@ -142,20 +212,51 @@ export async function autoFillRotation(
               continue;
             }
 
+            // Skip already filled slots (unless overwrite)
             if (slot.recipeId !== null && !overwrite) {
+              usedIds.add(slot.recipeId);
+              // Track starch group for existing starch sides
+              if (slot.course === "side1a" || slot.course === "side2a") {
+                const existing = recipes.find(r => r.id === slot.recipeId);
+                if (existing) usedStarchGroups.add(getStarchGroup(existing));
+              }
               skipped++;
-              usedToday.add(slot.recipeId);
               continue;
             }
 
-            const recipeId = nextRecipe(locSlug, slot.course, usedToday);
-            if (recipeId === null) {
+            // ── Pick recipe based on slot type ──
+            let picked: Recipe | null = null;
+
+            switch (slot.course) {
+              case "soup":
+                picked = pickNext(pools.soup, usedIds);
+                break;
+              case "main1":
+                picked = pickNext(pools.main1, usedIds);
+                break;
+              case "main2":
+                picked = pickNext(pools.main2, usedIds);
+                break;
+              case "side1a":
+              case "side2a":
+                // Stärkebeilage — with starch group collision avoidance
+                picked = pickNext(pools.starch, usedIds, usedStarchGroups);
+                if (picked) usedStarchGroups.add(getStarchGroup(picked));
+                break;
+              case "side1b":
+              case "side2b":
+                // Gemüsebeilage
+                picked = pickNext(pools.veg, usedIds);
+                break;
+            }
+
+            if (picked === null) {
               skipped++;
               continue;
             }
 
-            await storage.updateRotationSlot(slot.id, { recipeId });
-            usedToday.add(recipeId);
+            await storage.updateRotationSlot(slot.id, { recipeId: picked.id });
+            usedIds.add(picked.id);
             filled++;
           }
         }

@@ -14,6 +14,7 @@ import { getISOWeek, MEAL_SLOT_LABELS, type MealSlotName } from "@shared/constan
 import { RECIPE_CATEGORIES } from "@shared/schema";
 import { cn } from "@/lib/utils";
 import LocationSwitcher from "@/components/LocationSwitcher";
+import AllergenConflictBanner from "@/components/AllergenConflictBanner";
 import { useLocationFilter } from "@/lib/location-context";
 import { DndContext, DragOverlay, useDraggable, useDroppable, type DragEndEvent, type DragStartEvent, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 
@@ -348,6 +349,9 @@ export default function MenuPlan() {
         </div>
       ) : (
         <div className="px-4 space-y-5 pt-1">
+          {selectedDateStr && (
+            <AllergenConflictBanner date={selectedDateStr} locationId={selectedLocationId ?? undefined} />
+          )}
           {MEALS.map(meal => {
             const pax = getPax(selectedDateStr, meal.key);
             return (

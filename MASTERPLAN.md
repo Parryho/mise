@@ -80,41 +80,41 @@ mise hat bereits: React 19 + Express 5 + PostgreSQL + Drizzle ORM, Multi-Locatio
 
 ---
 
-### Phase 2: KILLER FEATURES (Woche 6-10)
+### Phase 2: KILLER FEATURES (Woche 6-10) ✅ ERLEDIGT
 > Differenzierende Features, die kein Open-Source-Tool hat
 
 #### 2A: Allergen-Management (EU-Verordnung 1169/2011)
-| # | Task | Aufwand |
-|---|------|---------|
-| 2A.1 | **Allergen-Übersicht pro Tag** — Tagesansicht mit allen 14 EU-Allergenen pro Gericht | 6h |
-| 2A.2 | **Buffet-Allergenkarten** — Druckbare Karten für Buffet-Aufsteller (A4/A5) | 4h |
-| 2A.3 | **Allergen-Konflikt-Warnung** — beim Menüplan-Erstellen: "Achtung: 5 von 7 Gerichten enthalten Gluten" | 4h |
-| 2A.4 | **Gast-Allergen-Profile** — Gruppenreservierungen mit spez. Diätanforderungen | 6h |
+| # | Task | Aufwand | Status |
+|---|------|---------|--------|
+| 2A.1 | **Allergen-Übersicht pro Tag** — Tagesansicht mit allen 14 EU-Allergenen pro Gericht | 6h | ✅ Done |
+| 2A.2 | **Buffet-Allergenkarten** — Druckbare Karten für Buffet-Aufsteller (A4/A5) | 4h | ✅ Done |
+| 2A.3 | **Allergen-Konflikt-Warnung** — beim Menüplan-Erstellen: "Achtung: 5 von 7 Gerichten enthalten Gluten" | 4h | ✅ Done |
+| 2A.4 | **Gast-Allergen-Profile** — Gruppenreservierungen mit spez. Diätanforderungen | 6h | ✅ Done |
 
 #### 2B: Analytics Dashboard
-| # | Task | Aufwand |
-|---|------|---------|
-| 2B.1 | **Food-Cost-Analyse** — Kosten pro Gericht, pro Woche, pro Monat (basierend auf masterIngredients) | 10h |
-| 2B.2 | **PAX-Trends** — Gästezahlen-Verlauf als Chart (Recharts), Wochentag-Muster, Saison-Vergleich | 6h |
-| 2B.3 | **HACCP-Compliance-Report** — Lückenanalyse, Temperatur-Trends pro Kühlschrank | 6h |
-| 2B.4 | **Beliebteste Gerichte** — Häufigkeitsanalyse aus Rotation + Wochenplan | 4h |
+| # | Task | Aufwand | Status |
+|---|------|---------|--------|
+| 2B.1 | **Food-Cost-Analyse** — Kosten pro Gericht, pro Woche, pro Monat (basierend auf masterIngredients) | 10h | ✅ Done |
+| 2B.2 | **PAX-Trends** — Gästezahlen-Verlauf als Chart (Recharts), Wochentag-Muster, Saison-Vergleich | 6h | ✅ Done |
+| 2B.3 | **HACCP-Compliance-Report** — Lückenanalyse, Temperatur-Trends pro Kühlschrank | 6h | ✅ Done |
+| 2B.4 | **Beliebteste Gerichte** — Häufigkeitsanalyse aus Rotation + Wochenplan | 4h | ✅ Done |
 
 #### 2C: Produktion & Einkauf
-| # | Task | Aufwand |
-|---|------|---------|
-| 2C.1 | **Sub-Rezepte** — Rezept als Zutat in anderem Rezept (z.B. "Grundbrühe" in Suppen) → Basis für genaue Kalkulation | 8h |
-| 2C.2 | **Produktionsliste V2** — Mengen aus PAX × Portionen, sortiert nach Vorbereitungsreihenfolge | 8h |
-| 2C.3 | **Einkaufsliste V2** — Zutatenkonsoldierung über Tage/Locations, Lieferanten-Zuordnung | 8h |
-| 2C.4 | **Lieferanten-Verwaltung** — CRUD + Zuordnung zu masterIngredients | 6h |
+| # | Task | Aufwand | Status |
+|---|------|---------|--------|
+| 2C.1 | **Sub-Rezepte** — Rezept als Zutat in anderem Rezept (z.B. "Grundbrühe" in Suppen) → Basis für genaue Kalkulation | 8h | ✅ Done |
+| 2C.2 | **Produktionsliste V2** — Mengen aus PAX × Portionen, sortiert nach Vorbereitungsreihenfolge | 8h | ✅ Done |
+| 2C.3 | **Einkaufsliste V2** — Zutatenkonsoldierung über Tage/Locations, Lieferanten-Zuordnung | 8h | ✅ Done |
+| 2C.4 | **Lieferanten-Verwaltung** — CRUD + Zuordnung zu masterIngredients | 6h | ✅ Done |
 
 #### 2D: Digitale Speisekarte
-| # | Task | Aufwand |
-|---|------|---------|
-| 2D.1 | **Gast-Speisekarte** — Öffentliche URL pro Location/Tag mit Allergenen + Bildern | 8h |
-| 2D.2 | **Digital Signage** — Vollbild-Ansicht für Lobby-Bildschirm (Auto-Refresh) | 4h |
-| 2D.3 | **QR-Code Generator** — Pro Tag/Location einen QR-Code für die Speisekarte | 2h |
+| # | Task | Aufwand | Status |
+|---|------|---------|--------|
+| 2D.1 | **Gast-Speisekarte** — Öffentliche URL pro Location/Tag mit Allergenen + Bildern | 8h | ✅ Done |
+| 2D.2 | **Digital Signage** — Vollbild-Ansicht für Lobby-Bildschirm (Auto-Refresh) | 4h | ✅ Done |
+| 2D.3 | **QR-Code Generator** — Pro Tag/Location einen QR-Code für die Speisekarte | 2h | ✅ Done |
 
-**Gesamt Phase 2: ~82h**
+**Gesamt Phase 2: ~82h** ✅ Abgeschlossen am 07.02.2026
 
 ---
 
@@ -162,7 +162,7 @@ mise hat bereits: React 19 + Express 5 + PostgreSQL + Drizzle ORM, Multi-Locatio
 |-------|-------|---------|----------|
 | **0** | Security + Foundation Fix | ~31h | Woche 1-2 ✅ |
 | **1** | Core Polish | ~65h | Woche 3-5 ✅ |
-| **2** | Killer Features | ~90h | Woche 6-10 |
+| **2** | Killer Features | ~82h | Woche 6-10 ✅ |
 | **3** | AI-Powered | ~56h | Woche 11-14 |
 | **4** | Professional Polish | ~72h | Woche 15-18 |
 | **TOTAL** | | **~314h** | **~18 Wochen** |
@@ -181,9 +181,9 @@ mise hat bereits: React 19 + Express 5 + PostgreSQL + Drizzle ORM, Multi-Locatio
 | Dienstplan | ✓ | ✗ | ✗ | ✗ | ✗ |
 | Catering-Events | ✓ | ✗ | ✓ | ✗ | ✗ |
 | AI Menu Planning | ✓ (geplant) | ✗ | ✗ | ✗ | ✗ |
-| Food-Cost-Analyse | Phase 2 | ✓ | ✓✓ | ✓ | ✗ |
-| Allergen-Karten | Phase 2 | ✓ | ✓ | ✗ | ✗ |
-| Digital Signage | Phase 2 | ✗ | ✗ | ✗ | ✗ |
+| Food-Cost-Analyse | ✓ | ✓ | ✓✓ | ✓ | ✗ |
+| Allergen-Karten | ✓ | ✓ | ✓ | ✗ | ✗ |
+| Digital Signage | ✓ | ✗ | ✗ | ✗ | ✗ |
 | Offline/PWA | Phase 4 | ✗ | ✗ | ✗ | ✗ |
 | Open Source | ✓✓ | ✗ | ✗ | ✗ | ✓ |
 | Preis/Monat | €0 (self-hosted) | €150-500 | €500+ | €15/User | €0 |
@@ -220,4 +220,4 @@ Folgende Skills sind unter `.agents/skills/` installiert und sollten bei der Ums
 
 ## Nächster Schritt
 
-**Phase 0 + Phase 1 abgeschlossen.** Nächster Schritt: Phase 2 (Killer Features) — Allergen-Management, Analytics Dashboard, Produktion & Einkauf V2, Digitale Speisekarte.
+**Phase 0 + Phase 1 + Phase 2 abgeschlossen.** Nächster Schritt: Phase 3 (AI-Powered) — PAX-Forecasting, Smart Rotation, LLM Rezept-Import, HACCP Anomalie-Erkennung.

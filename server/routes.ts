@@ -8,10 +8,12 @@ import {
   registerUserSchema, loginUserSchema, insertTaskSchema, updateTaskStatusSchema,
   insertLocationSchema, insertRotationTemplateSchema, insertRotationSlotSchema,
   insertMasterIngredientSchema, insertCateringMenuItemSchema, insertMenuPlanTemperatureSchema,
+  insertSupplierSchema, insertSubRecipeLinkSchema, insertGuestAllergenProfileSchema,
   updateUserSchema, updateRecipeSchema, updateFridgeSchema, updateGuestCountSchema,
   updateCateringEventSchema, updateStaffSchema, updateShiftTypeSchema, updateScheduleEntrySchema,
   updateMenuPlanSchema, updateRotationTemplateSchema, updateRotationSlotSchema,
-  updateMasterIngredientSchema, updateSettingSchema, updateTaskTemplateSchema
+  updateMasterIngredientSchema, updateSettingSchema, updateTaskTemplateSchema,
+  updateSupplierSchema, updateGuestAllergenProfileSchema
 } from "@shared/schema";
 import { autoCategorize } from "@shared/categorizer";
 import { parseFelixText } from "./felix-parser";
@@ -21,6 +23,11 @@ import { autoFillRotation } from "./rotation-agent";
 import { getProductionList } from "./production";
 import { getShoppingList } from "./shopping";
 import { getDishCost, getWeeklyCostReport } from "./costs";
+import { resolveRecipeIngredients, wouldCreateCycle } from "./sub-recipes";
+import { getDailyAllergenMatrix, getWeeklyAllergenMatrix } from "./allergens";
+import { getPaxTrends, getHaccpCompliance, getPopularDishes } from "./analytics";
+import { getBuffetCards, getBuffetCardsForDate } from "./buffet-cards";
+import { getPublicMenu } from "./public-menu";
 import multer from "multer";
 import { createRequire } from "module";
 const _require = createRequire(typeof __filename !== "undefined" ? __filename : import.meta.url);
@@ -2426,6 +2433,247 @@ export async function registerRoutes(
       res.status(201).json(temp);
     } catch (error: any) {
       res.status(400).json({ error: error.message });
+    }
+  });
+
+  // ==========================================
+  // Phase 2: Suppliers CRUD
+  // ==========================================
+  app.get("/api/suppliers", requireAuth, async (_req: Request, res: Response) => {
+    const list = await storage.getSuppliers();
+    res.json(list);
+  });
+
+  app.get("/api/suppliers/:id", requireAuth, async (req: Request, res: Response) => {
+    const s = await storage.getSupplier(parseInt(getParam(req.params.id)));
+    if (!s) return res.status(404).json({ error: "Lieferant nicht gefunden" });
+    res.json(s);
+  });
+
+  app.post("/api/suppliers", requireRole("admin", "souschef"), async (req: Request, res: Response) => {
+    try {
+      const data = insertSupplierSchema.parse(req.body);
+      const created = await storage.createSupplier(data);
+      audit(req, "create", "suppliers", String(created.id), null, created);
+      res.status(201).json(created);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.put("/api/suppliers/:id", requireRole("admin", "souschef"), async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(getParam(req.params.id));
+      const before = await storage.getSupplier(id);
+      const data = updateSupplierSchema.parse(req.body);
+      const updated = await storage.updateSupplier(id, data);
+      if (!updated) return res.status(404).json({ error: "Lieferant nicht gefunden" });
+      audit(req, "update", "suppliers", String(id), before, updated);
+      res.json(updated);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/suppliers/:id", requireRole("admin"), async (req: Request, res: Response) => {
+    const id = parseInt(getParam(req.params.id));
+    const before = await storage.getSupplier(id);
+    await storage.deleteSupplier(id);
+    audit(req, "delete", "suppliers", String(id), before, null);
+    res.status(204).end();
+  });
+
+  // ==========================================
+  // Phase 2: Sub-Recipe Links
+  // ==========================================
+  app.get("/api/recipes/:id/sub-recipes", requireAuth, async (req: Request, res: Response) => {
+    const recipeId = parseInt(getParam(req.params.id));
+    const links = await storage.getSubRecipeLinks(recipeId);
+    // Enrich with recipe names
+    const enriched = await Promise.all(links.map(async (link) => {
+      const child = await storage.getRecipe(link.childRecipeId);
+      return { ...link, childRecipeName: child?.name || `#${link.childRecipeId}` };
+    }));
+    res.json(enriched);
+  });
+
+  app.post("/api/recipes/:id/sub-recipes", requireRole("admin", "souschef", "koch"), async (req: Request, res: Response) => {
+    try {
+      const parentId = parseInt(getParam(req.params.id));
+      const { childRecipeId, portionMultiplier } = insertSubRecipeLinkSchema.parse({
+        ...req.body,
+        parentRecipeId: parentId,
+      });
+      // Cycle detection
+      if (await wouldCreateCycle(parentId, childRecipeId)) {
+        return res.status(400).json({ error: "Zirkuläre Referenz erkannt — Sub-Rezept kann nicht hinzugefügt werden." });
+      }
+      const created = await storage.createSubRecipeLink({ parentRecipeId: parentId, childRecipeId, portionMultiplier: portionMultiplier ?? 1 });
+      res.status(201).json(created);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/sub-recipe-links/:id", requireRole("admin", "souschef", "koch"), async (req: Request, res: Response) => {
+    await storage.deleteSubRecipeLink(parseInt(getParam(req.params.id)));
+    res.status(204).end();
+  });
+
+  app.get("/api/recipes/:id/resolved-ingredients", requireAuth, async (req: Request, res: Response) => {
+    const recipeId = parseInt(getParam(req.params.id));
+    const resolved = await resolveRecipeIngredients(recipeId);
+    res.json(resolved);
+  });
+
+  // ==========================================
+  // Phase 2: Guest Allergen Profiles
+  // ==========================================
+  app.get("/api/guest-profiles", requireAuth, async (req: Request, res: Response) => {
+    const locationId = req.query.locationId ? parseInt(String(req.query.locationId)) : undefined;
+    const profiles = await storage.getGuestAllergenProfiles(locationId);
+    res.json(profiles);
+  });
+
+  app.get("/api/guest-profiles/:id", requireAuth, async (req: Request, res: Response) => {
+    const p = await storage.getGuestAllergenProfile(parseInt(getParam(req.params.id)));
+    if (!p) return res.status(404).json({ error: "Profil nicht gefunden" });
+    res.json(p);
+  });
+
+  app.post("/api/guest-profiles", requireRole("admin", "souschef", "koch"), async (req: Request, res: Response) => {
+    try {
+      const data = insertGuestAllergenProfileSchema.parse(req.body);
+      const created = await storage.createGuestAllergenProfile(data);
+      audit(req, "create", "guest_allergen_profiles", String(created.id), null, created);
+      res.status(201).json(created);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.put("/api/guest-profiles/:id", requireRole("admin", "souschef", "koch"), async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(getParam(req.params.id));
+      const before = await storage.getGuestAllergenProfile(id);
+      const data = updateGuestAllergenProfileSchema.parse(req.body);
+      const updated = await storage.updateGuestAllergenProfile(id, data);
+      if (!updated) return res.status(404).json({ error: "Profil nicht gefunden" });
+      audit(req, "update", "guest_allergen_profiles", String(id), before, updated);
+      res.json(updated);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/guest-profiles/:id", requireRole("admin", "souschef"), async (req: Request, res: Response) => {
+    const id = parseInt(getParam(req.params.id));
+    const before = await storage.getGuestAllergenProfile(id);
+    await storage.deleteGuestAllergenProfile(id);
+    audit(req, "delete", "guest_allergen_profiles", String(id), before, null);
+    res.status(204).end();
+  });
+
+  // ==========================================
+  // Phase 2: Allergen Analysis (Batch 2 + 4)
+  // ==========================================
+  app.get("/api/allergens/daily", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const date = String(req.query.date || new Date().toISOString().split('T')[0]);
+      const locationId = req.query.locationId ? parseInt(String(req.query.locationId)) : undefined;
+      const result = await getDailyAllergenMatrix(date, locationId);
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/allergens/weekly", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const startDate = String(req.query.startDate);
+      const endDate = String(req.query.endDate);
+      if (!startDate || !endDate) return res.status(400).json({ error: "startDate and endDate required" });
+      const locationId = req.query.locationId ? parseInt(String(req.query.locationId)) : undefined;
+      const result = await getWeeklyAllergenMatrix(startDate, endDate, locationId);
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/buffet-cards", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const date = String(req.query.date || new Date().toISOString().split('T')[0]);
+      const locationId = req.query.locationId ? parseInt(String(req.query.locationId)) : undefined;
+      const cards = await getBuffetCardsForDate(date, locationId);
+      res.json(cards);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ==========================================
+  // Phase 2: Analytics (Batch 2)
+  // ==========================================
+  app.get("/api/analytics/pax-trends", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const startDate = String(req.query.startDate);
+      const endDate = String(req.query.endDate);
+      if (!startDate || !endDate) return res.status(400).json({ error: "startDate and endDate required" });
+      const locationId = req.query.locationId ? parseInt(String(req.query.locationId)) : undefined;
+      const result = await getPaxTrends(startDate, endDate, locationId);
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/analytics/haccp-compliance", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const startDate = String(req.query.startDate);
+      const endDate = String(req.query.endDate);
+      if (!startDate || !endDate) return res.status(400).json({ error: "startDate and endDate required" });
+      const result = await getHaccpCompliance(startDate, endDate);
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/analytics/popular-dishes", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const limit = req.query.limit ? parseInt(String(req.query.limit)) : 20;
+      const result = await getPopularDishes(limit);
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/analytics/food-cost", requireRole("admin", "souschef"), async (req: Request, res: Response) => {
+    try {
+      const startDate = String(req.query.startDate);
+      const endDate = String(req.query.endDate);
+      if (!startDate || !endDate) return res.status(400).json({ error: "startDate and endDate required" });
+      const result = await getWeeklyCostReport(startDate, endDate);
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ==========================================
+  // Phase 2: Public Menu (Batch 5) — NO AUTH
+  // ==========================================
+  app.get("/api/public/menu/:locationSlug/:date?", async (req: Request, res: Response) => {
+    try {
+      const locationSlug = getParam(req.params.locationSlug);
+      const date = req.params.date ? getParam(req.params.date) : undefined;
+      const menu = await getPublicMenu(locationSlug, date);
+      if (!menu) return res.status(404).json({ error: "Standort nicht gefunden" });
+      res.json(menu);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
     }
   });
 

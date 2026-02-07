@@ -28,6 +28,21 @@ import Catering from "@/pages/Catering";
 import MasterIngredients from "@/pages/MasterIngredients";
 import NotFound from "@/pages/not-found";
 
+// Phase 2: New pages
+import Suppliers from "@/pages/Suppliers";
+import GuestProfiles from "@/pages/GuestProfiles";
+import AllergenOverview from "@/pages/AllergenOverview";
+import BuffetCards from "@/pages/BuffetCards";
+import QRGenerator from "@/pages/QRGenerator";
+import PaxTrends from "@/pages/analytics/PaxTrends";
+import HaccpCompliance from "@/pages/analytics/HaccpCompliance";
+import PopularDishes from "@/pages/analytics/PopularDishes";
+import FoodCost from "@/pages/analytics/FoodCost";
+
+// Phase 2: Public pages (no auth)
+import GuestMenu from "@/pages/public/GuestMenu";
+import DigitalSignage from "@/pages/public/DigitalSignage";
+
 function AuthenticatedRoutes() {
   return (
     <Switch>
@@ -58,8 +73,35 @@ function AuthenticatedRoutes() {
       <Route path="/reports">
         <Layout><Reports /></Layout>
       </Route>
+      <Route path="/reports/pax-trends">
+        <Layout><PaxTrends /></Layout>
+      </Route>
+      <Route path="/reports/haccp-compliance">
+        <Layout><HaccpCompliance /></Layout>
+      </Route>
+      <Route path="/reports/popular-dishes">
+        <Layout><PopularDishes /></Layout>
+      </Route>
+      <Route path="/reports/food-cost">
+        <Layout><FoodCost /></Layout>
+      </Route>
+      <Route path="/reports/allergens">
+        <Layout><AllergenOverview /></Layout>
+      </Route>
+      <Route path="/reports/buffet-cards">
+        <Layout><BuffetCards /></Layout>
+      </Route>
+      <Route path="/reports/qr-codes">
+        <Layout><QRGenerator /></Layout>
+      </Route>
       <Route path="/settings">
         <Layout><Settings /></Layout>
+      </Route>
+      <Route path="/settings/suppliers">
+        <Layout><Suppliers /></Layout>
+      </Route>
+      <Route path="/settings/guest-profiles">
+        <Layout><GuestProfiles /></Layout>
       </Route>
       <Route path="/rotation/print">
         <Layout><RotationPrint /></Layout>
@@ -103,20 +145,31 @@ function Router() {
     );
   }
 
-  if (!user) {
-    return (
-      <Switch>
-        <Route path="/login">
-          <Login />
-        </Route>
+  // Public routes (no auth required)
+  return (
+    <Switch>
+      <Route path="/speisekarte/:locationSlug/:date?">
+        <GuestMenu />
+      </Route>
+      <Route path="/signage/:locationSlug">
+        <DigitalSignage />
+      </Route>
+      {user ? (
         <Route>
-          <Redirect to="/login" />
+          <AuthenticatedRoutes />
         </Route>
-      </Switch>
-    );
-  }
-
-  return <AuthenticatedRoutes />;
+      ) : (
+        <>
+          <Route path="/login">
+            <Login />
+          </Route>
+          <Route>
+            <Redirect to="/login" />
+          </Route>
+        </>
+      )}
+    </Switch>
+  );
 }
 
 function App() {

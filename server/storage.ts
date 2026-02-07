@@ -20,10 +20,14 @@ import {
   type RotationTemplate, type InsertRotationTemplate,
   type RotationSlot, type InsertRotationSlot,
   type AuditLog,
+  type Supplier, type InsertSupplier,
+  type SubRecipeLink, type InsertSubRecipeLink,
+  type GuestAllergenProfile, type InsertGuestAllergenProfile,
   users, recipes, ingredients, masterIngredients, fridges, haccpLogs,
   guestCounts, cateringEvents, cateringMenuItems, staff, shiftTypes,
   scheduleEntries, menuPlans, menuPlanTemperatures, appSettings, tasks,
-  taskTemplates, locations, rotationTemplates, rotationSlots, auditLogs
+  taskTemplates, locations, rotationTemplates, rotationSlots, auditLogs,
+  suppliers, subRecipeLinks, guestAllergenProfiles
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, gte, lte, sql } from "drizzle-orm";
@@ -467,6 +471,66 @@ export class DatabaseStorage {
   }
   async getAuditLogs(limit = 100, offset = 0): Promise<AuditLog[]> {
     return db.select().from(auditLogs).orderBy(desc(auditLogs.timestamp)).limit(limit).offset(offset);
+  }
+
+  // === Suppliers ===
+  async getSuppliers(): Promise<Supplier[]> {
+    return db.select().from(suppliers).orderBy(suppliers.name);
+  }
+  async getSupplier(id: number): Promise<Supplier | undefined> {
+    const [s] = await db.select().from(suppliers).where(eq(suppliers.id, id));
+    return s;
+  }
+  async createSupplier(s: InsertSupplier): Promise<Supplier> {
+    const [created] = await db.insert(suppliers).values(s).returning();
+    return created;
+  }
+  async updateSupplier(id: number, s: Partial<InsertSupplier>): Promise<Supplier | undefined> {
+    const [updated] = await db.update(suppliers).set(s).where(eq(suppliers.id, id)).returning();
+    return updated;
+  }
+  async deleteSupplier(id: number): Promise<void> {
+    await db.delete(suppliers).where(eq(suppliers.id, id));
+  }
+
+  // === Sub-Recipe Links ===
+  async getSubRecipeLinks(parentRecipeId: number): Promise<SubRecipeLink[]> {
+    return db.select().from(subRecipeLinks).where(eq(subRecipeLinks.parentRecipeId, parentRecipeId));
+  }
+  async createSubRecipeLink(link: InsertSubRecipeLink): Promise<SubRecipeLink> {
+    const [created] = await db.insert(subRecipeLinks).values(link).returning();
+    return created;
+  }
+  async deleteSubRecipeLink(id: number): Promise<void> {
+    await db.delete(subRecipeLinks).where(eq(subRecipeLinks.id, id));
+  }
+
+  // === Guest Allergen Profiles ===
+  async getGuestAllergenProfiles(locationId?: number): Promise<GuestAllergenProfile[]> {
+    if (locationId) {
+      return db.select().from(guestAllergenProfiles).where(eq(guestAllergenProfiles.locationId, locationId)).orderBy(desc(guestAllergenProfiles.date));
+    }
+    return db.select().from(guestAllergenProfiles).orderBy(desc(guestAllergenProfiles.date));
+  }
+  async getGuestAllergenProfile(id: number): Promise<GuestAllergenProfile | undefined> {
+    const [p] = await db.select().from(guestAllergenProfiles).where(eq(guestAllergenProfiles.id, id));
+    return p;
+  }
+  async getGuestAllergenProfilesByDateRange(startDate: string, endDate: string, locationId?: number): Promise<GuestAllergenProfile[]> {
+    const conditions = [lte(guestAllergenProfiles.date, endDate), gte(sql`COALESCE(${guestAllergenProfiles.dateEnd}, ${guestAllergenProfiles.date})`, startDate)];
+    if (locationId) conditions.push(eq(guestAllergenProfiles.locationId, locationId));
+    return db.select().from(guestAllergenProfiles).where(and(...conditions));
+  }
+  async createGuestAllergenProfile(p: InsertGuestAllergenProfile): Promise<GuestAllergenProfile> {
+    const [created] = await db.insert(guestAllergenProfiles).values(p).returning();
+    return created;
+  }
+  async updateGuestAllergenProfile(id: number, p: Partial<InsertGuestAllergenProfile>): Promise<GuestAllergenProfile | undefined> {
+    const [updated] = await db.update(guestAllergenProfiles).set(p).where(eq(guestAllergenProfiles.id, id)).returning();
+    return updated;
+  }
+  async deleteGuestAllergenProfile(id: number): Promise<void> {
+    await db.delete(guestAllergenProfiles).where(eq(guestAllergenProfiles.id, id));
   }
 }
 

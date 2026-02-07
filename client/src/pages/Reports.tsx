@@ -1,84 +1,149 @@
-import { useApp } from "@/lib/store";
-import { useTranslation } from "@/lib/i18n";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, FileText } from "lucide-react";
+import { Link } from "wouter";
+import {
+  TrendingUp, Thermometer, Star, DollarSign,
+  AlertTriangle, CreditCard, QrCode, FileText, Download
+} from "lucide-react";
+import { useApp } from "@/lib/store";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import jsPDF from "jspdf";
 import { format } from "date-fns";
-import { useToast } from "@/hooks/use-toast";
+
+const reportCards = [
+  {
+    title: "Food-Cost-Analyse",
+    description: "Kosten pro Gericht, Woche & Monat mit Kategorie-Aufschlüsselung",
+    icon: DollarSign,
+    href: "/reports/food-cost",
+    color: "text-green-600",
+    bgColor: "bg-green-50",
+  },
+  {
+    title: "PAX-Trends",
+    description: "Gästezahlen-Charts, Wochentag-Muster und Saison-Vergleich",
+    icon: TrendingUp,
+    href: "/reports/pax-trends",
+    color: "text-blue-600",
+    bgColor: "bg-blue-50",
+  },
+  {
+    title: "HACCP-Compliance",
+    description: "Lückenanalyse, Temperatur-Trends und Compliance-Prozent",
+    icon: Thermometer,
+    href: "/reports/haccp-compliance",
+    color: "text-red-600",
+    bgColor: "bg-red-50",
+  },
+  {
+    title: "Beliebteste Gerichte",
+    description: "Häufigkeitsranking aus Menüplänen und Rotation",
+    icon: Star,
+    href: "/reports/popular-dishes",
+    color: "text-amber-600",
+    bgColor: "bg-amber-50",
+  },
+  {
+    title: "Allergen-Übersicht",
+    description: "Tages-Matrix aller Gerichte mit Allergenen und Gast-Warnungen",
+    icon: AlertTriangle,
+    href: "/reports/allergens",
+    color: "text-orange-600",
+    bgColor: "bg-orange-50",
+  },
+  {
+    title: "Buffet-Allergenkarten",
+    description: "Druckbare Karten pro Gericht mit Allergen-Kennzeichnung",
+    icon: CreditCard,
+    href: "/reports/buffet-cards",
+    color: "text-purple-600",
+    bgColor: "bg-purple-50",
+  },
+  {
+    title: "QR-Code Generator",
+    description: "QR-Codes für digitale Speisekarten pro Standort",
+    icon: QrCode,
+    href: "/reports/qr-codes",
+    color: "text-teal-600",
+    bgColor: "bg-teal-50",
+  },
+];
 
 export default function Reports() {
   const { logs, fridges } = useApp();
-  const { t } = useTranslation();
   const { toast } = useToast();
 
-  const handleExportPDF = () => {
+  const handleExportHaccpPDF = () => {
     const doc = new jsPDF();
-    
+
     doc.setFont("helvetica", "bold");
     doc.setFontSize(20);
     doc.text("HACCP Temperature Report", 14, 20);
-    
+
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
     doc.text(`Generated: ${format(new Date(), "PPpp")}`, 14, 30);
-    
+
     let y = 40;
-    
+
     fridges.forEach(fridge => {
       doc.setFont("helvetica", "bold");
       doc.text(`Unit: ${fridge.name}`, 14, y);
       y += 6;
-      
+
       const fridgeLogs = logs.filter(l => l.fridgeId === fridge.id).slice(0, 10);
-      
+
       fridgeLogs.forEach(log => {
         doc.setFont("helvetica", "normal");
         const line = `${format(new Date(log.timestamp), "yyyy-MM-dd HH:mm")} | ${log.temperature}°C | ${log.user} | ${log.status}`;
         doc.text(line, 20, y);
         y += 5;
       });
-      
+
       y += 10;
     });
 
     doc.save("haccp-report.pdf");
-    toast({ title: t("exportComplete"), description: "HACCP Report downloaded." });
+    toast({ title: "Export fertig", description: "HACCP Report wurde heruntergeladen." });
   };
 
   return (
     <div className="p-4 space-y-6">
-      <h1 className="text-2xl font-heading font-bold">{t("reports")}</h1>
-      
-      <div className="grid gap-4">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Weekly HACCP Log</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <p className="text-sm text-muted-foreground">Export all temperature records for the past 7 days for audit compliance.</p>
-            <div className="flex gap-2">
-              <Button onClick={handleExportPDF} className="flex-1">
-                <FileText className="mr-2 h-4 w-4" /> {t("exportPDF")}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+      <h1 className="text-2xl font-heading font-bold">Reports & Analysen</h1>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Allergen Matrix</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <p className="text-sm text-muted-foreground">Download current menu allergen overview.</p>
-             <div className="flex gap-2">
-              <Button variant="secondary" className="flex-1" onClick={() => toast({ title: t("comingSoon"), description: "This report is not yet implemented in mock." })}>
-                <Download className="mr-2 h-4 w-4" /> CSV
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
+        {reportCards.map((card) => (
+          <Link key={card.href} href={card.href}>
+            <Card className="cursor-pointer hover:shadow-md transition-shadow h-full">
+              <CardContent className="flex items-start gap-3 p-4">
+                <div className={`p-2 rounded-lg ${card.bgColor} shrink-0`}>
+                  <card.icon className={`h-5 w-5 ${card.color}`} />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-semibold text-sm">{card.title}</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">{card.description}</p>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+        ))}
       </div>
+
+      {/* Quick export section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            Schnell-Export
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Button onClick={handleExportHaccpPDF} variant="outline" className="w-full">
+            <Download className="mr-2 h-4 w-4" />
+            HACCP-Report als PDF
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }

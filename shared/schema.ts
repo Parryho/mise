@@ -95,6 +95,7 @@ export const masterIngredients = pgTable("master_ingredients", {
   pricePerUnit: doublePrecision("price_per_unit").notNull().default(0),
   priceUnit: text("price_unit").notNull().default("kg"),
   supplier: text("supplier"),
+  supplierId: integer("supplier_id").references(() => suppliers.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -272,6 +273,45 @@ export const taskTemplates = pgTable("task_templates", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// === NEW Phase 2: Suppliers ===
+export const suppliers = pgTable("suppliers", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  contactPerson: text("contact_person"),
+  phone: text("phone"),
+  email: text("email"),
+  deliveryDays: text("delivery_days").array().notNull().default([]),
+  orderDeadline: text("order_deadline"),
+  minOrder: text("min_order"),
+  notes: text("notes"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// === NEW Phase 2: Sub-recipe links (recipe-in-recipe) ===
+export const subRecipeLinks = pgTable("sub_recipe_links", {
+  id: serial("id").primaryKey(),
+  parentRecipeId: integer("parent_recipe_id").references(() => recipes.id, { onDelete: "cascade" }).notNull(),
+  childRecipeId: integer("child_recipe_id").references(() => recipes.id, { onDelete: "cascade" }).notNull(),
+  portionMultiplier: doublePrecision("portion_multiplier").notNull().default(1),
+}, (table) => [
+  index("idx_sub_recipe_links_parent").on(table.parentRecipeId),
+]);
+
+// === NEW Phase 2: Guest allergen profiles ===
+export const guestAllergenProfiles = pgTable("guest_allergen_profiles", {
+  id: serial("id").primaryKey(),
+  groupName: text("group_name").notNull(),
+  date: text("date").notNull(),
+  dateEnd: text("date_end"),
+  personCount: integer("person_count").notNull().default(1),
+  allergens: text("allergens").array().notNull().default([]),
+  dietaryNotes: text("dietary_notes"),
+  locationId: integer("location_id").references(() => locations.id, { onDelete: "set null" }),
+  contactPerson: text("contact_person"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // Audit Logs
 export const auditLogs = pgTable("audit_logs", {
   id: serial("id").primaryKey(),
@@ -326,6 +366,11 @@ export const insertTaskSchema = createInsertSchema(tasks).omit({ id: true, creat
 export const updateTaskStatusSchema = z.object({ status: z.enum(["open", "done"]) });
 export const insertTaskTemplateSchema = createInsertSchema(taskTemplates).omit({ id: true, createdAt: true });
 
+// Phase 2: New insert schemas
+export const insertSupplierSchema = createInsertSchema(suppliers).omit({ id: true, createdAt: true });
+export const insertSubRecipeLinkSchema = createInsertSchema(subRecipeLinks).omit({ id: true });
+export const insertGuestAllergenProfileSchema = createInsertSchema(guestAllergenProfiles).omit({ id: true, createdAt: true });
+
 // Update schemas (partial versions for PUT endpoints)
 export const updateUserSchema = z.object({
   role: z.string().optional(),
@@ -345,6 +390,8 @@ export const updateRotationTemplateSchema = insertRotationTemplateSchema.partial
 export const updateRotationSlotSchema = z.object({ recipeId: z.number().nullable() });
 export const updateMasterIngredientSchema = insertMasterIngredientSchema.partial();
 export const updateSettingSchema = z.object({ value: z.string() });
+export const updateSupplierSchema = insertSupplierSchema.partial();
+export const updateGuestAllergenProfileSchema = insertGuestAllergenProfileSchema.partial();
 export const updateTaskTemplateSchema = z.object({
   name: z.string().optional(),
   items: z.array(z.any()).optional(),
@@ -397,3 +444,11 @@ export type InsertTask = z.infer<typeof insertTaskSchema>;
 export type TaskTemplate = typeof taskTemplates.$inferSelect;
 export type InsertTaskTemplate = z.infer<typeof insertTaskTemplateSchema>;
 export type AuditLog = typeof auditLogs.$inferSelect;
+
+// Phase 2 types
+export type Supplier = typeof suppliers.$inferSelect;
+export type InsertSupplier = z.infer<typeof insertSupplierSchema>;
+export type SubRecipeLink = typeof subRecipeLinks.$inferSelect;
+export type InsertSubRecipeLink = z.infer<typeof insertSubRecipeLinkSchema>;
+export type GuestAllergenProfile = typeof guestAllergenProfiles.$inferSelect;
+export type InsertGuestAllergenProfile = z.infer<typeof insertGuestAllergenProfileSchema>;

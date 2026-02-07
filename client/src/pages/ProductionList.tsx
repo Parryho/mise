@@ -3,7 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Printer, ChevronDown, ChevronUp } from "lucide-react";
+import { Loader2, Printer, ChevronDown, ChevronUp, Clock, DollarSign } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+
+function formatEuro(val: number): string {
+  return val.toLocaleString("de-AT", { style: "currency", currency: "EUR" });
+}
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface ProductionIngredient {
@@ -13,13 +18,16 @@ interface ProductionIngredient {
   unit: string;
   preparationNote: string;
   cost: number;
+  fromSubRecipe?: string;
 }
 
 interface ProductionDish {
   slot: string;
   dishName: string;
   dishId: number;
+  prepTime?: number;
   ingredients: ProductionIngredient[];
+  totalCost?: number;
 }
 
 interface ProductionEntry {
@@ -28,6 +36,7 @@ interface ProductionEntry {
   locationSlug: string;
   pax: number;
   dishes: ProductionDish[];
+  mealTotalCost?: number;
 }
 
 const MEAL_LABELS: Record<string, string> = { lunch: "Mittag", dinner: "Abend", breakfast: "Frühstück" };
@@ -126,8 +135,11 @@ export default function ProductionList() {
               <CardHeader className="py-2 px-3">
                 <CardTitle className="text-sm font-medium flex items-center justify-between">
                   <span>{formatDate(entry.date)} - {MEAL_LABELS[entry.meal] || entry.meal}</span>
-                  <span className="text-xs font-normal text-muted-foreground">
+                  <span className="text-xs font-normal text-muted-foreground flex items-center gap-2">
                     {LOC_LABELS[entry.locationSlug] || entry.locationSlug} | {entry.pax} PAX
+                    {entry.mealTotalCost != null && entry.mealTotalCost > 0 && (
+                      <Badge variant="outline" className="text-[10px] py-0">{formatEuro(entry.mealTotalCost)}</Badge>
+                    )}
                   </span>
                 </CardTitle>
               </CardHeader>
@@ -139,21 +151,38 @@ export default function ProductionList() {
                   return (
                     <Collapsible key={dIdx} open={isExpanded} onOpenChange={() => toggleDish(dishKey)}>
                       <CollapsibleTrigger className="w-full flex items-center justify-between p-2 rounded hover:bg-secondary/50 transition-colors">
-                        <span className="text-xs font-medium">{dish.dishName}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-medium">{dish.dishName}</span>
+                          {dish.prepTime != null && dish.prepTime > 0 && (
+                            <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                              <Clock className="h-2.5 w-2.5" />{dish.prepTime}min
+                            </span>
+                          )}
+                          {dish.totalCost != null && dish.totalCost > 0 && (
+                            <span className="text-[10px] text-muted-foreground">{formatEuro(dish.totalCost)}</span>
+                          )}
+                        </div>
                         {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                       </CollapsibleTrigger>
                       <CollapsibleContent className="px-2 pb-2">
                         <div className="border rounded p-2 space-y-1 bg-secondary/20">
-                          <div className="grid grid-cols-3 text-[10px] text-muted-foreground font-medium border-b pb-1">
+                          <div className="grid grid-cols-4 text-[10px] text-muted-foreground font-medium border-b pb-1">
                             <span>Zutat</span>
                             <span className="text-right">pro Portion</span>
                             <span className="text-right">Gesamt ({entry.pax}x)</span>
+                            <span className="text-right">Kosten</span>
                           </div>
                           {dish.ingredients.map((ing, iIdx) => (
-                            <div key={iIdx} className="grid grid-cols-3 text-xs">
-                              <span>{ing.name}</span>
+                            <div key={iIdx} className="grid grid-cols-4 text-xs">
+                              <span>
+                                {ing.name}
+                                {ing.fromSubRecipe && (
+                                  <span className="text-[9px] text-muted-foreground ml-1">({ing.fromSubRecipe})</span>
+                                )}
+                              </span>
                               <span className="text-right text-muted-foreground">{formatQuantity(ing.quantityPerPortion, ing.unit)}</span>
                               <span className="text-right font-medium">{formatQuantity(ing.totalQuantity, ing.unit)}</span>
+                              <span className="text-right text-muted-foreground">{ing.cost > 0 ? formatEuro(ing.cost) : '-'}</span>
                             </div>
                           ))}
                         </div>

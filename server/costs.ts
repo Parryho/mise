@@ -8,25 +8,33 @@ import { db } from "./db";
 import { menuPlans, guestCounts } from "@shared/schema";
 import { and, gte, lte } from "drizzle-orm";
 import { calculateCost, type Unit } from "@shared/units";
+import { resolveRecipeIngredients } from "./sub-recipes";
 
 const DEFAULT_PAX: Record<string, number> = { city: 60, sued: 45, ak: 80 };
 
 export async function getDishCost(recipeId: number): Promise<{
   recipeId: number;
   costPerPortion: number;
-  ingredients: Array<{ name: string; quantity: number; unit: string; cost: number }>;
+  ingredients: Array<{ name: string; quantity: number; unit: string; cost: number; fromSubRecipe?: string }>;
 }> {
-  const ings = await storage.getIngredients(recipeId);
+  // Resolve all ingredients including sub-recipes
+  const resolvedIngs = await resolveRecipeIngredients(recipeId);
   const masterIngs = await storage.getMasterIngredients();
   const masterByName: Record<string, typeof masterIngs[0]> = {};
   for (const mi of masterIngs) masterByName[mi.name.toLowerCase()] = mi;
 
-  const ingredientCosts = ings.map(i => {
+  const ingredientCosts = resolvedIngs.map(i => {
     const master = masterByName[i.name.toLowerCase()];
     const cost = master
       ? calculateCost(i.amount, i.unit as Unit, master.pricePerUnit, master.priceUnit as Unit)
       : 0;
-    return { name: i.name, quantity: i.amount, unit: i.unit, cost: Math.round(cost * 100) / 100 };
+    return {
+      name: i.name,
+      quantity: i.amount,
+      unit: i.unit,
+      cost: Math.round(cost * 100) / 100,
+      fromSubRecipe: i.fromSubRecipe,
+    };
   });
 
   return {

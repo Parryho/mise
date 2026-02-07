@@ -3,8 +3,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, ShoppingCart, Printer, Download } from "lucide-react";
+import { Loader2, ShoppingCart, Printer, Download, Truck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+
+interface SupplierGroup {
+  supplierId: number | null;
+  supplierName: string;
+  items: ShoppingItem[];
+  subtotal: number;
+}
 
 interface ShoppingItem {
   ingredientName: string;
@@ -62,8 +69,10 @@ export default function ShoppingList() {
   const [startDate, setStartDate] = useState(weekRange.start);
   const [endDate, setEndDate] = useState(weekRange.end);
   const [categories, setCategories] = useState<ShoppingCategory[]>([]);
+  const [supplierGroups, setSupplierGroups] = useState<SupplierGroup[]>([]);
   const [grandTotal, setGrandTotal] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [viewMode, setViewMode] = useState<'category' | 'supplier'>('category');
 
   const fetchData = async () => {
     setLoading(true);
@@ -71,6 +80,7 @@ export default function ShoppingList() {
       const res = await fetch(`/api/shopping-list?startDate=${startDate}&endDate=${endDate}`);
       const data = await res.json();
       setCategories(data.categories || []);
+      setSupplierGroups(data.supplierGroups || []);
       setGrandTotal(data.grandTotal || 0);
     } catch (err) {
       console.error("Failed to fetch shopping list:", err);
@@ -107,6 +117,16 @@ export default function ShoppingList() {
         </div>
       </div>
 
+      {/* View toggle */}
+      <div className="flex gap-1">
+        <Button variant={viewMode === 'category' ? 'default' : 'outline'} size="sm" className="text-xs flex-1" onClick={() => setViewMode('category')}>
+          <ShoppingCart className="h-3 w-3 mr-1" /> Kategorie
+        </Button>
+        <Button variant={viewMode === 'supplier' ? 'default' : 'outline'} size="sm" className="text-xs flex-1" onClick={() => setViewMode('supplier')}>
+          <Truck className="h-3 w-3 mr-1" /> Lieferant
+        </Button>
+      </div>
+
       {/* Summary */}
       <Card className="bg-secondary/30">
         <CardContent className="p-3">
@@ -131,7 +151,7 @@ export default function ShoppingList() {
         <div className="text-center py-8 text-muted-foreground">
           Keine Menüpläne für diesen Zeitraum
         </div>
-      ) : (
+      ) : viewMode === 'category' ? (
         <div className="space-y-3">
           {categories.map(cat => (
             <Card key={cat.category}>
@@ -150,6 +170,42 @@ export default function ShoppingList() {
                         {item.supplier && (
                           <Badge variant="outline" className="ml-1 text-[8px] px-1 py-0">{item.supplier}</Badge>
                         )}
+                      </div>
+                      <div className="text-right shrink-0 ml-2">
+                        <div className="text-xs font-medium">{formatQuantity(item.totalQuantity, item.unit)}</div>
+                        {item.estimatedCost > 0 && (
+                          <div className="text-[10px] text-muted-foreground">{formatEuro(item.estimatedCost)}</div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {supplierGroups.map(group => (
+            <Card key={group.supplierName}>
+              <CardHeader className="py-2 px-3">
+                <CardTitle className="text-sm font-medium flex justify-between">
+                  <span className="flex items-center gap-1">
+                    <Truck className="h-3 w-3" />
+                    {group.supplierName}
+                  </span>
+                  <span className="text-xs font-normal text-muted-foreground">{formatEuro(group.subtotal)}</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-2">
+                <div className="space-y-1">
+                  {group.items.map((item, idx) => (
+                    <div key={idx} className="flex items-center justify-between py-1 border-b border-border/30 last:border-0">
+                      <div className="flex-1 min-w-0">
+                        <span className="text-xs font-medium">{item.ingredientName}</span>
+                        <Badge variant="outline" className="ml-1 text-[8px] px-1 py-0">
+                          {CATEGORY_LABELS[item.category] || item.category}
+                        </Badge>
                       </div>
                       <div className="text-right shrink-0 ml-2">
                         <div className="text-xs font-medium">{formatQuantity(item.totalQuantity, item.unit)}</div>

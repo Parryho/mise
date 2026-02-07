@@ -1,14 +1,14 @@
 /**
  * Production list: Calculate ingredient quantities based on PAX and menu plans.
- * Ported from Menuplaner (Project A) and adapted for Drizzle.
+ * V2: Includes sub-recipe resolution, cost per line, preparation order.
  */
 
 import { storage } from "./storage";
 import { db } from "./db";
-import { recipes, ingredients, menuPlans, guestCounts, locations } from "@shared/schema";
-import { eq, and, gte, lte } from "drizzle-orm";
+import { menuPlans, guestCounts } from "@shared/schema";
+import { and, gte, lte } from "drizzle-orm";
 import { calculateCost, type Unit } from "@shared/units";
-import { getWeekDateRange } from "@shared/constants";
+import { resolveRecipeIngredients } from "./sub-recipes";
 
 const DEFAULT_PAX: Record<string, number> = { city: 60, sued: 45, ak: 80 };
 
@@ -16,6 +16,7 @@ interface ProductionDish {
   slot: string;
   dishName: string;
   dishId: number;
+  prepTime: number;
   ingredients: Array<{
     name: string;
     quantityPerPortion: number;
@@ -23,7 +24,9 @@ interface ProductionDish {
     unit: string;
     preparationNote: string;
     cost: number;
+    fromSubRecipe?: string;
   }>;
+  totalCost: number;
 }
 
 interface ProductionEntry {
@@ -32,47 +35,56 @@ interface ProductionEntry {
   locationSlug: string;
   pax: number;
   dishes: ProductionDish[];
+  mealTotalCost: number;
 }
 
 export async function getProductionList(startDate: string, endDate: string): Promise<ProductionEntry[]> {
-  // Get menu plans for date range
   const plans = await db.select().from(menuPlans)
     .where(and(gte(menuPlans.date, startDate), lte(menuPlans.date, endDate)));
 
-  // Get guest counts
   const counts = await db.select().from(guestCounts)
     .where(and(gte(guestCounts.date, startDate), lte(guestCounts.date, endDate)));
 
-  // Get locations
   const locs = await storage.getLocations();
   const locMap: Record<number, string> = {};
   for (const loc of locs) locMap[loc.id] = loc.slug;
 
-  // Build guest count lookup by date+meal+locationId
   const guestLookup: Record<string, number> = {};
   for (const gc of counts) {
     const key = `${gc.date}-${gc.meal}-${gc.locationId || 0}`;
     guestLookup[key] = gc.adults + gc.children;
   }
 
-  // Collect unique recipe IDs
+  // Collect unique recipe IDs and load master ingredients
   const recipeIds = Array.from(new Set(plans.filter(p => p.recipeId).map(p => p.recipeId!)));
   if (recipeIds.length === 0) return [];
 
-  // Load recipes and their ingredients
-  const recipeMap: Record<number, { name: string; ingredients: Array<{ name: string; amount: number; unit: string }> }> = {};
+  const masterIngs = await storage.getMasterIngredients();
+  const masterByName: Record<string, typeof masterIngs[0]> = {};
+  for (const mi of masterIngs) masterByName[mi.name.toLowerCase()] = mi;
+
+  // Load recipes and resolve ingredients (including sub-recipes)
+  const recipeMap: Record<number, {
+    name: string;
+    prepTime: number;
+    ingredients: Array<{ name: string; amount: number; unit: string; fromSubRecipe?: string }>;
+  }> = {};
+
   for (const id of recipeIds) {
     const recipe = await storage.getRecipe(id);
     if (!recipe) continue;
-    const ings = await storage.getIngredients(id);
+    const resolved = await resolveRecipeIngredients(id);
     recipeMap[id] = {
       name: recipe.name,
-      ingredients: ings.map(i => ({ name: i.name, amount: i.amount, unit: i.unit })),
+      prepTime: recipe.prepTime || 0,
+      ingredients: resolved.map(i => ({
+        name: i.name,
+        amount: i.amount,
+        unit: i.unit,
+        fromSubRecipe: i.fromSubRecipe,
+      })),
     };
   }
-
-  // Build production entries
-  const result: ProductionEntry[] = [];
 
   // Group plans by date+meal+location
   const grouped: Record<string, typeof plans> = {};
@@ -82,6 +94,8 @@ export async function getProductionList(startDate: string, endDate: string): Pro
     grouped[key].push(plan);
   }
 
+  const result: ProductionEntry[] = [];
+
   for (const [key, group] of Object.entries(grouped)) {
     const [date, meal, locIdStr] = key.split('-');
     const locId = parseInt(locIdStr);
@@ -89,27 +103,54 @@ export async function getProductionList(startDate: string, endDate: string): Pro
     const pax = guestLookup[key] || DEFAULT_PAX[locSlug] || 50;
 
     const dishes: ProductionDish[] = [];
+    let mealTotalCost = 0;
+
     for (const plan of group) {
       if (!plan.recipeId) continue;
       const recipe = recipeMap[plan.recipeId];
       if (!recipe) continue;
 
+      let dishCost = 0;
+      const ingredients = recipe.ingredients.map(i => {
+        const totalQty = i.amount * pax;
+        const master = masterByName[i.name.toLowerCase()];
+        const cost = master
+          ? calculateCost(totalQty, i.unit as Unit, master.pricePerUnit, master.priceUnit as Unit)
+          : 0;
+        dishCost += cost;
+        return {
+          name: i.name,
+          quantityPerPortion: i.amount,
+          totalQuantity: Math.round(totalQty * 100) / 100,
+          unit: i.unit,
+          preparationNote: '',
+          cost: Math.round(cost * 100) / 100,
+          fromSubRecipe: i.fromSubRecipe,
+        };
+      });
+
       dishes.push({
         slot: plan.course,
         dishName: recipe.name,
         dishId: plan.recipeId,
-        ingredients: recipe.ingredients.map(i => ({
-          name: i.name,
-          quantityPerPortion: i.amount,
-          totalQuantity: i.amount * pax,
-          unit: i.unit,
-          preparationNote: '',
-          cost: 0,
-        })),
+        prepTime: recipe.prepTime,
+        ingredients,
+        totalCost: Math.round(dishCost * 100) / 100,
       });
+      mealTotalCost += dishCost;
     }
 
-    result.push({ date, meal, locationSlug: locSlug, pax, dishes });
+    // Sort dishes by prep time (longest first = start earliest)
+    dishes.sort((a, b) => b.prepTime - a.prepTime);
+
+    result.push({
+      date,
+      meal,
+      locationSlug: locSlug,
+      pax,
+      dishes,
+      mealTotalCost: Math.round(mealTotalCost * 100) / 100,
+    });
   }
 
   result.sort((a, b) => a.date.localeCompare(b.date) || a.meal.localeCompare(b.meal) || a.locationSlug.localeCompare(b.locationSlug));

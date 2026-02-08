@@ -36,7 +36,10 @@ Menüplanung, 6-Wochen-Rotation, HACCP-Dokumentation, Rezeptverwaltung, Personal
 | `server/recipe-suggestions.ts` | AI Rezept-Scoring |
 | `server/intelligent-scaling.ts` | Nicht-lineares Scaling |
 | `server/recipe-media.ts` | Foto-Upload (Multer) |
-| `server/scraper.ts` | URL-Rezept-Scraping (Cheerio) |
+| `server/scraper.ts` | URL-Rezept-Scraping (Cheerio, JSON-LD) |
+| `script/batch-import-gutekueche.ts` | Batch-Scraping von gutekueche.at + chefkoch.de |
+| `script/seed-ingredients.ts` | 108 Rezepte mit Zutaten befüllen |
+| `client/src/lib/recipe-images.ts` | Kategorie-spezifische Default-Bilder |
 | `shared/categorizer.ts` | Auto-Kategorisierung |
 
 ### Allergene
@@ -317,6 +320,10 @@ AI Auto-Fill für 6-Wochen-Rotation mit kulinarischen Regeln:
 | `npm test` | Vitest Unit Tests |
 | `npm run test:e2e` | Playwright E2E Tests |
 | `npx tsx script/seed-recipe-pool.ts` | 335 Rezepte in DB seeden |
+| `npx tsx script/seed-ingredients.ts` | 108 Rezepte mit Zutaten befüllen |
+| `npx tsx script/batch-import-gutekueche.ts` | Rezeptdaten von gutekueche.at/chefkoch.de scrapen |
+| `npx tsx script/batch-import-gutekueche.ts --dry-run` | Nur suchen, nicht in DB schreiben |
+| `npx tsx script/batch-import-gutekueche.ts --limit 10` | Nur 10 Rezepte importieren |
 | `npx tsx script/deduplicate.ts` | Rezept-Duplikate entfernen |
 
 ---

@@ -13,7 +13,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { getISOWeek, MEAL_SLOT_LABELS, type MealSlotName } from "@shared/constants";
 import { RECIPE_CATEGORIES } from "@shared/schema";
 import { cn } from "@/lib/utils";
-import LocationSwitcher from "@/components/LocationSwitcher";
 import AllergenConflictBanner from "@/components/AllergenConflictBanner";
 import { useLocationFilter } from "@/lib/location-context";
 import { DndContext, DragOverlay, useDraggable, useDroppable, type DragEndEvent, type DragStartEvent, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
@@ -232,7 +231,6 @@ export default function MenuPlan() {
       <div className="bg-primary text-primary-foreground px-4 pt-4 pb-3">
         <div className="flex items-center justify-between mb-2">
           <h1 className="font-heading text-xl font-bold uppercase tracking-wide">Wochenplan</h1>
-          <LocationSwitcher variant="header" />
         </div>
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-1">

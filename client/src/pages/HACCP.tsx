@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import { ThermometerSnowflake, History, Loader2, PlusCircle, Pencil, Trash2, Download, AlertTriangle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import LocationSwitcher from "@/components/LocationSwitcher";
 import { useLocationFilter } from "@/lib/location-context";
 
 export default function HACCP() {
@@ -57,8 +56,6 @@ export default function HACCP() {
           </Button>
         </div>
       </div>
-      <LocationSwitcher />
-
       {/* Summary stats */}
       {fridges.length > 0 && (
         <div className="grid grid-cols-3 gap-2">

@@ -118,7 +118,12 @@ export default function RotationPrint() {
   const weeksToShow = selectedWeek ? [selectedWeek] : Array.from({ length: weekCount }, (_, i) => i + 1);
 
   return (
-    <div className="pb-24">
+    <div className="pb-24 print:pb-0">
+      {/* Print-only title */}
+      <div className="hidden print:block text-center font-heading text-sm font-bold uppercase tracking-wide mb-1">
+        Rotationsplan — 6-Wochen-Übersicht
+      </div>
+
       {/* Header (hidden when printing) */}
       <div className="bg-primary text-primary-foreground px-4 pt-4 pb-3 print:hidden">
         <div className="flex items-center justify-between">
@@ -172,13 +177,13 @@ export default function RotationPrint() {
 
       {/* Tables — one per week */}
       {weeksToShow.map(weekNr => (
-        <div key={weekNr} className="rotation-print-page px-2 mb-8">
+        <div key={weekNr} className="rotation-print-page px-2 mb-8 print:px-0 print:mb-0">
           <h2 className="font-heading text-lg font-bold uppercase tracking-wide px-2 pb-2 pt-2 text-foreground">
             Woche {weekNr}
           </h2>
 
-          <div className="overflow-x-auto rounded-lg border border-border/60">
-            <table className="w-full border-collapse text-[11px] leading-tight">
+          <div className="overflow-x-auto rounded-lg border border-border/60 print:overflow-visible print:rounded-none">
+            <table className="w-full border-collapse text-[11px] leading-tight print:text-[9px] print:leading-[1.15]">
               <thead>
                 <tr className="bg-primary text-primary-foreground">
                   <th className="border-r border-white/20 px-2 py-1.5 text-left w-10 font-bold text-[10px] uppercase tracking-wider">Tag</th>

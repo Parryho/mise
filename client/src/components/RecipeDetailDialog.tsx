@@ -13,6 +13,7 @@ import { Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RECIPE_CATEGORIES } from "@shared/schema";
 import RecipeMediaGallery from "@/components/RecipeMediaGallery";
+import { getDefaultRecipeImage } from "@/lib/recipe-images";
 import RecipeMediaUpload from "@/components/RecipeMediaUpload";
 
 const CATEGORIES = RECIPE_CATEGORIES;
@@ -150,7 +151,7 @@ export default function RecipeDetailDialog({ recipe, open, onOpenChange, readOnl
       <DialogContent className="max-w-lg h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <div className="relative h-48 shrink-0">
           <img
-            src={recipe.image || "https://images.unsplash.com/photo-1495521821757-a1efb6729352?auto=format&fit=crop&q=80&w=800"}
+            src={recipe.image || getDefaultRecipeImage(recipe.category)}
             alt={recipe.name}
             className="w-full h-full object-cover"
           />

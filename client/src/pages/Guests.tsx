@@ -8,7 +8,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useToast } from "@/hooks/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import LocationSwitcher from "@/components/LocationSwitcher";
 import { useLocationFilter } from "@/lib/location-context";
 
 interface GuestCount {
@@ -65,7 +64,6 @@ export default function Guests() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-heading font-bold">Gästezahlen</h1>
       </div>
-      <LocationSwitcher />
       <GuestCountsView />
     </div>
   );

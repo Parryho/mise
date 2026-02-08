@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { RECIPE_CATEGORIES } from "@shared/schema";
 import RecipeDetailDialog from "@/components/RecipeDetailDialog";
+import { getDefaultRecipeImage } from "@/lib/recipe-images";
 import { Link } from "wouter";
 
 // Debounce hook
@@ -252,7 +253,7 @@ function AddRecipeDialog({ defaultCategory }: { defaultCategory?: string }) {
         category,
         portions: 1,
         prepTime: 0,
-        image: "https://images.unsplash.com/photo-1495521821757-a1efb6729352?auto=format&fit=crop&q=80&w=800",
+        image: getDefaultRecipeImage(category),
         sourceUrl: null,
         steps: [],
         allergens: [],
@@ -595,7 +596,7 @@ function RecipeCard({ recipe }: { recipe: Recipe }) {
       >
         <div className="relative h-36 w-full overflow-hidden">
           <img
-            src={recipe.image || "https://images.unsplash.com/photo-1495521821757-a1efb6729352?auto=format&fit=crop&q=80&w=800"}
+            src={recipe.image || getDefaultRecipeImage(recipe.category)}
             alt={recipe.name}
             className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />

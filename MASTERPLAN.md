@@ -238,6 +238,39 @@ Folgende Skills sind unter `.agents/skills/` installiert und sollten bei der Ums
 
 ---
 
+## Phase 6: UI-POLISH + DATENQUALITÄT (08.02.2026) ✅
+
+| # | Task | Status |
+|---|------|--------|
+| 6.1 | **UI-Überarbeitung** — 22 Seiten mit Design-System Tokens, Hover-Effekte, responsive Grids | ✅ 08.02.2026 |
+| 6.2 | **Dashboard-Startseite** — Today.tsx: Tagesmenü, PAX, HACCP-Status, Quick Actions, Aufgaben | ✅ 08.02.2026 |
+| 6.3 | **Settings aufgewertet** — User-Cards, System-Verwaltung, App-Info, Sprach-Auswahl | ✅ 08.02.2026 |
+| 6.4 | **Security-Fixes** — Auth-Lücken, helmet, SSRF-Schutz, sicheres Admin-Passwort, FORCE_HTTPS | ✅ 08.02.2026 |
+| 6.5 | **Allergen-Bugs** — Code "I"→"L", AllergenOverview API-Fix, GuestProfiles Typ-Fix, 5 Rezeptkorrekturen | ✅ 08.02.2026 |
+| 6.6 | **Rezept-Zutaten** — seed-ingredients.ts: 108 Rezepte mit 778 Zutaten + EU-Allergenen | ✅ 08.02.2026 |
+| 6.7 | **Navigation** — HOME-Button in Bottom-Nav, globaler Zurück-Button oben | ✅ 08.02.2026 |
+| 6.8 | **A4-Druck** — RotationPrint: @page landscape, kompakte Tabellen, Seitenumbrüche pro Woche | ✅ 08.02.2026 |
+| 6.9 | **Kategorie-Bilder** — Dummy-Bild durch 11 kategorie-spezifische Unsplash-Bilder ersetzt | ✅ 08.02.2026 |
+| 6.10 | **Batch-Import Script** — script/batch-import-gutekueche.ts: Scrapt Rezeptdaten von gutekueche.at/chefkoch.de | ✅ 08.02.2026 |
+
+---
+
+## Rezept-Datenquellen (JSON-LD Scraping)
+
+| Seite | JSON-LD | Zutaten | Schritte | Nährwerte |
+|-------|---------|---------|----------|-----------|
+| **gutekueche.at** | ✅ | ✅ mit Mengen | ✅ | ✅ |
+| **chefkoch.de** | ✅ | ✅ | ✅ | ✅ |
+| **kochrezepte.at** | ✅ | ✅ | ✅ | teilweise |
+| **ichkoche.at** | ❓ JS-heavy | - | - | - |
+
+**Scripts:**
+- `script/batch-import-gutekueche.ts` — Batch-Scraping von gutekueche.at/chefkoch.de
+- `script/seed-ingredients.ts` — 108 Rezepte mit Zutaten (generiert)
+- `script/seed-recipe-pool.ts` — 335 Rezept-Grunddaten
+
+---
+
 ## Nächster Schritt
 
-**Alle 5 Phasen abgeschlossen** (07.02.2026). Phase 5 (Adaptive Learning) implementiert: Quiz-Feedback UI, Pairing-Score Engine mit Zeitverfall, Rotation-Agent v3 mit score-gewichteter Beilagen-Auswahl (Explore/Exploit), Lern-Dashboard mit Recharts, AI-Regelvalidierung via Claude API. `npm run db:push` für 3 neue Tabellen erforderlich.
+**Alle 6 Phasen abgeschlossen** (08.02.2026). Phase 6 fokussierte auf UI-Qualität, Security-Hardening und Datenqualität. Batch-Import-Script für echte Rezeptdaten von gutekueche.at verfügbar.

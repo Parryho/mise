@@ -11,7 +11,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import LocationSwitcher from "@/components/LocationSwitcher";
 import { useLocationFilter } from "@/lib/location-context";
 import StaffView from "./ScheduleStaff";
 import ShiftTypesView from "./ScheduleShifts";
@@ -91,8 +90,6 @@ export default function Schedule() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-heading font-bold">Dienstplan</h1>
       </div>
-      <LocationSwitcher />
-      
       <Tabs defaultValue="schedule" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="schedule">Kalender</TabsTrigger>

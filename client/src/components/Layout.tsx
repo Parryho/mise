@@ -1,11 +1,12 @@
 import { Link, useLocation } from "wouter";
-import { ChefHat, Users, CalendarDays, RefreshCw, Thermometer, Dices } from "lucide-react";
+import { ChefHat, Users, CalendarDays, RefreshCw, Thermometer, Dices, Home, ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
 
   const navItems = [
+    { icon: Home, label: "Home", href: "/today" },
     { icon: CalendarDays, label: "Plan", href: "/menu" },
     { icon: RefreshCw, label: "Rotation", href: "/rotation" },
     { icon: ChefHat, label: "Rezepte", href: "/recipes" },
@@ -14,8 +15,23 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { icon: Users, label: "Personal", href: "/schedule" },
   ];
 
+  const showBackButton = location !== "/today" && location !== "/";
+
   return (
     <div className="min-h-screen bg-background flex flex-col md:max-w-2xl lg:max-w-5xl md:mx-auto overflow-hidden relative">
+      {/* Back Button */}
+      {showBackButton && (
+        <div className="sticky top-0 z-40 bg-background/80 backdrop-blur-sm">
+          <button
+            onClick={() => window.history.back()}
+            className="flex items-center gap-1 px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            <span>Zurück</span>
+          </button>
+        </div>
+      )}
+
       {/* Content Area - Scrollable */}
       <main className="flex-1 overflow-y-auto pb-20 safe-area-bottom custom-scrollbar">
         {children}

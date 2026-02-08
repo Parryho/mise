@@ -13,7 +13,6 @@ import {
   Crown, Wine, BookOpen, Circle, RefreshCw, Users, CalendarDays,
   TrendingUp, Clock, User, DoorOpen,
 } from "lucide-react";
-import LocationSwitcher from "@/components/LocationSwitcher";
 import { useLocationFilter } from "@/lib/location-context";
 
 interface CateringEvent {
@@ -244,8 +243,6 @@ export default function Catering() {
           <PlusCircle className="h-4 w-4" /> Neues Event
         </Button>
       </div>
-      <LocationSwitcher />
-
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
         <Card>

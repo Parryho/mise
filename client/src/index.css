@@ -201,8 +201,22 @@
 
 /* Print styles */
 @media print {
-  .rotation-print-page {
-    break-after: page;
+  @page {
+    size: A4 landscape;
+    margin: 8mm;
+  }
+
+  body {
+    font-size: 10px;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Hide navigation, header, and other non-print elements */
+  nav, header, .print-hide {
+    display: none !important;
   }
   .print\:hidden {
     display: none !important;
@@ -210,12 +224,65 @@
   .print\:no-underline {
     text-decoration: none !important;
   }
-  /* Hide bottom nav and other chrome */
-  nav, header, .print-hide {
-    display: none !important;
+
+  /* Remove body padding that accommodates the bottom nav */
+  .pb-24 {
+    padding-bottom: 0 !important;
   }
-  body {
-    font-size: 10px;
+
+  /* Full-width containers */
+  .max-w-2xl, .max-w-5xl, .max-w-screen-xl {
+    max-width: 100% !important;
+  }
+
+  /* Each rotation week on its own page */
+  .rotation-print-page {
+    break-after: page;
+    break-inside: avoid;
+    padding: 0 !important;
+    margin-bottom: 0 !important;
+  }
+  .rotation-print-page:last-child {
+    break-after: auto;
+  }
+
+  /* Compact table styling */
+  .rotation-print-page table {
+    width: 100% !important;
+    font-size: 9px;
+    line-height: 1.2;
+    border-collapse: collapse;
+  }
+  .rotation-print-page th {
+    padding: 2px 4px !important;
+    font-size: 8px;
+  }
+  .rotation-print-page td {
+    padding: 1px 3px !important;
+    font-size: 9px;
+  }
+  .rotation-print-page td div {
+    gap: 0 !important;
+  }
+
+  /* Compact week heading */
+  .rotation-print-page h2 {
+    font-size: 12px;
+    padding: 2px 0 !important;
+    margin: 0;
+  }
+
+  /* Tighter allergen legend */
+  .rotation-print-page .bg-muted\/30 {
+    font-size: 7px !important;
+    padding: 2px 4px !important;
+    margin: 2px 0 0 0 !important;
+    background: transparent !important;
+  }
+
+  /* Remove rounded borders in print */
+  .rotation-print-page .rounded-lg {
+    border-radius: 0 !important;
   }
 }
 

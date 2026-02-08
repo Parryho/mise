@@ -1,5 +1,6 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
+import crypto from "crypto";
 import { storage } from "./storage";
 import { scrapeRecipe } from "./scraper";
 import {
@@ -184,7 +185,8 @@ export async function registerRoutes(
   // Create default admin account if none exists
   const existingAdmin = await storage.getUserByEmail("admin@mise.app");
   if (!existingAdmin) {
-    const hashedPassword = await bcrypt.hash("admin123", 10);
+    const defaultPw = process.env.ADMIN_PASSWORD || crypto.randomBytes(16).toString("hex");
+    const hashedPassword = await bcrypt.hash(defaultPw, 10);
     await storage.createUser({
       username: "admin@mise.app",
       name: "Administrator",
@@ -194,7 +196,12 @@ export async function registerRoutes(
       isApproved: true,
       position: "Admin"
     });
-    console.log("Default admin account created (admin@mise.app).");
+    if (!process.env.ADMIN_PASSWORD) {
+      console.log(`⚠️  Default admin created (admin@mise.app) with random password: ${defaultPw}`);
+      console.log("   Set ADMIN_PASSWORD env var to use a fixed password.");
+    } else {
+      console.log("Default admin account created (admin@mise.app).");
+    }
   }
 
   // Auth middleware — checks session for logged-in user

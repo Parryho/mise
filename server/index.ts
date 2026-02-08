@@ -1,6 +1,7 @@
 import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
 import cors from "cors";
+import helmet from "helmet";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
@@ -11,6 +12,12 @@ const isDev = process.env.NODE_ENV !== "production";
 
 // Trust first proxy (nginx) for correct X-Forwarded-Proto, X-Real-IP
 app.set("trust proxy", 1);
+
+// Security headers (X-Content-Type-Options, X-Frame-Options, HSTS, etc.)
+app.use(helmet({
+  contentSecurityPolicy: false, // CSP handled by Vite/React separately
+  crossOriginEmbedderPolicy: false, // Allow loading external images
+}));
 
 // CORS: In dev allow all origins for LAN access, in production disable
 app.use(cors({

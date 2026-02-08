@@ -25,8 +25,28 @@ export function getSupportedPlatforms(): string[] {
   return SUPPORTED_PLATFORMS;
 }
 
+// Block private/internal IPs to prevent SSRF
+function isPrivateUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    const hostname = parsed.hostname;
+    // Block private IPs, localhost, link-local, metadata endpoints
+    const blocked = [
+      /^127\./, /^10\./, /^172\.(1[6-9]|2\d|3[01])\./, /^192\.168\./,
+      /^169\.254\./, /^0\./, /^localhost$/i, /^::1$/, /^\[::1\]$/,
+      /^fc00:/i, /^fe80:/i, /^fd/i,
+    ];
+    return blocked.some(re => re.test(hostname));
+  } catch {
+    return true;
+  }
+}
+
 export async function scrapeRecipe(url: string): Promise<ScrapedRecipe | null> {
   try {
+    if (isPrivateUrl(url)) {
+      throw new Error("URL zu internem Netzwerk nicht erlaubt");
+    }
     const response = await fetch(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',

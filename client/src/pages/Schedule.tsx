@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -239,7 +240,7 @@ function ScheduleView() {
         <div className="overflow-x-auto border rounded-lg">
           <table className="w-full text-xs border-collapse">
             <thead>
-              <tr className="bg-yellow-100">
+              <tr className="bg-secondary">
                 <th className="text-left p-2 border font-medium">Nr.</th>
                 <th className="text-left p-2 border font-medium min-w-[120px]">Mitarbeitername</th>
                 {dates.map((date, idx) => {
@@ -247,7 +248,7 @@ function ScheduleView() {
                   const dayIdx = date.getDay() === 0 ? 6 : date.getDay() - 1;
                   const isWeekend = dayIdx >= 5;
                   return (
-                    <th key={idx} className={`p-1 text-center min-w-[70px] border ${isToday ? 'bg-primary/20' : isWeekend ? 'bg-yellow-200' : 'bg-yellow-100'}`}>
+                    <th key={idx} className={`p-1 text-center min-w-[70px] border ${isToday ? 'bg-primary/20' : isWeekend ? 'bg-secondary/80' : 'bg-secondary'}`}>
                       <div className="text-muted-foreground text-[10px]">{WEEKDAYS[dayIdx]}</div>
                       <div className="font-bold">{date.getDate()}.{(date.getMonth()+1).toString().padStart(2,'0')}.</div>
                     </th>
@@ -290,21 +291,26 @@ function ScheduleView() {
         </div>
       )}
 
-      <div className="flex gap-2 flex-wrap text-[10px]">
-        {ENTRY_TYPES.map(type => (
-          <Badge key={type.key} variant="outline" className="gap-1">
-            <div className={`w-2 h-2 rounded-full ${type.color}`} />
-            {type.de}
-          </Badge>
-        ))}
-        <div className="border-l mx-2" />
-        {shiftTypes.map(st => (
-          <Badge key={st.id} variant="outline" className="gap-1">
-            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: st.color }} />
-            {st.name}
-          </Badge>
-        ))}
-      </div>
+      <Card className="bg-secondary/20">
+        <CardContent className="p-3">
+          <div className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide mb-2">Legende</div>
+          <div className="flex gap-2 flex-wrap text-[10px]">
+            {ENTRY_TYPES.map(type => (
+              <Badge key={type.key} variant="outline" className="gap-1">
+                <div className={`w-2 h-2 rounded-full ${type.color}`} />
+                {type.de}
+              </Badge>
+            ))}
+            {shiftTypes.length > 0 && <div className="border-l mx-1" />}
+            {shiftTypes.map(st => (
+              <Badge key={st.id} variant="outline" className="gap-1">
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: st.color }} />
+                {st.name}
+              </Badge>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -596,12 +602,12 @@ function ScheduleCell({ staffId, date, entry, staffColor, isToday, isWeekend, sh
   };
 
   const bgColor = () => {
-    if (!entry) return isWeekend ? 'bg-yellow-50' : '';
+    if (!entry) return isWeekend ? 'bg-secondary/30' : '';
     if (entry.type === 'vacation') return 'bg-green-100';
     if (entry.type === 'sick') return 'bg-orange-100';
-    if (entry.type === 'wor') return 'bg-yellow-200';
+    if (entry.type === 'wor') return 'bg-amber-100';
     if (entry.type === 'off') return 'bg-gray-100';
-    if (isWeekend) return 'bg-yellow-100';
+    if (isWeekend) return 'bg-secondary/50';
     return '';
   };
 

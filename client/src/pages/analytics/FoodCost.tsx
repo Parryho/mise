@@ -75,7 +75,7 @@ export default function FoodCost() {
   }
 
   return (
-    <div className="p-4 space-y-6">
+    <div className="p-4 space-y-6 pb-24">
       <div className="flex items-center gap-4">
         <Link href="/reports">
           <Button variant="ghost" size="icon">
@@ -86,68 +86,44 @@ export default function FoodCost() {
       </div>
 
       {/* Week Navigation */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-between">
-            <Button variant="outline" size="sm" onClick={handlePrevWeek}>
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              Vorherige Woche
-            </Button>
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground">Kalenderwoche</p>
-              <p className="text-lg font-semibold">KW {week} / {year}</p>
-              <p className="text-xs text-muted-foreground">{from} bis {to}</p>
-            </div>
-            <Button variant="outline" size="sm" onClick={handleNextWeek}>
-              Nächste Woche
-              <ChevronRight className="h-4 w-4 ml-1" />
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-between">
+        <Button variant="outline" size="icon" onClick={handlePrevWeek}>
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        <div className="text-center">
+          <p className="text-sm font-semibold">KW {week} / {year}</p>
+          <p className="text-xs text-muted-foreground">{from} bis {to}</p>
+        </div>
+        <Button variant="outline" size="icon" onClick={handleNextWeek}>
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Woche gesamt</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-baseline gap-1">
-              <Euro className="h-4 w-4 text-muted-foreground" />
-              <p className="text-2xl font-bold">{formatCurrency(data?.weekSummary.totalCost || 0)}</p>
-            </div>
+      <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
+        <Card className="border-l-4 border-l-primary">
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground font-medium">Woche gesamt</p>
+            <p className="text-xl font-bold mt-1">{formatCurrency(data?.weekSummary.totalCost || 0)}</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Ø pro Tag</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-baseline gap-1">
-              <Euro className="h-4 w-4 text-muted-foreground" />
-              <p className="text-2xl font-bold">{formatCurrency(data?.weekSummary.avgCostPerDay || 0)}</p>
-            </div>
+        <Card className="border-l-4 border-l-blue-500">
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground font-medium">Ø pro Tag</p>
+            <p className="text-xl font-bold mt-1">{formatCurrency(data?.weekSummary.avgCostPerDay || 0)}</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Ø pro Gast</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-baseline gap-1">
-              <Euro className="h-4 w-4 text-muted-foreground" />
-              <p className="text-2xl font-bold">{formatCurrency(data?.weekSummary.avgCostPerGuest || 0)}</p>
-            </div>
+        <Card className="border-l-4 border-l-green-500">
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground font-medium">Ø pro Gast</p>
+            <p className="text-xl font-bold mt-1">{formatCurrency(data?.weekSummary.avgCostPerGuest || 0)}</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Gesamt PAX</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{data?.weekSummary.totalPax || 0}</p>
-            <p className="text-xs text-muted-foreground">{data?.weekSummary.totalMeals || 0} Mahlzeiten</p>
+        <Card className="border-l-4 border-l-amber-500">
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground font-medium">Gesamt PAX</p>
+            <p className="text-xl font-bold mt-1">{data?.weekSummary.totalPax || 0}</p>
+            <p className="text-[10px] text-muted-foreground">{data?.weekSummary.totalMeals || 0} Mahlzeiten</p>
           </CardContent>
         </Card>
       </div>
@@ -172,7 +148,7 @@ export default function FoodCost() {
                   return label;
                 }}
               />
-              <Bar dataKey="totalCost" name="Kosten" fill="#F37021" />
+              <Bar dataKey="totalCost" name="Kosten" fill="#F37021" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
@@ -184,41 +160,41 @@ export default function FoodCost() {
           <CardTitle>Tägliche Aufschlüsselung</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto rounded-lg border">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b">
-                  <th className="text-left p-2 font-medium">Datum</th>
-                  <th className="text-right p-2 font-medium">Mahlzeiten</th>
-                  <th className="text-right p-2 font-medium">PAX</th>
-                  <th className="text-right p-2 font-medium">Gesamt</th>
-                  <th className="text-right p-2 font-medium">€/Gast</th>
+                <tr className="bg-secondary/50">
+                  <th className="text-left p-2.5 font-medium text-xs">Datum</th>
+                  <th className="text-right p-2.5 font-medium text-xs">Mahlzeiten</th>
+                  <th className="text-right p-2.5 font-medium text-xs">PAX</th>
+                  <th className="text-right p-2.5 font-medium text-xs">Gesamt</th>
+                  <th className="text-right p-2.5 font-medium text-xs">€/Gast</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y">
                 {data?.daily.map((day) => (
-                  <tr key={day.date} className="border-b hover:bg-muted/50">
-                    <td className="p-2">
+                  <tr key={day.date} className="hover:bg-muted/50 transition-colors">
+                    <td className="p-2.5">
                       <div className="font-medium">{day.dayName}</div>
                       <div className="text-xs text-muted-foreground">
                         {new Date(day.date).toLocaleDateString('de-AT')}
                       </div>
                     </td>
-                    <td className="text-right p-2">{day.mealCount}</td>
-                    <td className="text-right p-2">{day.paxCount}</td>
-                    <td className="text-right p-2 font-semibold">{formatCurrency(day.totalCost)}</td>
-                    <td className="text-right p-2 text-muted-foreground">
+                    <td className="text-right p-2.5">{day.mealCount}</td>
+                    <td className="text-right p-2.5">{day.paxCount}</td>
+                    <td className="text-right p-2.5 font-semibold">{formatCurrency(day.totalCost)}</td>
+                    <td className="text-right p-2.5 text-muted-foreground">
                       {formatCurrency(day.costPerGuest)}
                     </td>
                   </tr>
                 ))}
                 {/* Total Row */}
-                <tr className="bg-muted/50 font-bold">
-                  <td className="p-2">SUMME</td>
-                  <td className="text-right p-2">{data?.weekSummary.totalMeals || 0}</td>
-                  <td className="text-right p-2">{data?.weekSummary.totalPax || 0}</td>
-                  <td className="text-right p-2">{formatCurrency(data?.weekSummary.totalCost || 0)}</td>
-                  <td className="text-right p-2 text-muted-foreground">
+                <tr className="bg-primary/5 font-bold border-t-2 border-primary/20">
+                  <td className="p-2.5">SUMME</td>
+                  <td className="text-right p-2.5">{data?.weekSummary.totalMeals || 0}</td>
+                  <td className="text-right p-2.5">{data?.weekSummary.totalPax || 0}</td>
+                  <td className="text-right p-2.5">{formatCurrency(data?.weekSummary.totalCost || 0)}</td>
+                  <td className="text-right p-2.5 text-muted-foreground">
                     {formatCurrency(data?.weekSummary.avgCostPerGuest || 0)}
                   </td>
                 </tr>

@@ -151,20 +151,20 @@ export default function Reports() {
   };
 
   return (
-    <div className="p-4 space-y-6">
+    <div className="p-4 space-y-6 pb-24">
       <h1 className="text-2xl font-heading font-bold">{t("reports.title")}</h1>
 
       <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
         {reportCards.map((card) => (
           <Link key={card.href} href={card.href}>
-            <Card className="cursor-pointer hover:shadow-md transition-shadow h-full">
+            <Card className="cursor-pointer hover:shadow-md transition-all active:scale-[0.98] h-full">
               <CardContent className="flex items-start gap-3 p-4">
-                <div className={`p-2 rounded-lg ${card.bgColor} shrink-0`}>
+                <div className={`p-2.5 rounded-lg ${card.bgColor} shrink-0`}>
                   <card.icon className={`h-5 w-5 ${card.color}`} />
                 </div>
                 <div className="min-w-0">
                   <h3 className="font-semibold text-sm">{t(card.titleKey)}</h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">{t(card.descKey)}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{t(card.descKey)}</p>
                 </div>
               </CardContent>
             </Card>
@@ -173,16 +173,16 @@ export default function Reports() {
       </div>
 
       {/* Quick export section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <FileText className="h-5 w-5" />
+      <Card className="bg-secondary/20">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <FileText className="h-4 w-4" />
             {t("reports.quickExport")}
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <Button onClick={handleExportHaccpPDF} variant="outline" className="w-full">
-            <Download className="mr-2 h-4 w-4" />
+        <CardContent className="pt-0">
+          <Button onClick={handleExportHaccpPDF} variant="outline" className="w-full gap-2">
+            <Download className="h-4 w-4" />
             {t("reports.haccpReportPdf")}
           </Button>
         </CardContent>

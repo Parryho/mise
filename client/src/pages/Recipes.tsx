@@ -104,24 +104,24 @@ export default function Recipes() {
           </div>
         </div>
 
-        <div className="grid gap-3 md:grid-cols-2">
-          {globalSearchResults.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <Search className="h-12 w-12 mx-auto mb-4 opacity-30" />
-              <p className="font-medium">Keine Rezepte gefunden</p>
-              <p className="text-sm mt-1">Versuchen Sie einen anderen Suchbegriff</p>
-            </div>
-          ) : (
-            <>
-              <p className="text-sm text-muted-foreground">
-                {globalSearchResults.length} Rezept{globalSearchResults.length !== 1 ? 'e' : ''} gefunden
-              </p>
+        {globalSearchResults.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            <Search className="h-12 w-12 mx-auto mb-4 opacity-30" />
+            <p className="font-medium">Keine Rezepte gefunden</p>
+            <p className="text-sm mt-1">Versuchen Sie einen anderen Suchbegriff</p>
+          </div>
+        ) : (
+          <>
+            <p className="text-sm text-muted-foreground tabular-nums">
+              {globalSearchResults.length} Rezept{globalSearchResults.length !== 1 ? 'e' : ''} gefunden
+            </p>
+            <div className="grid gap-3 md:grid-cols-2">
               {globalSearchResults.map(recipe => (
                 <RecipeCard key={recipe.id} recipe={recipe} />
               ))}
-            </>
-          )}
-        </div>
+            </div>
+          </>
+        )}
       </div>
     );
   }
@@ -210,14 +210,14 @@ export default function Recipes() {
           <button
             key={category.id}
             onClick={() => setSelectedCategory(category.id)}
-            className="flex flex-col items-center justify-center gap-1 p-4 rounded-lg border border-border bg-card elevation-0 press transition-all"
+            className="flex flex-col items-center justify-center gap-1.5 p-5 rounded-xl border border-border bg-card hover:border-primary/40 hover:bg-primary/5 elevation-0 press transition-all duration-200"
             data-testid={`category-${category.id.toLowerCase()}`}
           >
             <span className="text-4xl mb-1">{category.symbol}</span>
             <h3 className="font-heading font-bold text-sm text-center leading-tight">
               {category.label}
             </h3>
-            <span className="text-xs text-muted-foreground">
+            <span className="text-xs text-muted-foreground font-medium tabular-nums">
               {recipeCounts[category.id] || 0} Rezepte
             </span>
           </button>
@@ -589,37 +589,40 @@ function RecipeCard({ recipe }: { recipe: Recipe }) {
   return (
     <>
       <Card
-        className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow press border-border/50"
+        className="overflow-hidden cursor-pointer hover:shadow-md transition-all duration-200 press border-border/50 group"
         data-testid={`recipe-card-${recipe.id}`}
         onClick={() => setDialogOpen(true)}
       >
-        <div className="relative h-32 w-full">
+        <div className="relative h-36 w-full overflow-hidden">
           <img
             src={recipe.image || "https://images.unsplash.com/photo-1495521821757-a1efb6729352?auto=format&fit=crop&q=80&w=800"}
             alt={recipe.name}
-            className="absolute inset-0 w-full h-full object-cover"
+            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-          <div className="absolute bottom-2 left-3 right-3 flex justify-between items-end text-white">
-            <div>
-              <Badge variant="secondary" className="text-[10px] h-5 px-1.5 mb-1 bg-white/20 hover:bg-white/30 text-white border-0 backdrop-blur-sm">
-                {categoryLabel}
-              </Badge>
-              <h3 className="font-heading font-bold text-lg leading-tight shadow-black drop-shadow-md">{recipe.name}</h3>
-            </div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+          <div className="absolute bottom-2.5 left-3 right-3 text-white">
+            <Badge variant="secondary" className="text-[10px] h-5 px-1.5 mb-1.5 bg-white/20 hover:bg-white/30 text-white border-0 backdrop-blur-sm">
+              {categoryLabel}
+            </Badge>
+            <h3 className="font-heading font-bold text-lg leading-tight drop-shadow-md line-clamp-2">{recipe.name}</h3>
           </div>
         </div>
-        <CardContent className="p-3 flex justify-between items-center text-sm text-muted-foreground">
+        <CardContent className="px-3 py-2.5 flex justify-between items-center text-sm text-muted-foreground">
           <div className="flex gap-3">
             <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {recipe.prepTime}m</span>
             <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5" /> {recipe.portions}p</span>
           </div>
-          <div className="flex gap-1">
-            {recipe.allergens.length > 0 ? recipe.allergens.map(code => (
+          <div className="flex gap-1 flex-wrap justify-end">
+            {recipe.allergens.length > 0 ? recipe.allergens.slice(0, 5).map(code => (
               <span key={code} className="w-5 h-5 rounded-full bg-destructive/10 text-destructive text-[10px] flex items-center justify-center font-bold border border-destructive/20 font-mono" title={ALLERGENS[code as AllergenCode]?.[lang]}>
                 {code}
               </span>
-            )) : <span className="text-[10px] text-green-600 bg-green-50 px-1 rounded">{t("noAllergens")}</span>}
+            )) : <span className="text-[10px] text-green-600 bg-green-50 px-1.5 py-0.5 rounded">{t("noAllergens")}</span>}
+            {recipe.allergens.length > 5 && (
+              <span className="w-5 h-5 rounded-full bg-muted text-muted-foreground text-[10px] flex items-center justify-center font-bold font-mono">
+                +{recipe.allergens.length - 5}
+              </span>
+            )}
           </div>
         </CardContent>
       </Card>

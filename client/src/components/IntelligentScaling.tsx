@@ -116,24 +116,26 @@ export default function IntelligentScaling({
 
   return (
     <div className="space-y-4">
-      <Card className="p-4 bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200">
+      <Card className="p-4 bg-gradient-to-br from-secondary to-secondary/50 border-primary/20">
         <div className="space-y-4">
           <div className="flex items-center gap-2">
-            <Scale className="h-5 w-5 text-blue-600" />
-            <h3 className="font-semibold text-blue-900">
+            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+              <Scale className="h-4 w-4 text-primary" />
+            </div>
+            <h3 className="font-heading font-semibold text-foreground">
               Intelligente Portionsskalierung
             </h3>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Info className="h-4 w-4 text-blue-500 cursor-help" />
+                  <Info className="h-4 w-4 text-muted-foreground cursor-help" />
                 </TooltipTrigger>
                 <TooltipContent side="right" className="max-w-xs">
                   <div className="text-xs space-y-1">
                     <p className="font-semibold">Intelligente Skalierung</p>
                     <p>
-                      Gewürze, Triebmittel und Bratfette werden nicht linear skaliert.
-                      Bei großen Mengen benötigt man z.B. weniger Salz pro Portion.
+                      Gewuerze, Triebmittel und Bratfette werden nicht linear skaliert.
+                      Bei grossen Mengen benoetigt man z.B. weniger Salz pro Portion.
                     </p>
                   </div>
                 </TooltipContent>
@@ -143,14 +145,14 @@ export default function IntelligentScaling({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label className="text-sm text-gray-700">Original</Label>
-              <div className="text-2xl font-bold text-gray-900">
+              <Label className="text-sm text-muted-foreground">Original</Label>
+              <div className="text-2xl font-bold text-foreground tabular-nums">
                 {originalServings} Portionen
               </div>
             </div>
 
             <div>
-              <Label htmlFor="targetServings" className="text-sm text-gray-700">
+              <Label htmlFor="targetServings" className="text-sm text-muted-foreground">
                 Ziel-Portionen
               </Label>
               <Input
@@ -159,13 +161,13 @@ export default function IntelligentScaling({
                 min="1"
                 value={targetServings}
                 onChange={(e) => setTargetServings(parseInt(e.target.value) || 0)}
-                className="text-lg font-semibold"
+                className="text-lg font-semibold tabular-nums"
               />
             </div>
           </div>
 
           {error && (
-            <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
+            <div className="text-sm text-destructive bg-destructive/10 p-2 rounded border border-destructive/20">
               {error}
             </div>
           )}
@@ -173,16 +175,16 @@ export default function IntelligentScaling({
           <Button
             onClick={handleScale}
             disabled={loading || targetServings <= 0}
-            className="w-full"
+            className="w-full gap-2"
           >
             {loading ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                <Loader2 className="h-4 w-4 animate-spin" />
                 Berechne...
               </>
             ) : (
               <>
-                <Scale className="h-4 w-4 mr-2" />
+                <Scale className="h-4 w-4" />
                 Skalieren
               </>
             )}
@@ -203,11 +205,11 @@ export default function IntelligentScaling({
 
           <div className="space-y-2 max-h-[400px] overflow-y-auto">
             {result.scaledIngredients.map((ing, idx) => (
-              <Card key={idx} className="p-3 hover:bg-gray-50 transition-colors">
+              <Card key={idx} className="p-3 hover:bg-secondary/30 transition-colors">
                 <div className="space-y-2">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1">
-                      <div className="font-medium text-sm">{ing.name}</div>
+                      <div className="font-medium text-sm text-foreground">{ing.name}</div>
                       <div className="flex items-center gap-2 mt-1">
                         <Badge
                           variant="outline"
@@ -219,21 +221,21 @@ export default function IntelligentScaling({
                     </div>
 
                     <div className="text-right">
-                      <div className="flex items-center gap-1 text-gray-500 text-sm line-through">
+                      <div className="flex items-center gap-1 text-muted-foreground text-sm line-through tabular-nums">
                         {formatQuantity(ing.originalQuantity, ing.unit as any)}
                       </div>
-                      <div className="flex items-center gap-1 font-semibold text-base">
+                      <div className="flex items-center gap-1 font-semibold text-base tabular-nums text-foreground">
                         {getScalingIcon(ing.scalingFactor)}
                         {formatQuantity(ing.scaledQuantity, ing.unit as any)}
                       </div>
-                      <div className="text-xs text-gray-500">
+                      <div className="text-xs text-muted-foreground tabular-nums">
                         {(ing.scalingFactor * 100).toFixed(0)}%
                       </div>
                     </div>
                   </div>
 
                   {ing.ingredientType !== "Standard" && (
-                    <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded border-l-2 border-blue-300">
+                    <div className="text-xs text-muted-foreground bg-secondary/50 p-2 rounded border-l-2 border-primary/40">
                       {ing.scalingNote}
                     </div>
                   )}
@@ -242,13 +244,13 @@ export default function IntelligentScaling({
             ))}
           </div>
 
-          <div className="text-xs text-gray-600 bg-blue-50 p-3 rounded border border-blue-200">
+          <div className="text-xs text-muted-foreground bg-secondary/50 p-3 rounded-lg border border-border">
             <div className="flex items-start gap-2">
-              <Info className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" />
+              <Info className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
               <div>
-                <span className="font-semibold">Hinweis:</span> Die intelligente Skalierung
-                berücksichtigt, dass Gewürze und Triebmittel nicht linear skalieren.
-                Bei großen Mengen ist die Intensität pro Portion höher.
+                <span className="font-semibold text-foreground">Hinweis:</span> Die intelligente Skalierung
+                beruecksichtigt, dass Gewuerze und Triebmittel nicht linear skalieren.
+                Bei grossen Mengen ist die Intensitaet pro Portion hoeher.
               </div>
             </div>
           </div>

@@ -89,28 +89,29 @@ export default function RecipeMediaGallery({ recipeId, steps }: RecipeMediaGalle
   return (
     <>
       <div>
-        <h3 className="text-sm font-heading font-semibold mb-2 text-muted-foreground uppercase tracking-wide">
+        <h3 className="text-sm font-heading font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
           Fotos ({media.length})
         </h3>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-3 gap-2.5">
           {media.map((item, idx) => (
             <div
               key={item.id}
-              className="relative aspect-square rounded-lg overflow-hidden cursor-pointer group border border-border hover:border-primary/50 transition-colors"
+              className="relative aspect-square rounded-lg overflow-hidden cursor-pointer group border border-border hover:border-primary/50 transition-all duration-200 hover:shadow-md"
               onClick={() => openLightbox(idx)}
             >
               <img
                 src={`/uploads/recipes/${item.filename}`}
                 alt={item.caption || item.originalName}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-200" />
               {item.step !== null && (
-                <div className="absolute bottom-1 left-1 bg-primary text-primary-foreground text-[10px] px-1.5 py-0.5 rounded font-medium">
+                <div className="absolute bottom-1 left-1 bg-primary text-primary-foreground text-[10px] px-1.5 py-0.5 rounded font-medium shadow-sm">
                   Schritt {item.step + 1}
                 </div>
               )}
               {item.caption && (
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                   <p className="text-[10px] text-white truncate">{item.caption}</p>
                 </div>
               )}
@@ -141,7 +142,7 @@ export default function RecipeMediaGallery({ recipeId, steps }: RecipeMediaGalle
               <Button
                 size="icon"
                 variant="ghost"
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-white hover:bg-white/20 z-10"
+                className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 text-white hover:bg-white/20 z-10 h-12 w-12"
                 onClick={(e) => { e.stopPropagation(); prevImage(); }}
               >
                 <ChevronLeft className="h-8 w-8" />
@@ -149,7 +150,7 @@ export default function RecipeMediaGallery({ recipeId, steps }: RecipeMediaGalle
               <Button
                 size="icon"
                 variant="ghost"
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:bg-white/20 z-10"
+                className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 text-white hover:bg-white/20 z-10 h-12 w-12"
                 onClick={(e) => { e.stopPropagation(); nextImage(); }}
               >
                 <ChevronRight className="h-8 w-8" />

@@ -97,16 +97,19 @@ export default function RecipeSuggestions() {
   });
 
   return (
-    <div className="p-4 space-y-6">
+    <div className="p-4 space-y-6 pb-24 max-w-3xl mx-auto">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
         <Link href="/menu">
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" className="shrink-0">
             <ArrowLeft className="h-5 w-5" />
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-heading font-bold">Rezeptvorschläge</h1>
+          <h1 className="text-2xl font-heading font-bold flex items-center gap-2">
+            <Lightbulb className="h-6 w-6 text-primary" />
+            Rezeptvorschläge
+          </h1>
           <p className="text-sm text-muted-foreground">
             Intelligente Empfehlungen basierend auf Abwechslung, Saison und Kategoriebalance
           </p>
@@ -216,25 +219,25 @@ export default function RecipeSuggestions() {
           {data.suggestions.map((suggestion, index) => (
             <Card
               key={suggestion.recipeId}
-              className={`border ${getScoreBg(suggestion.score)} transition-colors hover:shadow-md`}
+              className={`border ${getScoreBg(suggestion.score)} transition-all duration-200 hover:shadow-md`}
             >
               <CardContent className="pt-4 pb-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-sm font-bold text-muted-foreground">
-                        #{index + 1}
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground">
+                        {index + 1}
                       </span>
-                      <h3 className="font-semibold text-base truncate">
+                      <h3 className="font-heading font-semibold text-base truncate">
                         {suggestion.recipeName}
                       </h3>
                     </div>
-                    <div className="flex items-center gap-2 flex-wrap mb-2">
+                    <div className="flex items-center gap-1.5 flex-wrap mb-2 ml-8">
                       <Badge variant="outline" className="text-xs">
                         {suggestion.categoryLabel}
                       </Badge>
                       {suggestion.seasonTag && (
-                        <Badge variant="secondary" className="text-xs">
+                        <Badge variant="secondary" className="text-xs bg-green-100 text-green-800 border-green-200">
                           {suggestion.seasonTag}
                         </Badge>
                       )}
@@ -244,18 +247,18 @@ export default function RecipeSuggestions() {
                         </Badge>
                       ))}
                     </div>
-                    <div className="space-y-0.5">
+                    <div className="space-y-0.5 ml-8">
                       {suggestion.reasons.map((reason, i) => (
-                        <p key={i} className="text-xs text-muted-foreground">
+                        <p key={i} className="text-xs text-muted-foreground leading-relaxed">
                           {reason}
                         </p>
                       ))}
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-2 shrink-0">
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-background/80">
                       <Star className={`h-4 w-4 ${getScoreColor(suggestion.score)}`} />
-                      <span className={`text-lg font-bold ${getScoreColor(suggestion.score)}`}>
+                      <span className={`text-lg font-bold tabular-nums ${getScoreColor(suggestion.score)}`}>
                         {suggestion.score}
                       </span>
                     </div>
@@ -263,9 +266,10 @@ export default function RecipeSuggestions() {
                       size="sm"
                       onClick={() => addToMenuPlan.mutate(suggestion.recipeId)}
                       disabled={addToMenuPlan.isPending}
+                      className="gap-1"
                     >
-                      <Plus className="h-4 w-4 mr-1" />
-                      Hinzufügen
+                      <Plus className="h-4 w-4" />
+                      Hinzufuegen
                     </Button>
                   </div>
                 </div>

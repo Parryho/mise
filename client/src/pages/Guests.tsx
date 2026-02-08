@@ -219,21 +219,29 @@ function GuestCountsView() {
         </div>
       )}
 
-      <Card className="bg-secondary/30">
+      <Card className="border-primary/20 bg-primary/5">
         <CardContent className="p-3">
-          <div className="text-xs text-muted-foreground mb-2">Gesamtsumme ({viewMode === "day" ? "Tag" : viewMode === "week" ? "Woche" : "Monat"})</div>
-          <div className="flex justify-around text-center">
-            <div>
-              <div className="text-2xl font-bold">{periodTotals.total}</div>
-              <div className="text-xs text-muted-foreground">Gesamt</div>
+          <div className="text-xs text-muted-foreground mb-3 font-medium uppercase tracking-wide">
+            Gesamtsumme ({viewMode === "day" ? "Tag" : viewMode === "week" ? "Woche" : "Monat"})
+          </div>
+          <div className="grid grid-cols-3 gap-3 text-center">
+            <div className="bg-background rounded-lg p-2 border">
+              <div className="text-2xl font-bold text-primary">{periodTotals.total}</div>
+              <div className="text-[10px] text-muted-foreground font-medium">Gesamt</div>
             </div>
-            <div>
-              <div className="text-lg font-medium">{periodTotals.adults}</div>
-              <div className="text-xs text-muted-foreground">Erwachsene</div>
+            <div className="bg-background rounded-lg p-2 border">
+              <div className="flex items-center justify-center gap-1">
+                <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-lg font-semibold">{periodTotals.adults}</span>
+              </div>
+              <div className="text-[10px] text-muted-foreground font-medium">Erwachsene</div>
             </div>
-            <div>
-              <div className="text-lg font-medium">{periodTotals.children}</div>
-              <div className="text-xs text-muted-foreground">Kinder</div>
+            <div className="bg-background rounded-lg p-2 border">
+              <div className="flex items-center justify-center gap-1">
+                <Baby className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-lg font-semibold">{periodTotals.children}</span>
+              </div>
+              <div className="text-[10px] text-muted-foreground font-medium">Kinder</div>
             </div>
           </div>
         </CardContent>

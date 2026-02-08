@@ -59,6 +59,36 @@ export default function HACCP() {
       </div>
       <LocationSwitcher />
 
+      {/* Summary stats */}
+      {fridges.length > 0 && (
+        <div className="grid grid-cols-3 gap-2">
+          <Card className="bg-green-50 border-green-200">
+            <CardContent className="p-3 text-center">
+              <div className="text-2xl font-bold text-green-700">
+                {fridges.filter(f => { const l = getLatestLog(f.id); return l && l.status === "OK"; }).length}
+              </div>
+              <div className="text-[10px] text-green-600 font-medium">OK</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-amber-50 border-amber-200">
+            <CardContent className="p-3 text-center">
+              <div className="text-2xl font-bold text-amber-700">
+                {fridges.filter(f => { const l = getLatestLog(f.id); return l?.status === "WARNING"; }).length}
+              </div>
+              <div className="text-[10px] text-amber-600 font-medium">{t("warning") || "Warnung"}</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-red-50 border-red-200">
+            <CardContent className="p-3 text-center">
+              <div className="text-2xl font-bold text-red-700">
+                {fridges.filter(f => { const l = getLatestLog(f.id); return l?.status === "CRITICAL"; }).length}
+              </div>
+              <div className="text-[10px] text-red-600 font-medium">Kritisch</div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Alert banner for today's out-of-range readings */}
       {todayAlerts.length > 0 && (
         <div className={`px-3 py-2.5 rounded-lg border flex items-start gap-2 ${
@@ -87,7 +117,7 @@ export default function HACCP() {
         </div>
       )}
 
-      <div className="grid gap-4">
+      <div className="grid gap-4 sm:grid-cols-2">
         {fridges.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             <p>{t("noData")}</p>

@@ -35,6 +35,7 @@ interface GuestWarning {
 
 export async function getDailyAllergenMatrix(date: string, locationId?: number): Promise<{
   matrix: DayAllergenMatrix[];
+  dishes: Array<{ id: number; name: string; allergens: string[]; meal: string }>;
   guestWarnings: GuestWarning[];
 }> {
   const conditions: any[] = [eq(menuPlans.date, date)];
@@ -134,7 +135,15 @@ export async function getDailyAllergenMatrix(date: string, locationId?: number):
     }
   }
 
-  return { matrix, guestWarnings };
+  // Flatten dishes for the client's AllergenOverview.tsx which expects { dishes, guestWarnings }
+  const dishes = allDishAllergens.map(d => ({
+    id: d.recipeId,
+    name: d.recipeName,
+    allergens: d.allergens,
+    meal: d.course,
+  }));
+
+  return { matrix, dishes, guestWarnings };
 }
 
 export async function getWeeklyAllergenMatrix(startDate: string, endDate: string, locationId?: number): Promise<{

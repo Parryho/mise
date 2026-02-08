@@ -142,13 +142,13 @@ export default function RotationPrint() {
       </div>
 
       {/* Week tabs (hidden when printing) */}
-      <div className="flex gap-1.5 px-4 py-3 print:hidden overflow-x-auto">
+      <div className="flex gap-1.5 px-4 py-3 print:hidden overflow-x-auto border-b border-border/50">
         <button
           onClick={() => setSelectedWeek(null)}
           className={cn(
-            "px-3 py-1.5 rounded-full text-xs font-bold transition-colors whitespace-nowrap",
+            "px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap press",
             selectedWeek === null
-              ? "bg-primary text-primary-foreground"
+              ? "bg-primary text-primary-foreground shadow-sm"
               : "bg-muted text-muted-foreground hover:bg-muted/80"
           )}
         >
@@ -159,9 +159,9 @@ export default function RotationPrint() {
             key={w}
             onClick={() => setSelectedWeek(w)}
             className={cn(
-              "px-3 py-1.5 rounded-full text-xs font-bold transition-colors whitespace-nowrap",
+              "px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap press",
               selectedWeek === w
-                ? "bg-primary text-primary-foreground"
+                ? "bg-primary text-primary-foreground shadow-sm"
                 : "bg-muted text-muted-foreground hover:bg-muted/80"
             )}
           >
@@ -172,18 +172,18 @@ export default function RotationPrint() {
 
       {/* Tables — one per week */}
       {weeksToShow.map(weekNr => (
-        <div key={weekNr} className="rotation-print-page px-2 mb-6">
-          <h2 className="font-heading text-lg font-bold uppercase tracking-wide px-2 pb-2 pt-1">
+        <div key={weekNr} className="rotation-print-page px-2 mb-8">
+          <h2 className="font-heading text-lg font-bold uppercase tracking-wide px-2 pb-2 pt-2 text-foreground">
             Woche {weekNr}
           </h2>
 
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto rounded-lg border border-border/60">
             <table className="w-full border-collapse text-[11px] leading-tight">
               <thead>
                 <tr className="bg-primary text-primary-foreground">
-                  <th className="border border-border/30 px-1.5 py-1 text-left w-10 font-bold">Tag</th>
+                  <th className="border-r border-white/20 px-2 py-1.5 text-left w-10 font-bold text-[10px] uppercase tracking-wider">Tag</th>
                   {COLUMNS.map(col => (
-                    <th key={`${col.locationSlug}-${col.meal}`} className="border border-border/30 px-1.5 py-1 text-left font-bold">
+                    <th key={`${col.locationSlug}-${col.meal}`} className="border-r border-white/20 last:border-r-0 px-2 py-1.5 text-left font-bold text-[10px] uppercase tracking-wider">
                       {col.label}
                     </th>
                   ))}
@@ -191,13 +191,13 @@ export default function RotationPrint() {
               </thead>
               <tbody>
                 {DAY_LABELS.map((dayLabel, dayIdx) => (
-                  <tr key={dayLabel} className={dayIdx % 2 === 0 ? "bg-background" : "bg-muted/30"}>
-                    <td className="border border-border/50 px-1.5 py-0.5 font-bold align-top bg-muted/50">
+                  <tr key={dayLabel} className={cn("border-b border-border/40 last:border-b-0", dayIdx % 2 === 0 ? "bg-background" : "bg-muted/20")}>
+                    <td className="border-r border-border/40 px-2 py-1 font-bold align-top bg-muted/40 text-xs">
                       {dayLabel}
                     </td>
                     {COLUMNS.map(col => (
-                      <td key={`${col.locationSlug}-${col.meal}`} className="border border-border/50 px-1 py-0.5 align-top">
-                        <div className="space-y-px">
+                      <td key={`${col.locationSlug}-${col.meal}`} className="border-r border-border/40 last:border-r-0 px-1.5 py-1 align-top">
+                        <div className="space-y-0.5">
                           {MEAL_SLOTS.map(course => {
                             const slot = getSlot(weekNr, dayIdx, col.meal, col.locationSlug, course);
                             const recipe = slot?.recipeId ? recipeMap.get(slot.recipeId) : null;
@@ -241,10 +241,11 @@ export default function RotationPrint() {
           </div>
 
           {/* Allergen legend */}
-          <div className="mt-1 px-2 text-[9px] text-muted-foreground print:text-[8px]">
+          <div className="mt-2 mx-2 px-3 py-2 bg-muted/30 rounded-lg text-[9px] text-muted-foreground print:text-[8px] print:bg-transparent print:px-0">
+            <span className="font-semibold text-foreground/70 mr-1">Allergene:</span>
             {Object.entries(ALLERGENS).map(([code, info]) => (
               <span key={code} className="mr-2">
-                <span className="font-bold">{code}</span>={info.nameDE}
+                <span className="font-bold text-orange-600">{code}</span>={info.nameDE}
               </span>
             ))}
           </div>

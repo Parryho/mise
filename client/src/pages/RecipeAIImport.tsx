@@ -326,7 +326,7 @@ export default function RecipeAIImport() {
             <div className="space-y-2">
               <Label>Rezeptbild hochladen</Label>
               <div
-                className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                className="border-2 border-dashed border-muted-foreground/25 rounded-xl p-8 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all duration-200"
                 onClick={() => fileInputRef.current?.click()}
               >
                 {imagePreview ? (
@@ -334,7 +334,7 @@ export default function RecipeAIImport() {
                     <img
                       src={imagePreview}
                       alt="Rezeptbild"
-                      className="max-h-64 mx-auto rounded-lg object-contain"
+                      className="max-h-64 mx-auto rounded-lg object-contain shadow-md"
                     />
                     <Button
                       variant="outline"
@@ -347,9 +347,11 @@ export default function RecipeAIImport() {
                     </Button>
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    <Upload className="h-10 w-10 text-muted-foreground mx-auto" />
-                    <p className="text-sm text-muted-foreground">
+                  <div className="space-y-3 py-4">
+                    <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Upload className="h-8 w-8 text-primary" />
+                    </div>
+                    <p className="text-sm font-medium text-foreground">
                       Klicken Sie hier oder ziehen Sie ein Bild hierher
                     </p>
                     <p className="text-xs text-muted-foreground">
@@ -589,15 +591,15 @@ export default function RecipeAIImport() {
         </CardHeader>
         <CardContent className="space-y-3">
           {result.ingredients.map((ing, index) => (
-            <div key={index} className="border rounded-lg p-3 space-y-2">
+            <div key={index} className="border rounded-lg p-3 space-y-2 hover:border-primary/30 transition-colors">
               <div className="flex items-start gap-2">
-                <div className="flex-1 grid grid-cols-12 gap-2">
+                <div className="flex-1 grid grid-cols-12 gap-2 items-center">
                   <div className="col-span-5">
                     <Input
                       value={ing.name}
                       onChange={(e) => updateIngredient(index, "name", e.target.value)}
                       placeholder="Zutatname"
-                      className="text-sm"
+                      className="text-sm h-9"
                     />
                   </div>
                   <div className="col-span-3">
@@ -606,7 +608,7 @@ export default function RecipeAIImport() {
                       value={ing.amount}
                       onChange={(e) => updateIngredient(index, "amount", parseFloat(e.target.value) || 0)}
                       placeholder="Menge"
-                      className="text-sm"
+                      className="text-sm h-9 tabular-nums"
                       step="any"
                     />
                   </div>
@@ -615,7 +617,7 @@ export default function RecipeAIImport() {
                       value={ing.unit}
                       onValueChange={(val) => updateIngredient(index, "unit", val)}
                     >
-                      <SelectTrigger className="text-sm">
+                      <SelectTrigger className="text-sm h-9">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -691,8 +693,8 @@ export default function RecipeAIImport() {
         <CardContent className="space-y-2">
           {result.steps.map((step, index) => (
             <div key={index} className="flex items-start gap-2">
-              <span className="text-sm font-medium text-muted-foreground mt-2 w-6 text-right shrink-0">
-                {index + 1}.
+              <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs mt-1">
+                {index + 1}
               </span>
               <Textarea
                 value={step}

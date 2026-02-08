@@ -73,7 +73,7 @@ export default function PaxTrends() {
   }
 
   return (
-    <div className="p-4 space-y-6">
+    <div className="p-4 space-y-6 pb-24">
       <div className="flex items-center gap-4">
         <Link href="/reports">
           <Button variant="ghost" size="icon">
@@ -84,50 +84,37 @@ export default function PaxTrends() {
       </div>
 
       {/* Week Navigation */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-between">
-            <Button variant="outline" size="sm" onClick={handlePrevWeek}>
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              Vorherige Woche
-            </Button>
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground">Kalenderwoche</p>
-              <p className="text-lg font-semibold">KW {week} / {year}</p>
-              <p className="text-xs text-muted-foreground">{from} bis {to}</p>
-            </div>
-            <Button variant="outline" size="sm" onClick={handleNextWeek}>
-              Nächste Woche
-              <ChevronRight className="h-4 w-4 ml-1" />
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-between">
+        <Button variant="outline" size="icon" onClick={handlePrevWeek}>
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        <div className="text-center">
+          <p className="text-sm font-semibold">KW {week} / {year}</p>
+          <p className="text-xs text-muted-foreground">{from} bis {to}</p>
+        </div>
+        <Button variant="outline" size="icon" onClick={handleNextWeek}>
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Erwachsene</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{data?.totalWeek.adults || 0}</p>
+      <div className="grid gap-3 grid-cols-3">
+        <Card className="border-l-4 border-l-primary">
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground font-medium">Erwachsene</p>
+            <p className="text-2xl font-bold mt-1">{data?.totalWeek.adults || 0}</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Kinder</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{data?.totalWeek.children || 0}</p>
+        <Card className="border-l-4 border-l-blue-500">
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground font-medium">Kinder</p>
+            <p className="text-2xl font-bold mt-1">{data?.totalWeek.children || 0}</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Gesamt</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{data?.totalWeek.total || 0}</p>
+        <Card className="border-l-4 border-l-green-500">
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground font-medium">Gesamt</p>
+            <p className="text-2xl font-bold mt-1">{data?.totalWeek.total || 0}</p>
           </CardContent>
         </Card>
       </div>
@@ -146,7 +133,7 @@ export default function PaxTrends() {
               <Tooltip />
               <Legend />
               <Bar dataKey="adults" name="Erwachsene" fill="#F37021" stackId="a" />
-              <Bar dataKey="children" name="Kinder" fill="#3b82f6" stackId="a" />
+              <Bar dataKey="children" name="Kinder" fill="#3b82f6" stackId="a" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
@@ -158,23 +145,23 @@ export default function PaxTrends() {
           <CardTitle>Wochentags-Durchschnitt</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto rounded-lg border">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b">
-                  <th className="text-left p-2 font-medium">Wochentag</th>
-                  <th className="text-right p-2 font-medium">Ø Erwachsene</th>
-                  <th className="text-right p-2 font-medium">Ø Kinder</th>
-                  <th className="text-right p-2 font-medium">Ø Gesamt</th>
+                <tr className="bg-secondary/50">
+                  <th className="text-left p-2.5 font-medium text-xs">Wochentag</th>
+                  <th className="text-right p-2.5 font-medium text-xs">Ø Erwachsene</th>
+                  <th className="text-right p-2.5 font-medium text-xs">Ø Kinder</th>
+                  <th className="text-right p-2.5 font-medium text-xs">Ø Gesamt</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y">
                 {data?.weekdayAverages.map((day) => (
-                  <tr key={day.dayName} className="border-b hover:bg-muted/50">
-                    <td className="p-2 font-medium">{day.dayName}</td>
-                    <td className="text-right p-2">{Math.round(day.avgAdults)}</td>
-                    <td className="text-right p-2">{Math.round(day.avgChildren)}</td>
-                    <td className="text-right p-2 font-semibold">{Math.round(day.avgTotal)}</td>
+                  <tr key={day.dayName} className="hover:bg-muted/50 transition-colors">
+                    <td className="p-2.5 font-medium">{day.dayName}</td>
+                    <td className="text-right p-2.5">{Math.round(day.avgAdults)}</td>
+                    <td className="text-right p-2.5">{Math.round(day.avgChildren)}</td>
+                    <td className="text-right p-2.5 font-semibold">{Math.round(day.avgTotal)}</td>
                   </tr>
                 ))}
               </tbody>

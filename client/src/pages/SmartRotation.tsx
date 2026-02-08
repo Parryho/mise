@@ -283,67 +283,71 @@ export default function SmartRotation() {
   }
 
   return (
-    <div className="p-4 space-y-6 pb-24">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Link href="/rotation">
-          <Button variant="ghost" size="icon">
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-heading font-bold flex items-center gap-2">
-            <Brain className="h-6 w-6 text-primary" />
-            Smart Rotation
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            KI-gestützte Analyse und Optimierung der 6-Wochen-Rotation
-          </p>
+    <div className="flex flex-col pb-24">
+      {/* Orange Header */}
+      <div className="bg-primary text-primary-foreground px-4 pt-4 pb-3">
+        <div className="flex items-center gap-3">
+          <Link href="/rotation">
+            <Button size="icon" variant="ghost" className="text-primary-foreground hover:bg-white/20 h-8 w-8">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          </Link>
+          <div className="flex-1">
+            <h1 className="font-heading text-xl font-bold uppercase tracking-wide flex items-center gap-2">
+              <Brain className="h-5 w-5" />
+              Smart Rotation
+            </h1>
+            <p className="text-xs text-primary-foreground/70 mt-0.5">
+              KI-gestützte Analyse und Optimierung
+            </p>
+          </div>
         </div>
       </div>
+
+      <div className="p-4 space-y-6">
 
       {/* ── Score Overview ─────────────────────────────────────────── */}
       {analysis && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Card>
+          <Card className="border-border/60">
             <CardContent className="pt-4 pb-3 px-4 text-center">
-              <div className="text-3xl font-bold text-primary">
+              <div className="text-3xl font-bold text-primary leading-tight">
                 {analysis.varietyScore}%
               </div>
-              <div className="text-xs text-muted-foreground mt-1">Abwechslung</div>
-              <Progress value={analysis.varietyScore} className="mt-2 h-1.5" />
+              <div className="text-[11px] text-muted-foreground mt-1 font-medium uppercase tracking-wide">Abwechslung</div>
+              <Progress value={analysis.varietyScore} className="mt-2.5 h-1.5" />
             </CardContent>
           </Card>
-          <Card>
+          <Card className="border-border/60">
             <CardContent className="pt-4 pb-3 px-4 text-center">
-              <div className="text-3xl font-bold text-primary">
+              <div className="text-3xl font-bold text-primary leading-tight">
                 {analysis.fillPercentage}%
               </div>
-              <div className="text-xs text-muted-foreground mt-1">Befüllt</div>
-              <Progress value={analysis.fillPercentage} className="mt-2 h-1.5" />
+              <div className="text-[11px] text-muted-foreground mt-1 font-medium uppercase tracking-wide">Befüllt</div>
+              <Progress value={analysis.fillPercentage} className="mt-2.5 h-1.5" />
             </CardContent>
           </Card>
-          <Card>
+          <Card className="border-border/60">
             <CardContent className="pt-4 pb-3 px-4 text-center">
-              <div className="text-3xl font-bold text-primary">
+              <div className="text-3xl font-bold text-primary leading-tight">
                 {analysis.seasonalFit}%
               </div>
-              <div className="text-xs text-muted-foreground mt-1">Saison-Fit</div>
-              <Progress value={analysis.seasonalFit} className="mt-2 h-1.5" />
+              <div className="text-[11px] text-muted-foreground mt-1 font-medium uppercase tracking-wide">Saison-Fit</div>
+              <Progress value={analysis.seasonalFit} className="mt-2.5 h-1.5" />
             </CardContent>
           </Card>
-          <Card>
+          <Card className="border-border/60">
             <CardContent className="pt-4 pb-3 px-4 text-center">
-              <div className="text-3xl font-bold text-primary">
+              <div className="text-3xl font-bold text-primary leading-tight">
                 {analysis.recipesUsedMultipleTimes.length}
               </div>
-              <div className="text-xs text-muted-foreground mt-1">Wiederholungen</div>
+              <div className="text-[11px] text-muted-foreground mt-1 font-medium uppercase tracking-wide">Wiederholungen</div>
               <Progress
                 value={Math.max(
                   0,
                   100 - analysis.recipesUsedMultipleTimes.length * 5
                 )}
-                className="mt-2 h-1.5"
+                className="mt-2.5 h-1.5"
               />
             </CardContent>
           </Card>
@@ -352,10 +356,10 @@ export default function SmartRotation() {
 
       {/* ── Radar Chart (Overall Score) ────────────────────────────── */}
       {analysis && scoreRadarData.length > 0 && (
-        <Card>
+        <Card className="border-border/60">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
+            <CardTitle className="text-sm flex items-center gap-2 text-muted-foreground">
+              <BarChart3 className="h-4 w-4 text-primary" />
               Gesamtbewertung
             </CardTitle>
           </CardHeader>
@@ -380,9 +384,9 @@ export default function SmartRotation() {
 
       {/* ── Weekly Balance ──────────────────────────────────────────── */}
       {analysis && weeklyChartData.length > 0 && (
-        <Card>
+        <Card className="border-border/60">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Befüllung pro Woche</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">Befüllung pro Woche</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>
@@ -406,9 +410,9 @@ export default function SmartRotation() {
 
       {/* ── Category Distribution ──────────────────────────────────── */}
       {analysis && categoryChartData.length > 0 && (
-        <Card>
+        <Card className="border-border/60">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Kategorieverteilung</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">Kategorieverteilung</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={280}>
@@ -442,9 +446,9 @@ export default function SmartRotation() {
 
       {/* ── Allergen Coverage ──────────────────────────────────────── */}
       {analysis && allergenChartData.length > 0 && (
-        <Card>
+        <Card className="border-border/60">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Allergen-Verteilung (Top 10)</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">Allergen-Verteilung (Top 10)</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={250}>
@@ -464,10 +468,10 @@ export default function SmartRotation() {
 
       {/* ── Repeated Recipes Table ─────────────────────────────────── */}
       {analysis && analysis.recipesUsedMultipleTimes.length > 0 && (
-        <Card>
+        <Card className="border-border/60">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-amber-500" />
+            <CardTitle className="text-sm flex items-center gap-2 text-muted-foreground">
+              <AlertTriangle className="h-4 w-4 text-status-warning" />
               Mehrfach verwendete Gerichte
             </CardTitle>
           </CardHeader>
@@ -504,9 +508,9 @@ export default function SmartRotation() {
       <Separator />
 
       {/* ── AI Optimization Section ────────────────────────────────── */}
-      <Card className="border-primary/30">
+      <Card className="border-primary/30 bg-primary/[0.02]">
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2">
+          <CardTitle className="text-base flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
             KI-Optimierung
           </CardTitle>
@@ -514,7 +518,7 @@ export default function SmartRotation() {
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
             Claude analysiert die aktuelle Rotation und schlägt konkrete Verbesserungen vor.
-            Wähle die Schwerpunkte:
+            Schwerpunkte wählen:
           </p>
 
           <div className="space-y-3">
@@ -573,16 +577,16 @@ export default function SmartRotation() {
 
       {/* ── Optimization Results ───────────────────────────────────── */}
       {optimizeResult && (
-        <Card>
+        <Card className="border-border/60">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <ArrowRightLeft className="h-4 w-4" />
+            <CardTitle className="text-sm flex items-center gap-2 text-muted-foreground">
+              <ArrowRightLeft className="h-4 w-4 text-primary" />
               Vorgeschlagene Änderungen ({optimizeResult.swaps.length})
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Summary */}
-            <div className="bg-muted/50 rounded-lg p-3 text-sm">
+            <div className="bg-muted/40 rounded-lg p-3 text-sm text-muted-foreground border border-border/40">
               {optimizeResult.summary}
             </div>
 
@@ -601,10 +605,10 @@ export default function SmartRotation() {
                 return (
                   <div
                     key={idx}
-                    className={`border rounded-lg p-3 space-y-2 ${
+                    className={`border rounded-lg p-3 space-y-2 transition-colors ${
                       isApplied
-                        ? "border-green-300 bg-green-50/50"
-                        : "border-border"
+                        ? "border-status-success/40 bg-status-success-subtle/50"
+                        : "border-border/60"
                     }`}
                   >
                     {/* Location info */}
@@ -618,7 +622,7 @@ export default function SmartRotation() {
                         <span>{COURSE_LABELS[swap.course] || swap.course}</span>
                       </div>
                       {isApplied && (
-                        <Badge className="bg-green-600 text-[10px] py-0 h-5">
+                        <Badge className="bg-status-success text-status-success-foreground text-[10px] py-0 h-5">
                           Übernommen
                         </Badge>
                       )}
@@ -682,6 +686,7 @@ export default function SmartRotation() {
           </CardContent>
         </Card>
       )}
+      </div>
     </div>
   );
 }

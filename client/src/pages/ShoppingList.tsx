@@ -128,16 +128,20 @@ export default function ShoppingList() {
       </div>
 
       {/* Summary */}
-      <Card className="bg-secondary/30">
+      <Card className="border-primary/20 bg-primary/5">
         <CardContent className="p-3">
-          <div className="flex justify-between items-center">
-            <div>
-              <div className="text-xs text-muted-foreground">{totalItems} Zutaten</div>
-              <div className="text-xs text-muted-foreground">{categories.length} Kategorien</div>
+          <div className="grid grid-cols-3 gap-3 text-center">
+            <div className="bg-background rounded-lg p-2 border">
+              <div className="text-lg font-bold">{totalItems}</div>
+              <div className="text-[10px] text-muted-foreground font-medium">Zutaten</div>
             </div>
-            <div className="text-right">
-              <div className="text-xs text-muted-foreground">Geschätzte Kosten</div>
-              <div className="text-xl font-bold">{formatEuro(grandTotal)}</div>
+            <div className="bg-background rounded-lg p-2 border">
+              <div className="text-lg font-bold">{viewMode === 'category' ? categories.length : supplierGroups.length}</div>
+              <div className="text-[10px] text-muted-foreground font-medium">{viewMode === 'category' ? 'Kategorien' : 'Lieferanten'}</div>
+            </div>
+            <div className="bg-background rounded-lg p-2 border">
+              <div className="text-lg font-bold text-primary">{formatEuro(grandTotal)}</div>
+              <div className="text-[10px] text-muted-foreground font-medium">Geschätzt</div>
             </div>
           </div>
         </CardContent>

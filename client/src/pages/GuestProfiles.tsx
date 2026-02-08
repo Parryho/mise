@@ -25,7 +25,7 @@ interface GuestProfile {
   date: string;
   dateEnd: string | null;
   personCount: number;
-  allergens: string;
+  allergens: string[] | string;
   dietaryNotes: string | null;
   locationId: number | null;
   contactPerson: string | null;
@@ -168,9 +168,11 @@ export default function GuestProfiles() {
         <div className="space-y-2">
           {filteredProfiles.map((profile) => {
             const isActive = isActiveProfile(profile);
-            const allergenCodes = profile.allergens
-              ? profile.allergens.split("").filter((c) => c in ALLERGENS)
-              : [];
+            const allergenCodes = Array.isArray(profile.allergens)
+              ? profile.allergens.filter((c: string) => c in ALLERGENS)
+              : typeof profile.allergens === "string"
+                ? profile.allergens.split("").filter((c) => c in ALLERGENS)
+                : [];
 
             return (
               <Card key={profile.id} className={isActive ? "border-orange-500 shadow-md" : ""}>
@@ -313,7 +315,7 @@ function AddProfileDialog({
       date,
       dateEnd: dateEnd || null,
       personCount: parseInt(personCount) || 1,
-      allergens: Array.from(allergens).sort().join(""),
+      allergens: Array.from(allergens).sort(),
       dietaryNotes: dietaryNotes.trim() || null,
       locationId: locationId === "none" ? null : parseInt(locationId),
       contactPerson: contactPerson.trim() || null,
@@ -376,7 +378,13 @@ function EditProfileDialog({
   const [dateEnd, setDateEnd] = useState(profile.dateEnd || "");
   const [personCount, setPersonCount] = useState(String(profile.personCount));
   const [allergens, setAllergens] = useState<Set<string>>(
-    new Set(profile.allergens.split("").filter((c) => c in ALLERGENS))
+    new Set(
+      Array.isArray(profile.allergens)
+        ? profile.allergens.filter((c: string) => c in ALLERGENS)
+        : typeof profile.allergens === "string"
+          ? profile.allergens.split("").filter((c) => c in ALLERGENS)
+          : []
+    )
   );
   const [dietaryNotes, setDietaryNotes] = useState(profile.dietaryNotes || "");
   const [locationId, setLocationId] = useState<string>(
@@ -411,7 +419,7 @@ function EditProfileDialog({
       date,
       dateEnd: dateEnd || null,
       personCount: parseInt(personCount) || 1,
-      allergens: Array.from(allergens).sort().join(""),
+      allergens: Array.from(allergens).sort(),
       dietaryNotes: dietaryNotes.trim() || null,
       locationId: locationId === "none" ? null : parseInt(locationId),
       contactPerson: contactPerson.trim() || null,

@@ -148,49 +148,51 @@ export default function RecipeDetailDialog({ recipe, open, onOpenChange, readOnl
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <div className="relative h-40 shrink-0">
+        <div className="relative h-48 shrink-0">
           <img
             src={recipe.image || "https://images.unsplash.com/photo-1495521821757-a1efb6729352?auto=format&fit=crop&q=80&w=800"}
             alt={recipe.name}
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
           <div className="absolute bottom-4 left-4 right-4">
-            <Badge className="mb-2 bg-primary text-primary-foreground border-none">{categoryLabel}</Badge>
+            <Badge className="mb-2 bg-primary text-primary-foreground border-none shadow-sm">{categoryLabel}</Badge>
             <h2 className="text-2xl font-heading font-bold text-foreground drop-shadow-sm">{recipe.name}</h2>
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {!readOnly && (
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-2 flex-wrap items-center">
               {!editMode && (
                 <>
-                  <Button variant="outline" size="sm" className="gap-1" onClick={startEdit}>
-                    <Pencil className="h-3 w-3" /> Bearbeiten
+                  <Button variant="outline" size="sm" className="gap-1.5" onClick={startEdit}>
+                    <Pencil className="h-3.5 w-3.5" /> Bearbeiten
                   </Button>
-                  <Button variant="outline" size="sm" className="gap-1" onClick={() => exportRecipe('pdf')}>
-                    <Download className="h-3 w-3" /> PDF
+                  <Button variant="outline" size="sm" className="gap-1.5" onClick={() => exportRecipe('pdf')}>
+                    <Download className="h-3.5 w-3.5" /> PDF
                   </Button>
-                  <Button variant="outline" size="sm" className="gap-1" onClick={() => exportRecipe('docx')}>
-                    <FileText className="h-3 w-3" /> DOCX
+                  <Button variant="outline" size="sm" className="gap-1.5" onClick={() => exportRecipe('docx')}>
+                    <FileText className="h-3.5 w-3.5" /> DOCX
                   </Button>
                   {recipe.sourceUrl && (
-                    <Button variant="outline" size="sm" className="gap-1" asChild>
+                    <Button variant="outline" size="sm" className="gap-1.5" asChild>
                       <a href={recipe.sourceUrl} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="h-3 w-3" /> Website
+                        <ExternalLink className="h-3.5 w-3.5" /> Website
                       </a>
                     </Button>
                   )}
-                  <Button variant="destructive" size="sm" onClick={handleDelete} disabled={deleting}>
-                    {deleting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
-                  </Button>
+                  <div className="ml-auto">
+                    <Button variant="destructive" size="sm" className="gap-1.5" onClick={handleDelete} disabled={deleting}>
+                      {deleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                    </Button>
+                  </div>
                 </>
               )}
               {editMode && (
                 <>
-                  <Button size="sm" className="gap-1" onClick={handleSave} disabled={saving}>
-                    {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : null} Speichern
+                  <Button size="sm" className="gap-1.5" onClick={handleSave} disabled={saving}>
+                    {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null} Speichern
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => setEditMode(false)}>Abbrechen</Button>
                 </>
@@ -342,19 +344,19 @@ export default function RecipeDetailDialog({ recipe, open, onOpenChange, readOnl
                     <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                   </div>
                 ) : (
-                  <ul className="space-y-2 text-sm">
+                  <ul className="text-sm divide-y divide-border/50">
                     {ingredients.map((ing, idx) => {
                       const scaledAmount = (ing.amount / recipe.portions) * portions;
                       return (
-                        <li key={idx} className="flex justify-between items-center py-1">
-                          <span className="text-muted-foreground">{ing.name}</span>
-                          <div className="flex items-center gap-2">
+                        <li key={idx} className="flex justify-between items-center py-2 px-2 -mx-2 rounded hover:bg-secondary/30 transition-colors">
+                          <span className="text-foreground">{ing.name}</span>
+                          <div className="flex items-center gap-2 shrink-0 ml-3">
                             {ing.allergens?.map(code => (
                               <span key={code} className="text-[10px] text-destructive font-bold px-1 border border-destructive/30 rounded font-mono" title={ALLERGENS[code as AllergenCode]?.[lang]}>
                                 {code}
                               </span>
                             ))}
-                            <span className="font-mono font-medium text-foreground">
+                            <span className="font-mono font-medium text-foreground tabular-nums">
                               {Number.isInteger(scaledAmount) ? scaledAmount : scaledAmount.toFixed(1)} {ing.unit}
                             </span>
                           </div>
@@ -362,7 +364,7 @@ export default function RecipeDetailDialog({ recipe, open, onOpenChange, readOnl
                       );
                     })}
                     {ingredients.length === 0 && !loadingIngredients && (
-                      <li className="text-muted-foreground text-center py-2">{t("noData")}</li>
+                      <li className="text-muted-foreground text-center py-4">{t("noData")}</li>
                     )}
                   </ul>
                 )}

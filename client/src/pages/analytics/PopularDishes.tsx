@@ -75,7 +75,7 @@ export default function PopularDishes() {
   })) || [];
 
   return (
-    <div className="p-4 space-y-6">
+    <div className="p-4 space-y-6 pb-24">
       <div className="flex items-center gap-4">
         <Link href="/reports">
           <Button variant="ghost" size="icon">
@@ -121,28 +121,28 @@ export default function PopularDishes() {
           <CardTitle>Detaillierte Rangliste</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto rounded-lg border">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b">
-                  <th className="text-center p-2 font-medium w-12">#</th>
-                  <th className="text-left p-2 font-medium">Gericht</th>
-                  <th className="text-left p-2 font-medium">Kategorie</th>
-                  <th className="text-right p-2 font-medium">Menüplan</th>
-                  <th className="text-right p-2 font-medium">Rotation</th>
-                  <th className="text-right p-2 font-medium">Gesamt</th>
+                <tr className="bg-secondary/50">
+                  <th className="text-center p-2.5 font-medium text-xs w-12">#</th>
+                  <th className="text-left p-2.5 font-medium text-xs">Gericht</th>
+                  <th className="text-left p-2.5 font-medium text-xs">Kategorie</th>
+                  <th className="text-right p-2.5 font-medium text-xs">Menüplan</th>
+                  <th className="text-right p-2.5 font-medium text-xs">Rotation</th>
+                  <th className="text-right p-2.5 font-medium text-xs">Gesamt</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y">
                 {data?.rankings.map((dish) => (
-                  <tr key={dish.dishId} className="border-b hover:bg-muted/50">
-                    <td className="text-center p-2 font-medium text-lg">
+                  <tr key={dish.dishId} className={`hover:bg-muted/50 transition-colors ${dish.rank <= 3 ? 'bg-primary/5' : ''}`}>
+                    <td className="text-center p-2.5 font-medium text-lg">
                       {getMedalEmoji(dish.rank)}
                     </td>
-                    <td className="p-2 font-medium">{dish.dishName}</td>
-                    <td className="p-2">
+                    <td className="p-2.5 font-medium">{dish.dishName}</td>
+                    <td className="p-2.5">
                       <span
-                        className="inline-block px-2 py-1 rounded text-xs font-medium"
+                        className="inline-block px-2 py-0.5 rounded-full text-xs font-medium"
                         style={{
                           backgroundColor: CATEGORY_COLORS[dish.category] + "20",
                           color: CATEGORY_COLORS[dish.category]
@@ -151,9 +151,9 @@ export default function PopularDishes() {
                         {CATEGORY_LABELS[dish.category] || dish.category}
                       </span>
                     </td>
-                    <td className="text-right p-2">{dish.countMenuplan}</td>
-                    <td className="text-right p-2">{dish.countRotation}</td>
-                    <td className="text-right p-2 font-bold">{dish.totalCount}</td>
+                    <td className="text-right p-2.5 text-muted-foreground">{dish.countMenuplan}</td>
+                    <td className="text-right p-2.5 text-muted-foreground">{dish.countRotation}</td>
+                    <td className="text-right p-2.5 font-bold">{dish.totalCount}</td>
                   </tr>
                 ))}
               </tbody>

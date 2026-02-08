@@ -8,10 +8,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Users, Shield, Settings2, Check, Globe, Trash2, UserCheck, UserX, LogOut, UserPlus, Mail, ChevronRight, HardDrive, Database, Activity } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import {
+  Loader2, Users, Shield, Settings2, Check, Globe, Trash2, UserCheck, UserX,
+  LogOut, UserPlus, Mail, ChevronRight, Database, Activity, MapPin, Info,
+  Eye, EyeOff,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useLocation } from "wouter";
 
@@ -26,13 +30,19 @@ interface UserData {
 }
 
 const ROLES = [
-  { key: "admin", label: "Küchenchef (Admin)", color: "bg-red-500" },
-  { key: "souschef", label: "Sous-Chef", color: "bg-orange-500" },
-  { key: "koch", label: "Koch", color: "bg-blue-500" },
-  { key: "fruehkoch", label: "Früh-Koch", color: "bg-cyan-500" },
-  { key: "lehrling", label: "Lehrling", color: "bg-green-500" },
-  { key: "abwasch", label: "Abwasch", color: "bg-gray-500" },
-  { key: "guest", label: "Gast", color: "bg-slate-400" },
+  { key: "admin", label: "Küchenchef (Admin)", color: "bg-red-500", textColor: "text-red-700", bgLight: "bg-red-50" },
+  { key: "souschef", label: "Sous-Chef", color: "bg-orange-500", textColor: "text-orange-700", bgLight: "bg-orange-50" },
+  { key: "koch", label: "Koch", color: "bg-blue-500", textColor: "text-blue-700", bgLight: "bg-blue-50" },
+  { key: "fruehkoch", label: "Früh-Koch", color: "bg-cyan-500", textColor: "text-cyan-700", bgLight: "bg-cyan-50" },
+  { key: "lehrling", label: "Lehrling", color: "bg-green-500", textColor: "text-green-700", bgLight: "bg-green-50" },
+  { key: "abwasch", label: "Abwasch", color: "bg-gray-500", textColor: "text-gray-700", bgLight: "bg-gray-50" },
+  { key: "guest", label: "Gast", color: "bg-slate-400", textColor: "text-slate-700", bgLight: "bg-slate-50" },
+];
+
+const LOCATIONS = [
+  { key: "city", label: "JUFA City", pax: 60 },
+  { key: "sued", label: "JUFA SÜD", pax: 45 },
+  { key: "ak", label: "AK Catering", pax: 80 },
 ];
 
 export default function SettingsPage() {
@@ -46,7 +56,8 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="p-4 space-y-4 pb-24">
+    <div className="p-4 space-y-6 pb-24">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-heading font-bold">{t("settings")}</h1>
         {user && (
@@ -57,129 +68,235 @@ export default function SettingsPage() {
         )}
       </div>
 
+      {/* Current User Profile */}
       {user && (
-        <Card className="bg-primary/5">
+        <Card>
           <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                <span className="text-lg font-bold text-primary">{user.name.charAt(0)}</span>
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center shrink-0">
+                <span className="text-lg font-bold text-primary-foreground">
+                  {user.name.split(" ").map(n => n.charAt(0)).join("").substring(0, 2)}
+                </span>
               </div>
-              <div>
-                <div className="font-medium">{user.name}</div>
-                <div className="text-xs text-muted-foreground">{user.position} • {user.email}</div>
+              <div className="min-w-0 flex-1">
+                <div className="font-semibold text-base truncate">{user.name}</div>
+                <div className="text-sm text-muted-foreground truncate">{user.position}</div>
+                <div className="text-xs text-muted-foreground truncate">{user.email}</div>
               </div>
-              <Badge className="ml-auto" variant={isAdmin ? "default" : "secondary"}>
-                {ROLES.find(r => r.key === user.role)?.label || user.role}
-              </Badge>
+              {(() => {
+                const roleInfo = ROLES.find(r => r.key === user.role);
+                return (
+                  <Badge className={`${roleInfo?.bgLight} ${roleInfo?.textColor} border-0 shrink-0`}>
+                    {roleInfo?.label || user.role}
+                  </Badge>
+                );
+              })()}
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Admin Quick Links */}
+      {/* System Administration (Admin only) */}
       {isAdmin && (
-        <div className="grid grid-cols-1 gap-2">
-          <Card className="cursor-pointer hover:bg-secondary/30 transition-colors" onClick={() => setLocation("/settings/email")}>
-            <CardContent className="p-3 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Mail className="h-5 w-5 text-primary" />
-                <div>
-                  <div className="font-medium text-sm">E-Mail Benachrichtigungen</div>
-                  <div className="text-xs text-muted-foreground">SMTP-Konfiguration und Alerts</div>
+        <section>
+          <div className="flex items-center gap-2 mb-3">
+            <Settings2 className="h-4 w-4 text-muted-foreground" />
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              System-Verwaltung
+            </h2>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Card
+              className="cursor-pointer hover:bg-secondary/30 transition-all active:scale-[0.98]"
+              onClick={() => setLocation("/settings/email")}
+            >
+              <CardContent className="p-4 flex flex-col items-center text-center gap-2">
+                <div className="p-2.5 rounded-lg bg-blue-50">
+                  <Mail className="h-5 w-5 text-blue-600" />
                 </div>
-              </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            </CardContent>
-          </Card>
-          <Card className="cursor-pointer hover:bg-secondary/30 transition-colors" onClick={() => setLocation("/settings/backup")}>
-            <CardContent className="p-3 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Database className="h-5 w-5 text-primary" />
                 <div>
-                  <div className="font-medium text-sm">Backup & Restore</div>
-                  <div className="text-xs text-muted-foreground">Datenbank-Sicherung und Wiederherstellung</div>
+                  <div className="font-medium text-sm">E-Mail</div>
+                  <div className="text-[11px] text-muted-foreground leading-tight">SMTP & Alerts</div>
                 </div>
-              </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            </CardContent>
-          </Card>
-          <Card className="cursor-pointer hover:bg-secondary/30 transition-colors" onClick={() => setLocation("/settings/gdpr")}>
-            <CardContent className="p-3 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Shield className="h-5 w-5 text-primary" />
+              </CardContent>
+            </Card>
+            <Card
+              className="cursor-pointer hover:bg-secondary/30 transition-all active:scale-[0.98]"
+              onClick={() => setLocation("/settings/backup")}
+            >
+              <CardContent className="p-4 flex flex-col items-center text-center gap-2">
+                <div className="p-2.5 rounded-lg bg-green-50">
+                  <Database className="h-5 w-5 text-green-600" />
+                </div>
                 <div>
-                  <div className="font-medium text-sm">DSGVO / Datenschutz</div>
-                  <div className="text-xs text-muted-foreground">Datenexport und Löschung</div>
+                  <div className="font-medium text-sm">Backup</div>
+                  <div className="text-[11px] text-muted-foreground leading-tight">Sicherung & Restore</div>
                 </div>
-              </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            </CardContent>
-          </Card>
-          <Card className="cursor-pointer hover:bg-secondary/30 transition-colors" onClick={() => setLocation("/settings/server-status")}>
-            <CardContent className="p-3 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Activity className="h-5 w-5 text-primary" />
+              </CardContent>
+            </Card>
+            <Card
+              className="cursor-pointer hover:bg-secondary/30 transition-all active:scale-[0.98]"
+              onClick={() => setLocation("/settings/gdpr")}
+            >
+              <CardContent className="p-4 flex flex-col items-center text-center gap-2">
+                <div className="p-2.5 rounded-lg bg-purple-50">
+                  <Shield className="h-5 w-5 text-purple-600" />
+                </div>
                 <div>
-                  <div className="font-medium text-sm">Server-Status</div>
-                  <div className="text-xs text-muted-foreground">Monitoring und Systemgesundheit</div>
+                  <div className="font-medium text-sm">DSGVO</div>
+                  <div className="text-[11px] text-muted-foreground leading-tight">Export & Löschung</div>
                 </div>
-              </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            </CardContent>
-          </Card>
-        </div>
+              </CardContent>
+            </Card>
+            <Card
+              className="cursor-pointer hover:bg-secondary/30 transition-all active:scale-[0.98]"
+              onClick={() => setLocation("/settings/server-status")}
+            >
+              <CardContent className="p-4 flex flex-col items-center text-center gap-2">
+                <div className="p-2.5 rounded-lg bg-amber-50">
+                  <Activity className="h-5 w-5 text-amber-600" />
+                </div>
+                <div>
+                  <div className="font-medium text-sm">Server</div>
+                  <div className="text-[11px] text-muted-foreground leading-tight">Monitoring & Status</div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </section>
       )}
 
-      <Tabs defaultValue="general" className="w-full">
-        <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-3' : 'grid-cols-1'}`}>
-          <TabsTrigger value="general"><Globe className="h-4 w-4 mr-1" /> Sprache</TabsTrigger>
-          {isAdmin && <TabsTrigger value="users"><Users className="h-4 w-4 mr-1" /> Benutzer</TabsTrigger>}
-          {isAdmin && <TabsTrigger value="visibility"><Settings2 className="h-4 w-4 mr-1" /> Sichtbarkeit</TabsTrigger>}
-        </TabsList>
-        
-        <TabsContent value="general" className="mt-4">
+      {/* User Management (Admin only) */}
+      {isAdmin && (
+        <section>
+          <div className="flex items-center gap-2 mb-3">
+            <Users className="h-4 w-4 text-muted-foreground" />
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              Benutzer-Verwaltung
+            </h2>
+          </div>
+          <UserManagement />
+        </section>
+      )}
+
+      {/* Module Visibility (Admin only) */}
+      {isAdmin && (
+        <section>
+          <div className="flex items-center gap-2 mb-3">
+            <Eye className="h-4 w-4 text-muted-foreground" />
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              Modul-Sichtbarkeit
+            </h2>
+          </div>
+          <VisibilitySettings />
+        </section>
+      )}
+
+      {/* App Settings */}
+      <section>
+        <div className="flex items-center gap-2 mb-3">
+          <Globe className="h-4 w-4 text-muted-foreground" />
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            App-Einstellungen
+          </h2>
+        </div>
+        <div className="space-y-3">
+          {/* Language */}
           <Card>
-            <CardHeader className="py-3">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Globe className="h-4 w-4" />
-                {t("language")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <RadioGroup value={lang} onValueChange={(v) => setLang(v as any)} className="space-y-3">
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="de" id="de" />
-                  <Label htmlFor="de" className="font-medium">Deutsch</Label>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-medium text-sm">{t("language")}</div>
+                  <div className="text-xs text-muted-foreground">Sprache der Benutzeroberfläche</div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="en" id="en" />
-                  <Label htmlFor="en" className="font-medium">English</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="tr" id="tr" />
-                  <Label htmlFor="tr" className="font-medium">Türkçe</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="uk" id="uk" />
-                  <Label htmlFor="uk" className="font-medium">Українська</Label>
-                </div>
+              </div>
+              <Separator className="my-3" />
+              <RadioGroup value={lang} onValueChange={(v) => setLang(v as any)} className="grid grid-cols-2 gap-2">
+                {[
+                  { value: "de", label: "Deutsch", flag: "DE" },
+                  { value: "en", label: "English", flag: "EN" },
+                  { value: "tr", label: "Türkçe", flag: "TR" },
+                  { value: "uk", label: "Українська", flag: "UA" },
+                ].map(({ value, label, flag }) => (
+                  <Label
+                    key={value}
+                    htmlFor={value}
+                    className={`flex items-center gap-2 rounded-lg border p-3 cursor-pointer transition-colors ${
+                      lang === value ? "border-primary bg-primary/5" : "hover:bg-secondary/50"
+                    }`}
+                  >
+                    <RadioGroupItem value={value} id={value} />
+                    <span className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">{flag}</span>
+                    <span className="font-medium text-sm">{label}</span>
+                  </Label>
+                ))}
               </RadioGroup>
             </CardContent>
           </Card>
-        </TabsContent>
-        
-        {isAdmin && (
-          <TabsContent value="users" className="mt-4">
-            <UserManagement />
-          </TabsContent>
-        )}
-        
-        {isAdmin && (
-          <TabsContent value="visibility" className="mt-4">
-            <VisibilitySettings />
-          </TabsContent>
-        )}
-      </Tabs>
+
+          {/* Locations */}
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <MapPin className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <div className="font-medium text-sm">Standorte</div>
+                  <div className="text-xs text-muted-foreground">Konfigurierte Betriebsstandorte</div>
+                </div>
+              </div>
+              <Separator className="mb-3" />
+              <div className="space-y-2">
+                {LOCATIONS.map(loc => (
+                  <div key={loc.key} className="flex items-center justify-between p-2.5 rounded-lg bg-secondary/30">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-primary" />
+                      <span className="font-medium text-sm">{loc.label}</span>
+                      <span className="text-xs font-mono text-muted-foreground">({loc.key})</span>
+                    </div>
+                    <Badge variant="outline" className="text-xs">
+                      {loc.pax} PAX
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+
+      {/* About */}
+      <section>
+        <div className="flex items-center gap-2 mb-3">
+          <Info className="h-4 w-4 text-muted-foreground" />
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Über mise.at
+          </h2>
+        </div>
+        <Card>
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center shrink-0">
+                <span className="text-sm font-bold text-primary-foreground">m.</span>
+              </div>
+              <div>
+                <div className="font-semibold">mise.at</div>
+                <div className="text-xs text-muted-foreground leading-relaxed">
+                  Küchenmanagement-System für JUFA Hotels und AK Catering. Menüplanung, Rotation, HACCP, Rezeptverwaltung und mehr.
+                </div>
+              </div>
+            </div>
+            <Separator />
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+              <div className="text-muted-foreground">Version</div>
+              <div className="font-mono">1.0.0</div>
+              <div className="text-muted-foreground">Stack</div>
+              <div className="font-mono">React + Express</div>
+              <div className="text-muted-foreground">Datenbank</div>
+              <div className="font-mono">PostgreSQL 16</div>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
     </div>
   );
 }
@@ -190,7 +307,6 @@ function UserManagement() {
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
 
-  // Add user form state
   const [addOpen, setAddOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
@@ -302,7 +418,7 @@ function UserManagement() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Add User Button + Dialog */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogTrigger asChild>
@@ -348,25 +464,31 @@ function UserManagement() {
         </DialogContent>
       </Dialog>
 
+      {/* Pending Users */}
       {pendingUsers.length > 0 && (
-        <Card className="border-orange-500/50">
-          <CardHeader className="py-3">
+        <Card className="border-orange-200">
+          <CardHeader className="py-3 pb-1">
             <CardTitle className="text-sm flex items-center gap-2">
               <UserX className="h-4 w-4 text-orange-500" />
               Warten auf Freischaltung ({pendingUsers.length})
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-2">
+          <CardContent className="p-3 pt-2">
             <div className="space-y-2">
               {pendingUsers.map(user => (
-                <div key={user.id} className="flex items-center justify-between p-2 bg-secondary/50 rounded">
-                  <div>
-                    <div className="font-medium">{user.name}</div>
-                    <div className="text-xs text-muted-foreground">{user.email} • {user.position}</div>
+                <div key={user.id} className="flex items-center gap-3 p-3 bg-orange-50 rounded-lg border border-orange-100">
+                  <div className="w-9 h-9 bg-orange-200 rounded-full flex items-center justify-center shrink-0">
+                    <span className="text-sm font-bold text-orange-700">
+                      {user.name.charAt(0)}
+                    </span>
                   </div>
-                  <div className="flex gap-1">
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium text-sm truncate">{user.name}</div>
+                    <div className="text-xs text-muted-foreground truncate">{user.email}</div>
+                  </div>
+                  <div className="flex gap-1 shrink-0">
                     <Button size="sm" onClick={() => handleApprove(user.id, true)} className="h-7 gap-1" data-testid={`approve-user-${user.id}`}>
-                      <Check className="h-3 w-3" /> Freischalten
+                      <Check className="h-3 w-3" /> OK
                     </Button>
                     <Button size="sm" variant="destructive" onClick={() => handleDelete(user.id)} className="h-7" data-testid={`delete-user-${user.id}`}>
                       <Trash2 className="h-3 w-3" />
@@ -379,16 +501,17 @@ function UserManagement() {
         </Card>
       )}
 
+      {/* Active Users */}
       <Card>
-        <CardHeader className="py-3">
+        <CardHeader className="py-3 pb-1">
           <CardTitle className="text-sm flex items-center gap-2">
             <UserCheck className="h-4 w-4 text-green-500" />
             Aktive Benutzer ({activeUsers.length})
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-2">
+        <CardContent className="p-3 pt-2">
           {activeUsers.length === 0 ? (
-            <div className="text-center py-4 text-muted-foreground">
+            <div className="text-center py-4 text-muted-foreground text-sm">
               Keine aktiven Benutzer
             </div>
           ) : (
@@ -398,24 +521,26 @@ function UserManagement() {
                 const isCurrentUser = user.id === currentUser?.id;
 
                 return (
-                  <div key={user.id} className="flex items-center justify-between p-2 bg-secondary/30 rounded">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-2 h-2 rounded-full ${roleInfo?.color || 'bg-gray-400'}`} />
-                      <div>
-                        <div className="font-medium flex items-center gap-2">
-                          {user.name}
-                          {isCurrentUser && <Badge variant="outline" className="text-[10px]">Sie</Badge>}
-                        </div>
-                        <div className="text-xs text-muted-foreground">{user.email} • {user.position}</div>
-                      </div>
+                  <div key={user.id} className="flex items-center gap-3 p-3 rounded-lg bg-secondary/30">
+                    <div className={`w-9 h-9 ${roleInfo?.color || 'bg-gray-400'} rounded-full flex items-center justify-center shrink-0`}>
+                      <span className="text-sm font-bold text-white">
+                        {user.name.split(" ").map(n => n.charAt(0)).join("").substring(0, 2)}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium text-sm flex items-center gap-1.5 truncate">
+                        {user.name}
+                        {isCurrentUser && <Badge variant="outline" className="text-[10px] shrink-0">Sie</Badge>}
+                      </div>
+                      <div className="text-xs text-muted-foreground truncate">{user.email}</div>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
                       <Select
                         value={user.role}
                         onValueChange={(v) => handleRoleChange(user.id, v)}
                         disabled={isCurrentUser}
                       >
-                        <SelectTrigger className="w-32 h-7 text-xs" data-testid={`role-select-${user.id}`}>
+                        <SelectTrigger className="w-28 h-7 text-xs" data-testid={`role-select-${user.id}`}>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -499,22 +624,31 @@ function VisibilitySettings() {
 
   return (
     <Card>
-      <CardHeader className="py-3">
-        <CardTitle className="text-sm">Bereiche ein-/ausblenden</CardTitle>
+      <CardHeader className="py-3 pb-1">
         <CardDescription className="text-xs">Steuern Sie, welche Bereiche für alle Benutzer sichtbar sind</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {MODULES.map(mod => (
-          <div key={mod.key} className="flex items-center justify-between">
-            <div>
-              <div className="font-medium text-sm">{mod.label}</div>
-              <div className="text-xs text-muted-foreground">{mod.description}</div>
+      <CardContent className="p-4 pt-2 space-y-3">
+        {MODULES.map((mod, idx) => (
+          <div key={mod.key}>
+            <div className="flex items-center justify-between py-1">
+              <div className="flex items-center gap-2">
+                {settings[mod.key] !== "false" ? (
+                  <Eye className="h-3.5 w-3.5 text-green-500" />
+                ) : (
+                  <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />
+                )}
+                <div>
+                  <div className="font-medium text-sm">{mod.label}</div>
+                  <div className="text-xs text-muted-foreground">{mod.description}</div>
+                </div>
+              </div>
+              <Switch
+                checked={settings[mod.key] !== "false"}
+                onCheckedChange={(checked) => handleToggle(mod.key, checked)}
+                data-testid={`switch-${mod.key}`}
+              />
             </div>
-            <Switch 
-              checked={settings[mod.key] !== "false"}
-              onCheckedChange={(checked) => handleToggle(mod.key, checked)}
-              data-testid={`switch-${mod.key}`}
-            />
+            {idx < MODULES.length - 1 && <Separator className="mt-3" />}
           </div>
         ))}
       </CardContent>

@@ -310,22 +310,25 @@ export default function MenuPlan() {
       </div>
 
       {/* Day Selector Pills */}
-      <div className="flex gap-1.5 px-4 py-3 bg-background">
+      <div className="flex gap-1.5 px-4 py-3 bg-background border-b border-border/50">
         {DAY_LABELS.map((label, idx) => {
           const isSelected = selectedDay === idx;
           const isToday = isCurrentWeek && idx === getTodayDayIndex();
+          const dateObj = weekDates[idx];
+          const dayNum = dateObj ? dateObj.getDate() : "";
           return (
             <button
               key={label}
               onClick={() => setSelectedDay(idx)}
               className={cn(
-                "flex-1 py-2 rounded-full text-xs font-bold transition-colors relative",
+                "flex-1 flex flex-col items-center gap-0.5 py-1.5 rounded-xl text-xs font-bold transition-all relative press",
                 isSelected
-                  ? "bg-primary text-primary-foreground"
+                  ? "bg-primary text-primary-foreground shadow-sm"
                   : "bg-muted text-muted-foreground hover:bg-muted/80"
               )}
             >
-              {label}
+              <span className="text-[10px] font-medium">{label}</span>
+              <span className={cn("text-sm", isSelected ? "text-primary-foreground" : "text-foreground")}>{dayNum}</span>
               {isToday && !isSelected && (
                 <span className="absolute -top-0.5 right-1/2 translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary" />
               )}
@@ -348,18 +351,18 @@ export default function MenuPlan() {
           <Loader2 className="h-6 w-6 animate-spin text-primary" />
         </div>
       ) : (
-        <div className="px-4 space-y-5 pt-1">
+        <div className="px-4 space-y-6 pt-2">
           {selectedDateStr && (
             <AllergenConflictBanner date={selectedDateStr} locationId={selectedLocationId ?? undefined} />
           )}
           {MEALS.map(meal => {
             const pax = getPax(selectedDateStr, meal.key);
             return (
-            <div key={meal.key} className="space-y-2">
+            <div key={meal.key} className="space-y-2.5">
               {/* Section header */}
               <div className="flex items-center justify-between">
                 <h2 className="font-heading text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                  {DAY_NAMES_LONG[selectedDay]} — {meal.de}
+                  {meal.de}
                 </h2>
                 {pax && (
                   <Badge variant="outline" className="gap-1 text-xs font-normal">
@@ -370,7 +373,7 @@ export default function MenuPlan() {
               </div>
 
               {/* Course cards */}
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {COURSES.map(course => {
                   const plan = getPlan(selectedDateStr, meal.key, course.key);
                   const recipeName = plan ? getRecipeName(plan.recipeId) : null;
@@ -527,22 +530,25 @@ function CourseCard({ date, dayName, dayNum, meal, course, courseLabel, plan, re
         <Card
           ref={setNodeRef}
           className={cn(
-            "cursor-pointer hover:bg-muted/50 transition-colors active:scale-[0.98]",
-            isOver && "ring-2 ring-primary bg-primary/10"
+            "cursor-pointer hover:bg-muted/50 transition-all press border-border/60",
+            isOver && "ring-2 ring-primary bg-primary/5",
+            !recipeName && "border-dashed border-muted-foreground/20"
           )}
         >
-          <CardContent className="flex items-center justify-between p-3">
+          <CardContent className="flex items-center justify-between px-3 py-2.5">
             <div className="min-w-0 flex-1">
-              <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
+              <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium mb-0.5">
                 {courseLabel}
               </div>
-              <div className="text-base font-medium truncate">
-                {recipeName || <span className="text-muted-foreground">—</span>}
+              <div className={cn("text-sm font-medium truncate", !recipeName && "text-muted-foreground/40")}>
+                {recipeName || "Nicht belegt"}
               </div>
             </div>
-            <div className="flex items-center gap-1.5 shrink-0">
+            <div className="flex items-center gap-1.5 shrink-0 ml-2">
               {plan && plan.recipeId && pax && pax > 0 && plan.portions !== pax && (
-                <span className="text-[10px] text-amber-600 font-medium">{plan.portions}/{pax}</span>
+                <Badge variant="outline" className="text-[10px] py-0 h-5 border-amber-300 text-amber-600">
+                  {plan.portions}/{pax}
+                </Badge>
               )}
               {statusBadge}
             </div>
@@ -680,11 +686,11 @@ function ShoppingListDialog({ open, onOpenChange, plans, recipes }: {
               Keine Zutaten im Menüplan
             </div>
           ) : (
-            <ul className="space-y-2">
+            <ul className="space-y-0">
               {ingredientList.map((ing, idx) => (
-                <li key={idx} className="flex justify-between items-center py-1 border-b">
-                  <span>{ing.name}</span>
-                  <span className="font-mono text-sm">
+                <li key={idx} className="flex justify-between items-center py-2 border-b border-border/50 last:border-0">
+                  <span className="text-sm">{ing.name}</span>
+                  <span className="font-mono text-sm text-muted-foreground">
                     {Number.isInteger(ing.amount) ? ing.amount : ing.amount.toFixed(1)} {ing.unit}
                   </span>
                 </li>
@@ -710,11 +716,14 @@ function RecipePanel({ recipes, onClose }: { recipes: any[]; onClose: () => void
   });
 
   return (
-    <div className="fixed bottom-16 left-0 right-0 bg-background border-t shadow-lg z-50 max-h-[45vh] flex flex-col">
+    <div className="fixed bottom-16 left-0 right-0 bg-background border-t elevation-2 z-50 max-h-[45vh] flex flex-col rounded-t-xl">
       {/* Panel header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/30">
-        <span className="text-sm font-semibold">Rezepte ziehen</span>
-        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onClose}>
+      <div className="flex items-center justify-between px-4 py-2.5 border-b bg-muted/40">
+        <div className="flex items-center gap-2">
+          <GripVertical className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-semibold">Rezepte ziehen</span>
+        </div>
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onClose}>
           <X className="h-4 w-4" />
         </Button>
       </div>

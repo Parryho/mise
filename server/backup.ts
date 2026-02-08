@@ -129,6 +129,12 @@ export async function createBackup(): Promise<BackupInfo> {
     const dbName = url.pathname.replace("/", "");
     const password = url.password;
 
+    // Validate parameters to prevent shell injection
+    const shellSafe = /^[a-zA-Z0-9._\-]+$/;
+    if (!shellSafe.test(host) || !shellSafe.test(port) || !shellSafe.test(user) || !shellSafe.test(dbName)) {
+      throw new Error("Ungültige Datenbankverbindungsparameter");
+    }
+
     const env = { ...process.env, PGPASSWORD: password };
     const cmd = `pg_dump -h ${host} -p ${port} -U ${user} ${dbName} | gzip > "${filePath}"`;
 
@@ -189,6 +195,12 @@ export async function restoreBackup(filename: string): Promise<string> {
     const user = url.username;
     const dbName = url.pathname.replace("/", "");
     const password = url.password;
+
+    // Validate parameters to prevent shell injection
+    const shellSafe = /^[a-zA-Z0-9._\-]+$/;
+    if (!shellSafe.test(host) || !shellSafe.test(port) || !shellSafe.test(user) || !shellSafe.test(dbName)) {
+      throw new Error("Ungültige Datenbankverbindungsparameter");
+    }
 
     const env = { ...process.env, PGPASSWORD: password };
     const cmd = `gunzip -c "${filePath}" | psql -h ${host} -p ${port} -U ${user} ${dbName}`;

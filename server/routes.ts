@@ -917,16 +917,16 @@ export async function registerRoutes(
         { name: "Grießnockerlsuppe", category: "ClearSoups", portions: 4, prepTime: 25, allergens: ["A", "C", "G"], steps: ["Butter schaumig rühren", "Grieß und Ei untermengen", "Nockerl formen", "In Suppe kochen"] },
         { name: "Knoblauchcremesuppe", category: "CreamSoups", portions: 4, prepTime: 30, allergens: ["A", "G"], steps: ["Knoblauch anrösten", "Mit Suppe aufgießen", "Obers hinzufügen", "Pürieren"] },
         { name: "Kürbiscremesuppe", category: "CreamSoups", portions: 4, prepTime: 35, allergens: ["G"], steps: ["Kürbis würfeln", "Mit Zwiebeln anbraten", "Aufgießen und pürieren", "Mit Kernöl verfeinern"] },
-        { name: "Selleriecremesuppe", category: "CreamSoups", portions: 4, prepTime: 30, allergens: ["G", "I"], steps: ["Sellerie kochen", "Pürieren", "Mit Obers verfeinern"] },
+        { name: "Selleriecremesuppe", category: "CreamSoups", portions: 4, prepTime: 30, allergens: ["G", "L"], steps: ["Sellerie kochen", "Pürieren", "Mit Obers verfeinern"] },
         { name: "Schwammerlsuppe", category: "CreamSoups", portions: 4, prepTime: 35, allergens: ["G"], steps: ["Pilze putzen", "Anbraten", "Mit Suppe aufgießen", "Mit Sauerrahm verfeinern"] },
-        { name: "Erdäpfelsuppe", category: "CreamSoups", portions: 4, prepTime: 40, allergens: ["G", "I"], steps: ["Kartoffeln würfeln", "Mit Lauch anbraten", "Kochen und pürieren"] },
-        { name: "Klare Rindsuppe", category: "ClearSoups", portions: 6, prepTime: 180, allergens: ["I"], steps: ["Rindfleisch und Knochen kochen", "Wurzelgemüse hinzufügen", "Abseihen", "Würzen"] },
+        { name: "Erdäpfelsuppe", category: "CreamSoups", portions: 4, prepTime: 40, allergens: ["G", "L"], steps: ["Kartoffeln würfeln", "Mit Lauch anbraten", "Kochen und pürieren"] },
+        { name: "Klare Rindsuppe", category: "ClearSoups", portions: 6, prepTime: 180, allergens: ["L"], steps: ["Rindfleisch und Knochen kochen", "Wurzelgemüse hinzufügen", "Abseihen", "Würzen"] },
         { name: "Karfiolcremesuppe", category: "CreamSoups", portions: 4, prepTime: 30, allergens: ["G"], steps: ["Karfiol kochen", "Pürieren", "Mit Obers verfeinern", "Mit Muskat würzen"] },
         { name: "Spargelcremesuppe", category: "CreamSoups", portions: 4, prepTime: 35, allergens: ["G"], steps: ["Spargel kochen", "Schalen für Fond", "Pürieren", "Mit Obers vollenden"] },
         { name: "Bärlauchcremesuppe", category: "CreamSoups", portions: 4, prepTime: 25, allergens: ["G"], steps: ["Zwiebeln anbraten", "Bärlauch hinzufügen", "Pürieren", "Mit Sauerrahm servieren"] },
         { name: "Tomatencremesuppe", category: "CreamSoups", portions: 4, prepTime: 30, allergens: ["G"], steps: ["Tomaten rösten", "Mit Basilikum pürieren", "Obers einrühren"] },
         { name: "Linsensuppe", category: "ClearSoups", portions: 4, prepTime: 45, allergens: [], steps: ["Linsen mit Gemüse kochen", "Mit Essig abschmecken"] },
-        { name: "Erbsensuppe", category: "ClearSoups", portions: 4, prepTime: 60, allergens: ["I"], steps: ["Erbsen einweichen", "Mit Suppengrün kochen", "Pürieren"] },
+        { name: "Erbsensuppe", category: "ClearSoups", portions: 4, prepTime: 60, allergens: ["L"], steps: ["Erbsen einweichen", "Mit Suppengrün kochen", "Pürieren"] },
         { name: "Bohnensuppe", category: "ClearSoups", portions: 4, prepTime: 50, allergens: [], steps: ["Weiße Bohnen kochen", "Mit Speck verfeinern"] },
         { name: "Zwiebelsuppe", category: "ClearSoups", portions: 4, prepTime: 40, allergens: ["A", "G"], steps: ["Zwiebeln karamellisieren", "Mit Suppe aufgießen", "Mit Käsetoast servieren"] },
         { name: "Nudelsuppe", category: "ClearSoups", portions: 4, prepTime: 20, allergens: ["A", "C"], steps: ["Rindssuppe aufkochen", "Nudeln einlegen", "Schnittlauch darüber"] },
@@ -934,19 +934,19 @@ export async function registerRoutes(
         { name: "Kaspressknödelsuppe", category: "ClearSoups", portions: 4, prepTime: 40, allergens: ["A", "C", "G"], steps: ["Knödel aus Altbrot und Käse formen", "Braten", "In Suppe servieren"] },
 
         // MAINS - Meat (25+)
-        { name: "Wiener Schnitzel", category: "MainMeat", portions: 4, prepTime: 30, allergens: ["A", "C"], steps: ["Fleisch klopfen", "Panieren", "In Butterschmalz ausbacken", "Mit Zitrone servieren"] },
+        { name: "Wiener Schnitzel", category: "MainMeat", portions: 4, prepTime: 30, allergens: ["A", "C", "G"], steps: ["Fleisch klopfen", "Panieren", "In Butterschmalz ausbacken", "Mit Zitrone servieren"] },
         { name: "Schweinsbraten", category: "MainMeat", portions: 6, prepTime: 120, allergens: [], steps: ["Schwarte einschneiden", "Würzen", "Im Rohr braten", "Mit Bratensaft servieren"] },
         { name: "Tafelspitz", category: "MainMeat", portions: 6, prepTime: 180, allergens: ["L"], steps: ["Rindfleisch mit Suppengemüse kochen", "Mit Schnittlauchsauce servieren", "Apfelkren dazu reichen"] },
-        { name: "Backhendl", category: "MainMeat", portions: 4, prepTime: 45, allergens: ["A", "C"], steps: ["Hendl zerteilen", "Panieren", "In Fett ausbacken"] },
-        { name: "Rindsgulasch", category: "MainMeat", portions: 6, prepTime: 120, allergens: [], steps: ["Zwiebeln rösten", "Fleisch anbraten", "Mit Paprika würzen", "Langsam schmoren"] },
+        { name: "Backhendl", category: "MainMeat", portions: 4, prepTime: 45, allergens: ["A", "C", "G"], steps: ["Hendl zerteilen", "Panieren", "In Fett ausbacken"] },
+        { name: "Rindsgulasch", category: "MainMeat", portions: 6, prepTime: 120, allergens: ["A", "L"], steps: ["Zwiebeln rösten", "Fleisch anbraten", "Mit Paprika würzen", "Langsam schmoren"] },
         { name: "Zwiebelrostbraten", category: "MainMeat", portions: 4, prepTime: 40, allergens: [], steps: ["Rostbraten braten", "Röstzwiebeln zubereiten", "Mit Bratensaft servieren"] },
         { name: "Stelze", category: "MainMeat", portions: 4, prepTime: 150, allergens: [], steps: ["Stelze würzen", "Im Rohr knusprig braten", "Mit Kraut servieren"] },
         { name: "Cordon Bleu", category: "MainMeat", portions: 4, prepTime: 35, allergens: ["A", "C", "G"], steps: ["Schnitzel füllen", "Mit Schinken und Käse", "Panieren", "Ausbacken"] },
         { name: "Leberkäse", category: "MainMeat", portions: 8, prepTime: 90, allergens: [], steps: ["Leberkäse backen", "In Scheiben schneiden", "Mit Senf und Semmel servieren"] },
         { name: "Beuschel", category: "MainMeat", portions: 4, prepTime: 90, allergens: ["A"], steps: ["Innereien kochen", "Sauce zubereiten", "Mit Semmelknödel servieren"] },
         { name: "Blunzengröstl", category: "MainMeat", portions: 4, prepTime: 30, allergens: ["C"], steps: ["Blutwurst würfeln", "Mit Erdäpfeln braten", "Mit Spiegelei servieren"] },
-        { name: "Kalbsrahmgeschnetzeltes", category: "MainMeat", portions: 4, prepTime: 35, allergens: ["G"], steps: ["Kalbfleisch schnetzeln", "Anbraten", "Mit Rahmsauce servieren"] },
-        { name: "Altwiener Suppentopf", category: "MainMeat", portions: 6, prepTime: 120, allergens: ["I"], steps: ["Rindfleisch mit Gemüse kochen", "Als Eintopf servieren"] },
+        { name: "Kalbsrahmgeschnetzeltes", category: "MainMeat", portions: 4, prepTime: 35, allergens: ["A", "G"], steps: ["Kalbfleisch schnetzeln", "Anbraten", "Mit Rahmsauce servieren"] },
+        { name: "Altwiener Suppentopf", category: "MainMeat", portions: 6, prepTime: 120, allergens: ["L"], steps: ["Rindfleisch mit Gemüse kochen", "Als Eintopf servieren"] },
         { name: "Faschierter Braten", category: "MainMeat", portions: 6, prepTime: 70, allergens: ["A", "C"], steps: ["Faschiertes würzen", "Formen", "Im Rohr braten"] },
         { name: "Krautfleckerl mit Speck", category: "MainMeat", portions: 4, prepTime: 40, allergens: ["A", "C"], steps: ["Kraut dünsten", "Fleckerl kochen", "Mit Speck mischen"] },
         { name: "Gebackene Leber", category: "MainMeat", portions: 4, prepTime: 25, allergens: ["A", "C"], steps: ["Leber schneiden", "Panieren", "Ausbacken", "Mit Erdäpfelpüree servieren"] },
@@ -1046,7 +1046,7 @@ export async function registerRoutes(
         { name: "Hirtensalat", category: "Salads", portions: 4, prepTime: 15, allergens: ["G"], steps: ["Gurken, Tomaten, Paprika schneiden", "Mit Schafskäse servieren"] },
         { name: "Caesar Salad", category: "Salads", portions: 4, prepTime: 20, allergens: ["A", "C", "D", "G"], steps: ["Romanasalat waschen", "Mit Caesar-Dressing anrichten", "Croûtons und Parmesan dazu"] },
         { name: "Fisolensalat", category: "Salads", portions: 4, prepTime: 20, allergens: [], steps: ["Fisolen kochen", "Mit Essig-Öl marinieren"] },
-        { name: "Selleriesalat", category: "Salads", portions: 4, prepTime: 15, allergens: ["G"], steps: ["Sellerie raspeln", "Mit Mayonnaise anmachen"] },
+        { name: "Selleriesalat", category: "Salads", portions: 4, prepTime: 15, allergens: ["C", "G", "L"], steps: ["Sellerie raspeln", "Mit Mayonnaise anmachen"] },
 
         // BREAKFAST (10+)
         { name: "Bauernfrühstück", category: "Sides", portions: 2, prepTime: 20, allergens: ["C"], steps: ["Kartoffeln braten", "Eier und Speck dazugeben", "Stocken lassen"] },
@@ -1746,7 +1746,7 @@ export async function registerRoutes(
   });
 
   // === GUEST COUNTS EXPORT ===
-  app.get("/api/guest-counts/export", async (req, res) => {
+  app.get("/api/guest-counts/export", requireAuth, async (req, res) => {
     try {
       const { start, end, format = 'pdf' } = req.query;
       const startDate = (start as string) || new Date().toISOString().split('T')[0];
@@ -2876,8 +2876,8 @@ export async function registerRoutes(
   // ==========================================
   // Phase 4: Monitoring & Health (4.6)
   // ==========================================
-  app.get("/api/health/detailed", healthHandler);
-  app.get("/api/metrics", metricsHandler);
+  app.get("/api/health/detailed", requireAdmin, healthHandler);
+  app.get("/api/metrics", requireAdmin, metricsHandler);
 
   // ==========================================
   // Phase 5: Quiz Feedback & Adaptive Learning

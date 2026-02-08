@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft, AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, ArrowLeft, AlertTriangle, CheckCircle2, XCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "wouter";
 import { getWeekDateRange, getISOWeek } from "@shared/constants";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
@@ -70,7 +70,7 @@ export default function HaccpCompliance() {
   };
 
   return (
-    <div className="p-4 space-y-6">
+    <div className="p-4 space-y-6 pb-24">
       <div className="flex items-center gap-4">
         <Link href="/reports">
           <Button variant="ghost" size="icon">
@@ -80,9 +80,23 @@ export default function HaccpCompliance() {
         <h1 className="text-2xl font-heading font-bold">HACCP-Compliance</h1>
       </div>
 
-      <p className="text-sm text-muted-foreground">
-        KW {week} / {year} ({from} bis {to})
-      </p>
+      {/* Week Navigation */}
+      <div className="flex items-center justify-between">
+        <Button variant="outline" size="icon" onClick={() => {
+          if (week === 1) { setYear(year - 1); setWeek(52); } else { setWeek(week - 1); }
+        }}>
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        <div className="text-center">
+          <p className="text-sm font-semibold">KW {week} / {year}</p>
+          <p className="text-xs text-muted-foreground">{from} bis {to}</p>
+        </div>
+        <Button variant="outline" size="icon" onClick={() => {
+          if (week === 52) { setYear(year + 1); setWeek(1); } else { setWeek(week + 1); }
+        }}>
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
 
       {/* Overall Compliance Badge */}
       <Card className={cn("border-2", getComplianceBgColor(data?.overallCompliance || 0))}>
@@ -184,21 +198,21 @@ export default function HaccpCompliance() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-lg border border-amber-200">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-amber-200">
-                    <th className="text-left p-2 font-medium">Datum</th>
-                    <th className="text-left p-2 font-medium">Kühlgerät</th>
-                    <th className="text-right p-2 font-medium">Fehlende Checks</th>
+                  <tr className="bg-amber-100/50">
+                    <th className="text-left p-2.5 font-medium text-xs">Datum</th>
+                    <th className="text-left p-2.5 font-medium text-xs">Kühlgerät</th>
+                    <th className="text-right p-2.5 font-medium text-xs">Fehlende Checks</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-amber-200">
                   {data.gaps.map((gap, idx) => (
-                    <tr key={idx} className="border-b border-amber-200">
-                      <td className="p-2">{new Date(gap.date).toLocaleDateString('de-AT')}</td>
-                      <td className="p-2">{gap.fridgeName}</td>
-                      <td className="text-right p-2 font-semibold text-amber-700">{gap.missedChecks}</td>
+                    <tr key={idx} className="hover:bg-amber-100/30 transition-colors">
+                      <td className="p-2.5">{new Date(gap.date).toLocaleDateString('de-AT')}</td>
+                      <td className="p-2.5">{gap.fridgeName}</td>
+                      <td className="text-right p-2.5 font-semibold text-amber-700">{gap.missedChecks}</td>
                     </tr>
                   ))}
                 </tbody>

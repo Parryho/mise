@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 import { getISOWeek, MEAL_SLOT_LABELS, MEAL_SLOTS } from "@shared/constants";
 
 interface RotationSlot {
@@ -230,73 +231,87 @@ export default function Rotation() {
     <div className="flex flex-col pb-24">
       {/* Orange Header */}
       <div className="bg-primary text-primary-foreground px-4 pt-4 pb-3">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-2">
           <h1 className="font-heading text-xl font-bold uppercase tracking-wide">6-Wochen-Rotation</h1>
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="text-primary-foreground border-primary-foreground/30 text-[10px] py-0 h-5">
-              {weekStats.filled}/{weekStats.total} ({weekStats.pct}%)
-            </Badge>
-            <span className="text-xs text-primary-foreground/70">
-              KW {getISOWeek(new Date())} = W{currentRotationWeek}
-            </span>
+          <div className="flex items-center gap-1">
             <Link href={`/rotation/quiz?template=${templateId}&week=${weekNr}`}>
-              <Button size="icon" variant="ghost" className="text-primary-foreground hover:bg-primary-foreground/10 h-8 w-8" title="Bewerten">
+              <Button size="icon" variant="ghost" className="text-primary-foreground hover:bg-white/20 h-8 w-8" title="Bewerten">
                 <Star className="h-4 w-4" />
               </Button>
             </Link>
             <Button
               size="icon"
               variant="ghost"
-              className="text-primary-foreground hover:bg-primary-foreground/10 h-8 w-8"
+              className="text-primary-foreground hover:bg-white/20 h-8 w-8"
               onClick={() => setAutoFillOpen(true)}
               disabled={autoFilling}
+              title="Auto-Fill"
             >
               {autoFilling ? <Loader2 className="h-4 w-4 animate-spin" /> : <ChefHat className="h-4 w-4" />}
             </Button>
             <Link href="/rotation/print">
-              <Button size="icon" variant="ghost" className="text-primary-foreground hover:bg-primary-foreground/10 h-8 w-8">
+              <Button size="icon" variant="ghost" className="text-primary-foreground hover:bg-white/20 h-8 w-8" title="Drucken">
                 <Printer className="h-4 w-4" />
               </Button>
             </Link>
           </div>
         </div>
+        <div className="flex items-center gap-3 bg-white/15 rounded-lg px-3 py-1.5">
+          <span className="text-xs text-primary-foreground/80">
+            KW {getISOWeek(new Date())} = W{currentRotationWeek}
+          </span>
+          <Badge variant="outline" className="text-primary-foreground border-primary-foreground/30 text-[10px] py-0 h-5">
+            {weekStats.filled}/{weekStats.total} ({weekStats.pct}%)
+          </Badge>
+        </div>
       </div>
 
       {/* Week Selector Buttons */}
-      <div className="flex gap-2 px-4 pt-3 pb-2">
+      <div className="flex gap-1.5 px-4 py-3 border-b border-border/50">
         {weekButtons.map(w => {
           const ws = perWeekStats.get(w);
           const isFull = ws && ws.total > 0 && ws.filled === ws.total;
           const isEmpty = !ws || ws.total === 0 || ws.filled === 0;
+          const isSelected = weekNr === w;
+          const pct = ws && ws.total > 0 ? Math.round((ws.filled / ws.total) * 100) : 0;
           return (
-            <Button
+            <button
               key={w}
-              variant={weekNr === w ? "default" : "outline"}
-              size="sm"
-              className="relative flex-1"
               onClick={() => setWeekNr(w)}
+              className={cn(
+                "relative flex-1 flex flex-col items-center gap-0.5 py-2 rounded-xl text-xs font-bold transition-all press",
+                isSelected
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              )}
             >
-              W{w}
+              <span>W{w}</span>
+              <span className={cn("text-[10px] font-normal", isSelected ? "text-primary-foreground/80" : "text-muted-foreground/60")}>
+                {pct}%
+              </span>
               {w === currentRotationWeek && (
-                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-status-info border-2 border-background" />
+                <span className="absolute -top-0.5 right-1/2 translate-x-1/2 w-2 h-2 rounded-full bg-status-info border-2 border-background" />
               )}
               {ws && ws.total > 0 && (
-                <span className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full ${isFull ? "bg-green-500" : isEmpty ? "bg-red-400" : "bg-amber-400"}`} />
+                <span className={cn(
+                  "absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full",
+                  isFull ? "bg-green-500" : isEmpty ? "bg-red-400" : "bg-amber-400"
+                )} />
               )}
-            </Button>
+            </button>
           );
         })}
       </div>
 
       {/* Week Table */}
-      <div className="px-2 pt-1">
-        <div className="overflow-x-auto">
+      <div className="px-2 pt-2">
+        <div className="overflow-x-auto rounded-lg border border-border/60">
           <table className="w-full border-collapse text-[11px] leading-tight">
             <thead>
               <tr className="bg-primary text-primary-foreground">
-                <th className="border border-border/30 px-1.5 py-1 text-left w-8 font-bold">Tag</th>
+                <th className="border-r border-white/20 px-2 py-1.5 text-left w-8 font-bold text-[10px] uppercase tracking-wider">Tag</th>
                 {COLUMNS.map(col => (
-                  <th key={`${col.locationSlug}-${col.meal}`} className="border border-border/30 px-1.5 py-1 text-left font-bold">
+                  <th key={`${col.locationSlug}-${col.meal}`} className="border-r border-white/20 last:border-r-0 px-2 py-1.5 text-left font-bold text-[10px] uppercase tracking-wider">
                     {col.label}
                   </th>
                 ))}
@@ -304,13 +319,13 @@ export default function Rotation() {
             </thead>
             <tbody>
               {DAY_LABELS.map((dayLabel, dayIdx) => (
-                <tr key={dayLabel} className={dayIdx % 2 === 0 ? "bg-background" : "bg-muted/30"}>
-                  <td className="border border-border/50 px-1.5 py-0.5 font-bold align-top bg-muted/50">
+                <tr key={dayLabel} className={cn("border-b border-border/40 last:border-b-0", dayIdx % 2 === 0 ? "bg-background" : "bg-muted/20")}>
+                  <td className="border-r border-border/40 px-2 py-1 font-bold align-top bg-muted/40 text-xs">
                     {dayLabel}
                   </td>
                   {COLUMNS.map(col => (
-                    <td key={`${col.locationSlug}-${col.meal}`} className="border border-border/50 px-1 py-0.5 align-top">
-                      <div className="space-y-px">
+                    <td key={`${col.locationSlug}-${col.meal}`} className="border-r border-border/40 last:border-r-0 px-1.5 py-1 align-top">
+                      <div className="space-y-0.5">
                         {MEAL_SLOTS.map(course => {
                           const slot = getSlot(dayIdx, col.meal, col.locationSlug, course);
                           const recipe = slot?.recipeId ? recipeMap.get(slot.recipeId) : null;
@@ -319,8 +334,11 @@ export default function Rotation() {
                           const isEmpty = !recipe && !isDessert;
 
                           return (
-                            <div key={course} className={`flex items-baseline gap-1 min-h-[14px] ${isEmpty ? "bg-amber-50 rounded-sm" : ""}`}>
-                              <span className="text-[9px] text-muted-foreground font-medium w-10 shrink-0">
+                            <div key={course} className={cn(
+                              "flex items-baseline gap-1 min-h-[16px] rounded-sm px-0.5",
+                              isEmpty && "bg-status-warning-subtle/50"
+                            )}>
+                              <span className="text-[9px] text-muted-foreground/70 font-medium w-10 shrink-0">
                                 {COURSE_SHORT[course]}:
                               </span>
                               {isDessert && !recipe ? (
@@ -369,9 +387,9 @@ export default function Rotation() {
 
       {/* Duplicate warning */}
       {duplicates.size > 0 && (
-        <div className="mx-4 mt-2 px-3 py-2 bg-red-50 border border-red-200 rounded-md flex items-center gap-2 text-xs text-red-700">
-          <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-          <span>{duplicates.size / 2} doppelte Gerichte am selben Tag gefunden</span>
+        <div className="mx-4 mt-3 px-3 py-2.5 bg-status-danger-subtle border border-status-danger/20 rounded-lg flex items-center gap-2 text-xs text-status-danger">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span className="font-medium">{duplicates.size / 2} doppelte Gerichte am selben Tag gefunden</span>
         </div>
       )}
 

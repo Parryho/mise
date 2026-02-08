@@ -165,26 +165,28 @@ export default function ProductionList() {
                         {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                       </CollapsibleTrigger>
                       <CollapsibleContent className="px-2 pb-2">
-                        <div className="border rounded p-2 space-y-1 bg-secondary/20">
-                          <div className="grid grid-cols-4 text-[10px] text-muted-foreground font-medium border-b pb-1">
+                        <div className="border rounded-lg overflow-hidden bg-secondary/10">
+                          <div className="grid grid-cols-4 text-[10px] text-muted-foreground font-medium bg-secondary/30 px-2 py-1.5">
                             <span>Zutat</span>
                             <span className="text-right">pro Portion</span>
                             <span className="text-right">Gesamt ({entry.pax}x)</span>
                             <span className="text-right">Kosten</span>
                           </div>
-                          {dish.ingredients.map((ing, iIdx) => (
-                            <div key={iIdx} className="grid grid-cols-4 text-xs">
-                              <span>
-                                {ing.name}
-                                {ing.fromSubRecipe && (
-                                  <span className="text-[9px] text-muted-foreground ml-1">({ing.fromSubRecipe})</span>
-                                )}
-                              </span>
-                              <span className="text-right text-muted-foreground">{formatQuantity(ing.quantityPerPortion, ing.unit)}</span>
-                              <span className="text-right font-medium">{formatQuantity(ing.totalQuantity, ing.unit)}</span>
-                              <span className="text-right text-muted-foreground">{ing.cost > 0 ? formatEuro(ing.cost) : '-'}</span>
-                            </div>
-                          ))}
+                          <div className="divide-y divide-border/30">
+                            {dish.ingredients.map((ing, iIdx) => (
+                              <div key={iIdx} className="grid grid-cols-4 text-xs px-2 py-1.5 hover:bg-secondary/20 transition-colors">
+                                <span>
+                                  {ing.name}
+                                  {ing.fromSubRecipe && (
+                                    <span className="text-[9px] text-muted-foreground ml-1">({ing.fromSubRecipe})</span>
+                                  )}
+                                </span>
+                                <span className="text-right text-muted-foreground">{formatQuantity(ing.quantityPerPortion, ing.unit)}</span>
+                                <span className="text-right font-medium">{formatQuantity(ing.totalQuantity, ing.unit)}</span>
+                                <span className="text-right text-muted-foreground">{ing.cost > 0 ? formatEuro(ing.cost) : '-'}</span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       </CollapsibleContent>
                     </Collapsible>

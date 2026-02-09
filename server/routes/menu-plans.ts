@@ -9,14 +9,16 @@ export function registerMenuPlanRoutes(app: Express) {
   // === MENU PLANS ===
 
   // Week-based menu plan query with auto-generate from rotation
+  // ?force=true to delete+regenerate from current rotation state
   app.get("/api/menu-plans/week", requireAuth, async (req: Request, res: Response) => {
     try {
       const year = parseInt(req.query.year as string);
       const week = parseInt(req.query.week as string);
+      const force = req.query.force === "true" || req.query.force === "1";
       if (!year || !week || week < 1 || week > 53) {
         return res.status(400).json({ error: "year und week (1-53) erforderlich" });
       }
-      const result = await getOrGenerateWeekPlan(year, week);
+      const result = await getOrGenerateWeekPlan(year, week, force);
       res.json(result);
     } catch (error: any) {
       res.status(500).json({ error: error.message });

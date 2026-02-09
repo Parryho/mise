@@ -168,17 +168,27 @@ async function createAllSlots(templateId: number, weekCount: number) {
 }
 
 /**
- * Get menu plans for a calendar week, always regenerating from the current rotation state.
- * Old plans for that week are deleted and recreated from the rotation template.
+ * Get menu plans for a calendar week.
+ * If force=false (default): returns existing plans, generates only if none exist.
+ * If force=true: deletes existing plans and regenerates from rotation.
  */
-export async function getOrGenerateWeekPlan(year: number, week: number) {
+export async function getOrGenerateWeekPlan(year: number, week: number, force = false) {
   const { from, to } = getWeekDateRange(year, week);
   const template = await ensureDefaultTemplate();
   const rotationWeekNr = ((week - 1) % template.weekCount) + 1;
 
-  // Delete old plans and regenerate in one transaction
+  const existing = await storage.getMenuPlans(from, to);
+
+  // Return existing plans unless force-regenerate is requested or no plans exist
+  if (existing.length > 0 && !force) {
+    return { year, week, from, to, rotationWeekNr, plans: existing };
+  }
+
+  // Delete + regenerate in one transaction
   const plans = await db.transaction(async (tx) => {
-    await tx.delete(menuPlans).where(and(gte(menuPlans.date, from), lte(menuPlans.date, to)));
+    if (existing.length > 0) {
+      await tx.delete(menuPlans).where(and(gte(menuPlans.date, from), lte(menuPlans.date, to)));
+    }
 
     const rotSlots = await storage.getRotationSlotsByWeek(template.id, rotationWeekNr);
     const filledSlots = rotSlots.filter(s => s.recipeId !== null);
@@ -190,12 +200,5 @@ export async function getOrGenerateWeekPlan(year: number, week: number) {
     return storage.getMenuPlans(from, to);
   });
 
-  return {
-    year,
-    week,
-    from,
-    to,
-    rotationWeekNr,
-    plans,
-  };
+  return { year, week, from, to, rotationWeekNr, plans };
 }

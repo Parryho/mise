@@ -94,6 +94,31 @@ export function registerRotationRoutes(app: Express) {
     }
   });
 
+  // --- Clear rotation slots ---
+  app.post("/api/rotation-slots/clear", requireRole("admin", "souschef"), async (req: Request, res: Response) => {
+    try {
+      const { templateId, scope, weekNr, dayOfWeek } = req.body;
+      if (!templateId || !scope) {
+        return res.status(400).json({ error: "templateId und scope erforderlich" });
+      }
+      let cleared = 0;
+      if (scope === "all") {
+        cleared = await storage.clearRotationSlotsByTemplate(templateId);
+      } else if (scope === "week") {
+        if (weekNr == null) return res.status(400).json({ error: "weekNr erforderlich für scope=week" });
+        cleared = await storage.clearRotationSlotsByWeek(templateId, weekNr);
+      } else if (scope === "day") {
+        if (weekNr == null || dayOfWeek == null) return res.status(400).json({ error: "weekNr und dayOfWeek erforderlich für scope=day" });
+        cleared = await storage.clearRotationSlotsByDay(templateId, weekNr, dayOfWeek);
+      } else {
+        return res.status(400).json({ error: "scope muss 'all', 'week' oder 'day' sein" });
+      }
+      res.json({ cleared });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // --- Auto-fill rotation slots ---
   app.post("/api/rotation/auto-fill", requireRole("admin", "souschef"), async (req: Request, res: Response) => {
     try {

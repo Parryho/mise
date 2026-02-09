@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { ChefHat, Users, CalendarDays, RefreshCw, Thermometer, Dices, Home, ChevronLeft } from "lucide-react";
+import { ChefHat, Users, CalendarDays, Thermometer, Dices, Home, ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -7,8 +7,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const navItems = [
     { icon: Home, label: "Home", href: "/today" },
-    { icon: CalendarDays, label: "Plan", href: "/menu" },
-    { icon: RefreshCw, label: "Rotation", href: "/rotation" },
+    { icon: CalendarDays, label: "Planung", href: "/rotation" },
     { icon: ChefHat, label: "Rezepte", href: "/recipes" },
     { icon: Dices, label: "Quiz", href: "/quiz" },
     { icon: Thermometer, label: "HACCP", href: "/haccp" },

@@ -202,7 +202,7 @@
 /* Print styles */
 @media print {
   @page {
-    size: A4 landscape;
+    size: A4 portrait;
     margin: 5mm;
   }
 
@@ -265,7 +265,7 @@
     gap: 0 !important;
   }
   .rotation-print-page td div > div {
-    min-height: 12px !important;
+    min-height: 10px !important;
   }
 
   /* Compact week heading */

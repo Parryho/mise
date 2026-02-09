@@ -16,7 +16,6 @@ import Reports from "@/pages/Reports";
 import Settings from "@/pages/Settings";
 import Guests from "@/pages/Guests";
 import Schedule from "@/pages/Schedule";
-import MenuPlanPage from "@/pages/MenuPlan";
 import Today from "@/pages/Today";
 
 import Rotation from "@/pages/Rotation";
@@ -90,7 +89,7 @@ function AuthenticatedRoutes() {
         <Layout><Schedule /></Layout>
       </Route>
       <Route path="/menu">
-        <Layout><MenuPlanPage /></Layout>
+        <Redirect to="/rotation" />
       </Route>
       <Route path="/today">
         <Layout><Today /></Layout>

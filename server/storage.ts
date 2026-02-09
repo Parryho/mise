@@ -274,6 +274,18 @@ export class DatabaseStorage {
   async deleteRotationSlotsByTemplate(templateId: number): Promise<void> {
     await db.delete(rotationSlots).where(eq(rotationSlots.templateId, templateId));
   }
+  async clearRotationSlotsByTemplate(templateId: number): Promise<number> {
+    const result = await db.update(rotationSlots).set({ recipeId: null }).where(eq(rotationSlots.templateId, templateId)).returning();
+    return result.length;
+  }
+  async clearRotationSlotsByWeek(templateId: number, weekNr: number): Promise<number> {
+    const result = await db.update(rotationSlots).set({ recipeId: null }).where(and(eq(rotationSlots.templateId, templateId), eq(rotationSlots.weekNr, weekNr))).returning();
+    return result.length;
+  }
+  async clearRotationSlotsByDay(templateId: number, weekNr: number, dayOfWeek: number): Promise<number> {
+    const result = await db.update(rotationSlots).set({ recipeId: null }).where(and(eq(rotationSlots.templateId, templateId), eq(rotationSlots.weekNr, weekNr), eq(rotationSlots.dayOfWeek, dayOfWeek))).returning();
+    return result.length;
+  }
 
   // === Catering events ===
   async getCateringEvents(): Promise<CateringEvent[]> {

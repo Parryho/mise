@@ -15,7 +15,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import {
   CalendarDays,
   ChefHat,
-  RefreshCw,
   ShoppingCart,
   Thermometer,
   ClipboardList,
@@ -355,7 +354,7 @@ export default function Today() {
               <UtensilsCrossed className="h-4 w-4" />
               Tagesmenü
             </CardTitle>
-            <Link href="/menu">
+            <Link href="/rotation">
               <Button variant="ghost" size="sm" className="text-xs h-7 px-2 text-primary">
                 Plan öffnen <ArrowRight className="h-3 w-3 ml-1" />
               </Button>
@@ -396,7 +395,7 @@ export default function Today() {
           ) : (
             <div className="text-center py-4">
               <p className="text-sm text-muted-foreground mb-2">Noch kein Menü geplant</p>
-              <Link href="/menu">
+              <Link href="/rotation">
                 <Button variant="outline" size="sm">
                   <CalendarDays className="h-4 w-4 mr-2" />
                   Menü planen
@@ -563,10 +562,9 @@ export default function Today() {
       {/* Quick Actions */}
       <div>
         <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-3">Schnellzugriff</h2>
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-          <QuickAction href="/menu" icon={CalendarDays} label="Menüplan" color="text-blue-600" />
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+          <QuickAction href="/rotation" icon={CalendarDays} label="Planung" color="text-blue-600" />
           <QuickAction href="/recipes" icon={ChefHat} label="Rezepte" color="text-primary" />
-          <QuickAction href="/rotation" icon={RefreshCw} label="Rotation" color="text-purple-600" />
           <QuickAction href="/shopping" icon={ShoppingCart} label="Einkauf" color="text-green-600" />
           <QuickAction href="/production" icon={ClipboardList} label="Produktion" color="text-amber-600" />
           <QuickAction href="/agent-team" icon={Bot} label="Briefing" color="text-indigo-600" />

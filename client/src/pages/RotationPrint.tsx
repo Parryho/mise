@@ -244,17 +244,18 @@ export default function RotationPrint() {
             </table>
           </div>
 
-          {/* Allergen legend */}
-          <div className="mt-2 mx-2 px-3 py-2 bg-muted/30 rounded-lg text-[9px] text-muted-foreground print:text-[8px] print:bg-transparent print:px-0">
-            <span className="font-semibold text-foreground/70 mr-1">Allergene:</span>
-            {Object.entries(ALLERGENS).map(([code, info]) => (
-              <span key={code} className="mr-2">
-                <span className="font-bold text-orange-600">{code}</span>={info.nameDE}
-              </span>
-            ))}
-          </div>
         </div>
       ))}
+
+      {/* Allergen legend — once at the end (not per week) */}
+      <div className="mt-2 mx-2 px-3 py-2 bg-muted/30 rounded-lg text-[9px] text-muted-foreground print:text-[8px] print:bg-transparent print:px-0 print:mt-1">
+        <span className="font-semibold text-foreground/70 mr-1">Allergene:</span>
+        {Object.entries(ALLERGENS).map(([code, info]) => (
+          <span key={code} className="mr-2">
+            <span className="font-bold text-orange-600">{code}</span>={info.nameDE}
+          </span>
+        ))}
+      </div>
 
       {/* Recipe Detail Dialog */}
       {selectedRecipe && (

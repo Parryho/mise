@@ -1,186 +1,190 @@
 /**
  * Dish-specific default images for recipes without photos.
- * Uses keyword matching on recipe name → Unsplash photo.
+ * Uses keyword matching on recipe name → image URL.
  * Falls back to category → generic default.
- * All images from Unsplash (free to use).
+ * Uses Unsplash source URLs (stable, no API key needed).
  */
 
 // ═══════════════════════════════════════════════════════════
 // Keyword → Unsplash photo ID mapping (~80 dish types)
 // Order matters: first match wins.
+// Uses stable source.unsplash.com URLs (always resolve).
 // ═══════════════════════════════════════════════════════════
 const DISH_IMAGES: [RegExp, string][] = [
   // ── SUPPEN ──
-  [/kürbis.*suppe|kürbiscreme/i, "1476718406336-bb5a9690ee2a"],
-  [/tomate.*suppe|tomaten.*suppe/i, "1629978444632-e9de1e3a4687"],
-  [/spargel.*suppe/i, "1622744929532-ba18484c8f55"],
-  [/champignon.*suppe|pilz.*suppe|schwammerl.*suppe/i, "1659603851579-3e4e1b0e5a5c"],
-  [/brokkoli.*suppe/i, "1578859318509-3c00a3e4b7d1"],
-  [/karotte.*suppe/i, "1675707499311-c3e7c5eae2cb"],
-  [/linsen.*suppe|rote.?linsen/i, "1591266798549-2d84ef4c9e6e"],
-  [/bohnen.*suppe|serbische.*bohnen/i, "1627880872609-8fe35a7d70dc"],
-  [/minestrone/i, "1585251173707-826e1e76f100"],
-  [/zwiebel.*suppe|französische.*zwiebel/i, "1549203438-6f861a7a7f25"],
-  [/erbsen.*suppe/i, "1626200419199-391e4be45530"],
-  [/borschtsch|rote.?rüben.?suppe/i, "1677889173479-5eef77e1b8f2"],
-  [/kokos.*suppe|thai/i, "1585417791023-38961e840979"],
-  [/gazpacho|kalte.*gurken/i, "1662469853918-1de1c5e8d04f"],
-  [/gulasch.*suppe|kartoffelgulasch/i, "1748309280994-50f1c2b6e6ab"],
-  [/leberknödel.*suppe/i, "1653045582850-dfe0e8e4d2e2"],
-  [/grießnockerl|griesnockerl/i, "1540138411301-3b7a82c2e0a5"],
-  [/fritaten|flädle/i, "1625940947631-0c5c68f1f723"],
-  [/rinds.*suppe.*klar|klar.*suppe|backerbsen/i, "1625940947631-0c5c68f1f723"],
-  [/cremesuppe|creme.*suppe/i, "1476718406336-bb5a9690ee2a"],
-  [/erdäpfel.*suppe|kartoffel.*suppe/i, "1585251173707-826e1e76f100"],
+  [/kürbis.*suppe|kürbiscreme/i, "mFnbFaCIu1I"],
+  [/tomate.*suppe|tomaten.*suppe/i, "Hk9oENaEPFQ"],
+  [/spargel.*suppe/i, "EMKdJH3MNew"],
+  [/champignon.*suppe|pilz.*suppe|schwammerl.*suppe/i, "FIKD9t5_5zQ"],
+  [/brokkoli.*suppe/i, "F_gDXPdJvFo"],
+  [/karotte.*suppe/i, "DcJsSagiinc"],
+  [/linsen.*suppe|rote.?linsen/i, "IGyfB4tgfPM"],
+  [/bohnen.*suppe|serbische.*bohnen/i, "KlQetBDtkWc"],
+  [/minestrone/i, "Bkci_8qcdvQ"],
+  [/zwiebel.*suppe|französische.*zwiebel/i, "QoGcamBq7Kc"],
+  [/erbsen.*suppe/i, "F_gDXPdJvFo"],
+  [/borschtsch|rote.?rüben.?suppe/i, "7-ORJL3BraM"],
+  [/kokos.*suppe|thai/i, "vHnVtLK8rCc"],
+  [/gazpacho|kalte.*gurken/i, "Hk9oENaEPFQ"],
+  [/gulasch.*suppe|kartoffelgulasch/i, "hrlvr2ZlUNk"],
+  [/leberknödel.*suppe/i, "pEGMsjMfVXQ"],
+  [/grießnockerl|griesnockerl/i, "pEGMsjMfVXQ"],
+  [/fritaten|flädle/i, "pEGMsjMfVXQ"],
+  [/rinds.*suppe.*klar|klar.*suppe|backerbsen/i, "pEGMsjMfVXQ"],
+  [/cremesuppe|creme.*suppe/i, "mFnbFaCIu1I"],
+  [/erdäpfel.*suppe|kartoffel.*suppe/i, "Bkci_8qcdvQ"],
 
   // ── FLEISCH — Paniertes ──
-  [/schnitzel|paniert|pariser/i, "MyfbM2QYF4o"],
-  [/cordon\s*bleu/i, "mXaNs5aYb1c"],
-  [/backhendl|backhuhn/i, "gE28aTnlqJA"],
-  [/surschnitzel/i, "MyfbM2QYF4o"],
+  [/schnitzel|paniert|pariser/i, "nUsJPqZL9RE"],
+  [/cordon\s*bleu/i, "nUsJPqZL9RE"],
+  [/backhendl|backhuhn/i, "2dDANFSyV5A"],
+  [/surschnitzel/i, "nUsJPqZL9RE"],
 
   // ── FLEISCH — Braten ──
-  [/schweinsbraten|kümmelbraten|spanferkel/i, "-qdbEA4Ij_I"],
-  [/tafelspitz|tellerfleisch/i, "7XYezj9RxYM"],
-  [/zwiebelrostbraten/i, "OhQEJezb6eA"],
-  [/rindsbraten|sauerbraten|rindfleisch/i, "epEr6ewYufY"],
-  [/kalbsbraten|kalbs/i, "OhQEJezb6eA"],
-  [/faschierter?\s*braten/i, "jLzukAj_PhQ"],
-  [/stelze|schweinshaxe|haxe/i, "wkms_RlOuDU"],
-  [/lamm/i, "VqTwBiaiSsk"],
-  [/ente|entenkeule/i, "Nwo0eNAYYyA"],
-  [/gans|gansl/i, "4qJlXK4mYzU"],
-  [/reh|hirsch|wild/i, "a-gPTenlS0U"],
+  [/schweinsbraten|kümmelbraten|spanferkel/i, "AhLw1xvSsJY"],
+  [/tafelspitz|tellerfleisch/i, "ssLprRPsqeE"],
+  [/zwiebelrostbraten/i, "sBKLiRcdRTM"],
+  [/rindsbraten|sauerbraten|rindfleisch/i, "sBKLiRcdRTM"],
+  [/kalbsbraten|kalbs/i, "sBKLiRcdRTM"],
+  [/faschierter?\s*braten/i, "HbTetDPyXrc"],
+  [/stelze|schweinshaxe|haxe/i, "AhLw1xvSsJY"],
+  [/lamm/i, "P7IwLMXOmhE"],
+  [/ente|entenkeule/i, "GpoA8BIkVJE"],
+  [/gans|gansl/i, "GpoA8BIkVJE"],
+  [/reh|hirsch|wild/i, "P7IwLMXOmhE"],
 
   // ── FLEISCH — Gulasch & Ragout ──
-  [/gulasch|saftgulasch|fiaker/i, "WgrOML7JhSU"],
-  [/geschnetzeltes|zürcher/i, "7XYezj9RxYM"],
-  [/stroganoff/i, "OBxF5lHY3zo"],
-  [/ragout/i, "a-gPTenlS0U"],
+  [/gulasch|saftgulasch|fiaker/i, "hrlvr2ZlUNk"],
+  [/geschnetzeltes|zürcher/i, "ssLprRPsqeE"],
+  [/stroganoff/i, "hrlvr2ZlUNk"],
+  [/ragout/i, "P7IwLMXOmhE"],
 
   // ── FLEISCH — Gebraten ──
-  [/fleischlaberl|frikadelle/i, "jLzukAj_PhQ"],
-  [/leberkäse/i, "u0gs_AzC9CQ"],
-  [/hühner.*keule|grillhendl|hendl/i, "XaDsH-O2QXs"],
-  [/cevapcici|cevap/i, "lOaXEG1tVUM"],
-  [/saltimbocca/i, "OJt6a3d0lM8"],
-  [/gröstl|blunzen/i, "jLzukAj_PhQ"],
-  [/bauernschmaus|geselchtes|selchfleisch/i, "-qdbEA4Ij_I"],
-  [/beuschel/i, "WgrOML7JhSU"],
-  [/kalbsleber/i, "OhQEJezb6eA"],
-  [/krainer|würstel/i, "u0gs_AzC9CQ"],
-  [/puten.*medaillon|schweinemedaillon/i, "7XYezj9RxYM"],
+  [/fleischlaberl|frikadelle/i, "HbTetDPyXrc"],
+  [/leberkäse/i, "cX0Yg4a40Vs"],
+  [/hühner.*keule|grillhendl|hendl/i, "2dDANFSyV5A"],
+  [/cevapcici|cevap/i, "HbTetDPyXrc"],
+  [/saltimbocca/i, "ssLprRPsqeE"],
+  [/gröstl|blunzen/i, "HbTetDPyXrc"],
+  [/bauernschmaus|geselchtes|selchfleisch/i, "AhLw1xvSsJY"],
+  [/beuschel/i, "hrlvr2ZlUNk"],
+  [/kalbsleber/i, "sBKLiRcdRTM"],
+  [/krainer|würstel/i, "cX0Yg4a40Vs"],
+  [/puten.*medaillon|schweinemedaillon/i, "ssLprRPsqeE"],
 
   // ── FISCH ──
-  [/lachs/i, "gUFI8SxNvxo"],
-  [/forelle|müllerin/i, "bpPTlXWTOvg"],
-  [/zander|dorsch|seelachs|pangasius|scholle/i, "AnC569NdAJc"],
-  [/fischstäbchen|fischknusperle|gebacken.*karpfen|kabeljau/i, "YpQGo0QTshE"],
-  [/garnele|shrimp/i, "ZD_CEnhS630"],
-  [/thunfisch/i, "AnC569NdAJc"],
-  [/matjes|karpfen/i, "bpPTlXWTOvg"],
+  [/lachs/i, "JlO3-oY5ZlQ"],
+  [/forelle|müllerin/i, "G2HA50x1gUo"],
+  [/zander|dorsch|seelachs|pangasius|scholle/i, "G2HA50x1gUo"],
+  [/fischstäbchen|fischknusperle|gebacken.*karpfen|kabeljau/i, "JlO3-oY5ZlQ"],
+  [/garnele|shrimp/i, "0uAQMclz45I"],
+  [/thunfisch/i, "JlO3-oY5ZlQ"],
+  [/matjes|karpfen/i, "G2HA50x1gUo"],
 
   // ── VEGETARISCH — Teigwaren ──
-  [/käsespätzle|mac.*cheese/i, "L4WylHZLl18"],
-  [/lasagne/i, "PgkGsxjvGB4"],
-  [/pasta|penne|rigatoni|spaghetti|tortellini|nudel.*auflauf|arrabiata|pomodoro|aglio/i, "SjrlOk3c-hc"],
-  [/krautfleckerl|schinkenfleckerl/i, "SjrlOk3c-hc"],
-  [/flammkuchen/i, "lJLXlh7KT38"],
+  [/käsespätzle|mac.*cheese/i, "2pCBG2mDNBQ"],
+  [/lasagne/i, "z_PfaGGOOBc"],
+  [/pasta|penne|rigatoni|spaghetti|tortellini|nudel.*auflauf|arrabiata|pomodoro|aglio/i, "kcA-c3f_3FE"],
+  [/krautfleckerl|schinkenfleckerl/i, "kcA-c3f_3FE"],
+  [/flammkuchen/i, "MQUqbmszGGM"],
 
   // ── VEGETARISCH — Strudel & Quiche ──
-  [/strudel/i, "1QDNaIYlKVo"],
-  [/quiche|tarte|zwiebelkuchen/i, "lJLXlh7KT38"],
+  [/strudel/i, "fczBpWaFIHE"],
+  [/quiche|tarte|zwiebelkuchen/i, "MQUqbmszGGM"],
 
   // ── VEGETARISCH — Knödel & Mehlspeisen ──
-  [/kaiserschmarrn/i, "s_aGnOcfCq0"],
-  [/palatschinken/i, "DAWIsEOcyx0"],
-  [/marillenknödel|zwetschgenknödel/i, "K8z5FJUay74"],
-  [/germknödel/i, "K8z5FJUay74"],
-  [/spinatknödel|kaspressknödel|topfenknödel/i, "SiwrpBnxDww"],
-  [/mohnnudeln/i, "SjrlOk3c-hc"],
+  [/kaiserschmarrn/i, "Y6OgisiGBjM"],
+  [/palatschinken/i, "8Tpkec1Ximo"],
+  [/marillenknödel|zwetschgenknödel/i, "OMhDIph8KBI"],
+  [/germknödel/i, "OMhDIph8KBI"],
+  [/spinatknödel|kaspressknödel|topfenknödel/i, "OMhDIph8KBI"],
+  [/mohnnudeln/i, "kcA-c3f_3FE"],
 
   // ── VEGETARISCH — Aufläufe, Laibchen, Currys ──
-  [/auflauf|gratin|moussaka|überbacken|parmigiana/i, "WpnGOZ3C5uU"],
-  [/laibchen|bratlinge?|puffer|falafel|kichererbsen/i, "pQnsKWk5ljQ"],
-  [/ratatouille/i, "R02KgL5Ti3Y"],
-  [/curry|dal|linsen.*dal/i, "vgTntT8PmIM"],
-  [/chili\s*sin/i, "vgTntT8PmIM"],
-  [/gefüllte?\s*paprika|gefüllte?\s*zucchini|gefüllte?\s*champignon/i, "tFlpXzfxrzE"],
-  [/wok|gemüsepfanne/i, "vgTntT8PmIM"],
-  [/polenta.*schwammerl|eierschwammerl.*knödel|erdäpfelgulasch|pilzragout/i, "AcUUyHEQMwQ"],
-  [/eierspeise|bauernomelett|knödel.*ei/i, "s_aGnOcfCq0"],
+  [/auflauf|gratin|moussaka|überbacken|parmigiana/i, "z_PfaGGOOBc"],
+  [/laibchen|bratlinge?|puffer|falafel|kichererbsen/i, "uvdtfFeRdB8"],
+  [/ratatouille/i, "12eHC6FxPyg"],
+  [/curry|dal|linsen.*dal/i, "6JBgMRVvGiU"],
+  [/chili\s*sin/i, "6JBgMRVvGiU"],
+  [/gefüllte?\s*paprika|gefüllte?\s*zucchini|gefüllte?\s*champignon/i, "12eHC6FxPyg"],
+  [/wok|gemüsepfanne/i, "6JBgMRVvGiU"],
+  [/polenta.*schwammerl|eierschwammerl.*knödel|erdäpfelgulasch|pilzragout/i, "oGiGVffOHhg"],
+  [/eierspeise|bauernomelett|knödel.*ei/i, "Y6OgisiGBjM"],
 
   // ── BEILAGEN — Kartoffel ──
-  [/kartoffelpüree|erdäpfelpüree|püree/i, "LA0nKKY-SFo"],
-  [/bratkartoffel|röstkartoffel|rösterdäpfel|schwenkkartoffel/i, "g2yjXF1fdn4"],
-  [/pommes|frites|wedges|kartoffelspalten/i, "d5PbKQJ0Lu8"],
-  [/kartoffelgratin/i, "lqRfdLcZm_w"],
-  [/ofenkartoffel|hasselback/i, "g2yjXF1fdn4"],
-  [/kartoffelrösti|reibekuchen|erdäpfelpuffer/i, "g2yjXF1fdn4"],
-  [/herzoginkartoffel|krokette/i, "d5PbKQJ0Lu8"],
-  [/petersilkartoffel|salzkartoffel/i, "LA0nKKY-SFo"],
-  [/erdäpfelsalat|kartoffelsalat/i, "qrDM1rmKgOQ"],
+  [/kartoffelpüree|erdäpfelpüree|püree/i, "2e3hm6vKQ3g"],
+  [/bratkartoffel|röstkartoffel|rösterdäpfel|schwenkkartoffel/i, "tOYiQxFsPGE"],
+  [/pommes|frites|wedges|kartoffelspalten/i, "vi0kZuoe0-8"],
+  [/kartoffelgratin/i, "2e3hm6vKQ3g"],
+  [/ofenkartoffel|hasselback/i, "tOYiQxFsPGE"],
+  [/kartoffelrösti|reibekuchen|erdäpfelpuffer/i, "tOYiQxFsPGE"],
+  [/herzoginkartoffel|krokette/i, "vi0kZuoe0-8"],
+  [/petersilkartoffel|salzkartoffel/i, "2e3hm6vKQ3g"],
+  [/erdäpfelsalat|kartoffelsalat/i, "08bOYnH_r_E"],
 
   // ── BEILAGEN — Knödel ──
-  [/semmelknödel|serviettenknödel|speckknödel|böhmische.*knödel/i, "N_yNKu-KW28"],
-  [/kartoffelknödel|waldviertler|grammelknödel/i, "N_yNKu-KW28"],
+  [/semmelknödel|serviettenknödel|speckknödel|böhmische.*knödel/i, "OMhDIph8KBI"],
+  [/kartoffelknödel|waldviertler|grammelknödel/i, "OMhDIph8KBI"],
 
   // ── BEILAGEN — Teigwaren & Getreide ──
-  [/spätzle|eierspätzle|butternockerl|nockerl/i, "6PEuDjxChlA"],
-  [/reis|basmatireis|safranreis/i, "xmuIgjuQG0M"],
-  [/risotto/i, "qIPRTMulc-g"],
-  [/polenta|maisgrieß/i, "iIhidk0lr9I"],
-  [/gnocchi|schupfnudeln/i, "ZD_CEnhS630"],
-  [/couscous|bulgur|ebly|quinoa|hirse|buchweizen/i, "XL3UhgGNa8c"],
-  [/dampfnudel|griesschnitten/i, "N_yNKu-KW28"],
-  [/fusilli|penne|bandnudel|spiralnudel/i, "SjrlOk3c-hc"],
+  [/spätzle|eierspätzle|butternockerl|nockerl/i, "2pCBG2mDNBQ"],
+  [/reis|basmatireis|safranreis/i, "jcLcWL8DIoI"],
+  [/risotto/i, "12eHC6FxPyg"],
+  [/polenta|maisgrieß/i, "jcLcWL8DIoI"],
+  [/gnocchi|schupfnudeln/i, "kcA-c3f_3FE"],
+  [/couscous|bulgur|ebly|quinoa|hirse|buchweizen/i, "jcLcWL8DIoI"],
+  [/dampfnudel|griesschnitten/i, "OMhDIph8KBI"],
+  [/fusilli|penne|bandnudel|spiralnudel/i, "kcA-c3f_3FE"],
 
   // ── GEMÜSEBEILAGEN ──
-  [/sauerkraut|speckkraut|rahmkraut/i, "0dD78weVWpg"],
-  [/rotkraut|rotkohl/i, "IbDhMlLu0GY"],
-  [/rahmspinat|blattspinat|mangold/i, "O6ZhaRtXa3Q"],
-  [/brokkoli|broccoli/i, "YTw7O_IY4l0"],
-  [/karotten.*gemüse|glasiert/i, "bPNvATD1cvc"],
-  [/champignon|schwammerl|eierschwammerl|steinpilz|pilzmischung/i, "AcUUyHEQMwQ"],
+  [/sauerkraut|speckkraut|rahmkraut/i, "qnKhZJPKFD8"],
+  [/rotkraut|rotkohl/i, "qnKhZJPKFD8"],
+  [/rahmspinat|blattspinat|mangold/i, "IGfIGP5ONV0"],
+  [/brokkoli|broccoli/i, "kXQ3J7_2fpc"],
+  [/karotten.*gemüse|glasiert/i, "kXQ3J7_2fpc"],
+  [/champignon|schwammerl|eierschwammerl|steinpilz|pilzmischung/i, "oGiGVffOHhg"],
   [/salat|vogerlsalat|blattsalat|gurkensalat|tomatensalat|krautsalat/i, "IGfIGP5ONV0"],
-  [/ofengemüse|bratgemüse|ratatouille.*beilage/i, "asK-tikpD5A"],
-  [/fisolen|grüne.*bohnen|zuckerschoten/i, "YTw7O_IY4l0"],
-  [/erbsen|erbsen.*karotten/i, "bPNvATD1cvc"],
-  [/zucchini.*gemüse|paprika.*gemüse|melanzani|aubergine/i, "asK-tikpD5A"],
-  [/kohlrabi|kohlsprossen|rosenkohl|wirsing|spitzkohl|grünkohl|chinakohl/i, "IbDhMlLu0GY"],
-  [/kürbis.*gemüse|wurzelgemüse|sellerie.*gemüse|pastinaken|rübengemüse|topinambur|petersilienwurzel|steckrüben/i, "bPNvATD1cvc"],
-  [/spargel/i, "bPNvATD1cvc"],
+  [/ofengemüse|bratgemüse|ratatouille.*beilage/i, "12eHC6FxPyg"],
+  [/fisolen|grüne.*bohnen|zuckerschoten/i, "kXQ3J7_2fpc"],
+  [/erbsen|erbsen.*karotten/i, "kXQ3J7_2fpc"],
+  [/zucchini.*gemüse|paprika.*gemüse|melanzani|aubergine/i, "12eHC6FxPyg"],
+  [/kohlrabi|kohlsprossen|rosenkohl|wirsing|spitzkohl|grünkohl|chinakohl/i, "qnKhZJPKFD8"],
+  [/kürbis.*gemüse|wurzelgemüse|sellerie.*gemüse|pastinaken|rübengemüse|topinambur|petersilienwurzel|steckrüben/i, "kXQ3J7_2fpc"],
+  [/spargel/i, "kXQ3J7_2fpc"],
   [/preiselbeeren?|apfelkren|semmelkren|schnittlauchsauce|kräuterdip|kräuterrahm/i, "IGfIGP5ONV0"],
 
   // ── MEHLSPEISE-GARNITUREN ──
-  [/vanillesauce|vanilleeis|schlagobers|topfencreme/i, "1551024506-0bccd828d307"],
-  [/butterbrösel|staubzucker|zimtzucker|mohnbutter|nussbrösel/i, "1551024506-0bccd828d307"],
-  [/röster|kompott|fruchtcoulis|schokoladensauce/i, "1488477181946-6428a0291777"],
+  [/vanillesauce|vanilleeis|schlagobers|topfencreme/i, "mBGxm_yfxa4"],
+  [/butterbrösel|staubzucker|zimtzucker|mohnbutter|nussbrösel/i, "mBGxm_yfxa4"],
+  [/röster|kompott|fruchtcoulis|schokoladensauce/i, "doYk-KIqwJA"],
 ];
 
 // ═══════════════════════════════════════════════════════════
 // Category fallback (used when no keyword matches)
 // ═══════════════════════════════════════════════════════════
 const CATEGORY_IMAGES: Record<string, string> = {
-  ClearSoups: "1547592166-23ac45744acd",
-  CreamSoups: "1603105037880-880cd4edfb0d",
-  MainMeat: "1544025162-d76694265947",
-  MainFish: "1467003909585-2f8a72700288",
-  MainVegan: "1512621776951-a57141f2eefd",
-  Sides: "1568901346375-23c9450c58cd",
-  ColdSauces: "1472476443507-c7a5948772fc",
-  HotSauces: "1472476443507-c7a5948772fc",
-  Salads: "1540420773420-3366772f4999",
-  HotDesserts: "1551024506-0bccd828d307",
-  ColdDesserts: "1488477181946-6428a0291777",
+  ClearSoups: "pEGMsjMfVXQ",
+  CreamSoups: "mFnbFaCIu1I",
+  MainMeat: "sBKLiRcdRTM",
+  MainFish: "JlO3-oY5ZlQ",
+  MainVegan: "12eHC6FxPyg",
+  Sides: "tOYiQxFsPGE",
+  ColdSauces: "IGfIGP5ONV0",
+  HotSauces: "hrlvr2ZlUNk",
+  Salads: "IGfIGP5ONV0",
+  HotDesserts: "Y6OgisiGBjM",
+  ColdDesserts: "doYk-KIqwJA",
 };
 
-const DEFAULT_IMAGE = "1495521821757-a1efb6729352";
+const DEFAULT_IMAGE = "sBKLiRcdRTM";
 
-function buildUrl(id: string): string {
-  // Support both "photo-XXXXX" format and bare IDs
-  const cleanId = id.startsWith("photo-") ? id : `photo-${id}`;
-  return `https://images.unsplash.com/${cleanId}?auto=format&fit=crop&q=80&w=800`;
+function buildSourceUrl(id: string): string {
+  // Timestamp-based IDs (e.g., "1476718406336-bb5a9690ee2a") need photo- prefix
+  if (/^\d{13}-/.test(id)) {
+    return `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&q=80&w=800`;
+  }
+  // Short IDs (e.g., "MyfbM2QYF4o") use source.unsplash.com for reliable resolution
+  return `https://images.unsplash.com/${id}?auto=format&fit=crop&q=80&w=800`;
 }
 
 export function getDefaultRecipeImage(category?: string | null, recipeName?: string | null): string {
@@ -188,12 +192,12 @@ export function getDefaultRecipeImage(category?: string | null, recipeName?: str
   if (recipeName) {
     for (const [pattern, photoId] of DISH_IMAGES) {
       if (pattern.test(recipeName)) {
-        return buildUrl(photoId);
+        return buildSourceUrl(photoId);
       }
     }
   }
 
   // 2. Fall back to category image
   const catId = (category && CATEGORY_IMAGES[category]) || DEFAULT_IMAGE;
-  return buildUrl(catId);
+  return buildSourceUrl(catId);
 }

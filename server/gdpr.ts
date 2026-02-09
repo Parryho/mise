@@ -165,68 +165,70 @@ export async function anonymizeUser(userId: string, performedByUserId: string): 
   const anonymizedEmail = `deleted_${userId.substring(0, 8)}@anonymized.local`;
   const result = { anonymized: [] as string[], deleted: [] as string[] };
 
-  // 1. Anonymize HACCP logs (keep records, replace user name)
-  await db.update(haccpLogs)
-    .set({ user: anonymizedLabel })
-    .where(eq(haccpLogs.user, user.name));
-  result.anonymized.push("HACCP-Protokolle (anonymisiert)");
+  await db.transaction(async (tx) => {
+    // 1. Anonymize HACCP logs (keep records, replace user name)
+    await tx.update(haccpLogs)
+      .set({ user: anonymizedLabel })
+      .where(eq(haccpLogs.user, user.name));
+    result.anonymized.push("HACCP-Protokolle (anonymisiert)");
 
-  // 2. Anonymize menu plan temperatures (HACCP-relevant)
-  await db.update(menuPlanTemperatures)
-    .set({ recordedBy: anonymizedLabel })
-    .where(eq(menuPlanTemperatures.recordedBy, user.name));
-  result.anonymized.push("Temperaturmessungen (anonymisiert)");
+    // 2. Anonymize menu plan temperatures (HACCP-relevant)
+    await tx.update(menuPlanTemperatures)
+      .set({ recordedBy: anonymizedLabel })
+      .where(eq(menuPlanTemperatures.recordedBy, user.name));
+    result.anonymized.push("Temperaturmessungen (anonymisiert)");
 
-  // 3. Anonymize audit logs (keep for compliance, anonymize user reference)
-  await db.update(auditLogs)
-    .set({ userName: anonymizedLabel })
-    .where(eq(auditLogs.userId, userId));
-  result.anonymized.push("Audit-Protokolle (anonymisiert)");
+    // 3. Anonymize audit logs (keep for compliance, anonymize user reference)
+    await tx.update(auditLogs)
+      .set({ userName: anonymizedLabel })
+      .where(eq(auditLogs.userId, userId));
+    result.anonymized.push("Audit-Protokolle (anonymisiert)");
 
-  // 4. Delete push subscriptions
-  await db.delete(pushSubscriptions).where(eq(pushSubscriptions.userId, userId));
-  result.deleted.push("Push-Benachrichtigungen");
+    // 4. Delete push subscriptions
+    await tx.delete(pushSubscriptions).where(eq(pushSubscriptions.userId, userId));
+    result.deleted.push("Push-Benachrichtigungen");
 
-  // 5. Delete sessions
-  await db.delete(session).where(
-    sql`sess::jsonb->>'userId' = ${userId}`
-  );
-  result.deleted.push("Sitzungen");
+    // 5. Delete sessions
+    await tx.delete(session).where(
+      sql`sess::jsonb->>'userId' = ${userId}`
+    );
+    result.deleted.push("Sitzungen");
 
-  // 6. Unlink staff profiles (don't delete — they might be needed for schedule history)
-  await db.update(staff)
-    .set({ userId: null, name: anonymizedLabel, email: null, phone: null })
-    .where(eq(staff.userId, userId));
-  result.anonymized.push("Mitarbeiterprofil (anonymisiert)");
+    // 6. Unlink staff profiles (don't delete — they might be needed for schedule history)
+    await tx.update(staff)
+      .set({ userId: null, name: anonymizedLabel, email: null, phone: null })
+      .where(eq(staff.userId, userId));
+    result.anonymized.push("Mitarbeiterprofil (anonymisiert)");
 
-  // 7. Unlink tasks
-  await db.update(tasks)
-    .set({ assignedToUserId: null })
-    .where(eq(tasks.assignedToUserId, userId));
-  result.anonymized.push("Aufgaben-Zuweisungen (entfernt)");
+    // 7. Unlink tasks
+    await tx.update(tasks)
+      .set({ assignedToUserId: null })
+      .where(eq(tasks.assignedToUserId, userId));
+    result.anonymized.push("Aufgaben-Zuweisungen (entfernt)");
 
-  // 8. Anonymize user account (deactivate, replace personal data)
-  await db.update(users)
-    .set({
-      name: anonymizedLabel,
-      email: anonymizedEmail,
-      username: anonymizedEmail,
-      password: "ANONYMIZED",
-      isApproved: false,
-      role: "guest",
-    })
-    .where(eq(users.id, userId));
-  result.anonymized.push("Benutzerkonto (deaktiviert & anonymisiert)");
+    // 8. Anonymize user account (deactivate, replace personal data)
+    await tx.update(users)
+      .set({
+        name: anonymizedLabel,
+        email: anonymizedEmail,
+        username: anonymizedEmail,
+        password: "ANONYMIZED",
+        isApproved: false,
+        role: "guest",
+      })
+      .where(eq(users.id, userId));
+    result.anonymized.push("Benutzerkonto (deaktiviert & anonymisiert)");
 
-  // 9. Log the action
-  await storage.createAuditLog({
-    userId: performedByUserId,
-    userName: null,
-    action: "gdpr_anonymize",
-    tableName: "users",
-    recordId: userId,
-    before: { name: user.name, email: user.email },
-    after: { name: anonymizedLabel, email: anonymizedEmail },
+    // 9. Log the action
+    await tx.insert(auditLogs).values({
+      userId: performedByUserId,
+      userName: null,
+      action: "gdpr_anonymize",
+      tableName: "users",
+      recordId: userId,
+      before: JSON.stringify({ name: user.name, email: user.email }),
+      after: JSON.stringify({ name: anonymizedLabel, email: anonymizedEmail }),
+    });
   });
 
   return result;
@@ -247,16 +249,13 @@ export async function deleteUserCompletely(userId: string, performedByUserId: st
     throw new Error("Benutzer nicht gefunden");
   }
 
-  // First anonymize (handles HACCP data safely)
+  // Anonymize + delete in one transaction
   const result = await anonymizeUser(userId, performedByUserId);
 
-  // Then do full deletes for non-compliance data
   // Delete the anonymized user account entirely
   await db.delete(users).where(eq(users.id, userId));
   result.deleted.push("Benutzerkonto (vollständig gelöscht)");
-  // Remove from anonymized list since it's now fully deleted
   result.anonymized = result.anonymized.filter(a => !a.includes("Benutzerkonto"));
-
   result.deleted.push("Alle Sitzungsdaten");
 
   const summary = `Benutzer "${user.name}" wurde verarbeitet: ${result.deleted.length} Kategorien gelöscht, ${result.anonymized.length} Kategorien anonymisiert (HACCP-Aufbewahrungspflicht).`;

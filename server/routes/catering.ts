@@ -1,6 +1,8 @@
 import type { Express, Request, Response } from "express";
 import { requireAuth, getParam, storage } from "./middleware";
-import { insertCateringEventSchema, updateCateringEventSchema, insertCateringMenuItemSchema } from "@shared/schema";
+import { insertCateringEventSchema, updateCateringEventSchema, insertCateringMenuItemSchema, cateringEvents, cateringMenuItems } from "@shared/schema";
+import { db } from "../db";
+import { eq } from "drizzle-orm";
 
 export function registerCateringRoutes(app: Express) {
 
@@ -44,7 +46,10 @@ export function registerCateringRoutes(app: Express) {
 
   app.delete("/api/catering/:id", requireAuth, async (req, res) => {
     const id = parseInt(getParam(req.params.id), 10);
-    await storage.deleteCateringEvent(id);
+    await db.transaction(async (tx) => {
+      await tx.delete(cateringMenuItems).where(eq(cateringMenuItems.eventId, id));
+      await tx.delete(cateringEvents).where(eq(cateringEvents.id, id));
+    });
     res.status(204).send();
   });
 

@@ -1,7 +1,9 @@
 import type { Express, Request, Response } from "express";
 import { requireAuth, requireAdmin, requireRole, audit, getParam, storage } from "./middleware";
-import { insertRecipeSchema, updateRecipeSchema, insertIngredientSchema, insertSubRecipeLinkSchema } from "@shared/schema";
+import { insertRecipeSchema, updateRecipeSchema, insertIngredientSchema, insertSubRecipeLinkSchema, recipes, ingredients } from "@shared/schema";
 import { autoCategorize } from "@shared/categorizer";
+import { db } from "../db";
+import { eq } from "drizzle-orm";
 import { scrapeRecipe } from "../scraper";
 import { resolveRecipeIngredients, wouldCreateCycle } from "../sub-recipes";
 import { handleAIRecipeImport } from "../llm-recipe-import";
@@ -39,20 +41,20 @@ export function registerRecipeRoutes(app: Express) {
   app.post("/api/recipes", requireAuth, async (req, res) => {
     try {
       const parsed = insertRecipeSchema.parse(req.body);
-      const recipe = await storage.createRecipe(parsed);
-
-      // Create ingredients if provided
-      if (req.body.ingredientsList && Array.isArray(req.body.ingredientsList)) {
-        for (const ing of req.body.ingredientsList) {
-          await storage.createIngredient({
-            recipeId: recipe.id,
+      const recipe = await db.transaction(async (tx) => {
+        const [created] = await tx.insert(recipes).values(parsed).returning();
+        if (req.body.ingredientsList && Array.isArray(req.body.ingredientsList)) {
+          const ings = req.body.ingredientsList.map((ing: any) => ({
+            recipeId: created.id,
             name: ing.name,
             amount: ing.amount,
             unit: ing.unit,
-            allergens: ing.allergens || []
-          });
+            allergens: ing.allergens || [],
+          }));
+          if (ings.length > 0) await tx.insert(ingredients).values(ings);
         }
-      }
+        return created;
+      });
 
       res.status(201).json(recipe);
     } catch (error: any) {
@@ -65,25 +67,26 @@ export function registerRecipeRoutes(app: Express) {
       const id = parseInt(getParam(req.params.id), 10);
       const parsed = updateRecipeSchema.parse(req.body);
       const before = await storage.getRecipe(id);
-      const recipe = await storage.updateRecipe(id, parsed);
-      if (!recipe) {
-        return res.status(404).json({ error: "Rezept nicht gefunden" });
-      }
-      audit(req, "update", "recipes", id, { name: before?.name, category: before?.category }, { name: recipe.name, category: recipe.category });
-
-      // Update ingredients if provided
-      if (req.body.ingredientsList && Array.isArray(req.body.ingredientsList)) {
-        await storage.deleteIngredientsByRecipe(id);
-        for (const ing of req.body.ingredientsList) {
-          await storage.createIngredient({
+      const recipe = await db.transaction(async (tx) => {
+        const [updated] = await tx.update(recipes).set({ ...parsed, updatedAt: new Date() }).where(eq(recipes.id, id)).returning();
+        if (!updated) return null;
+        if (req.body.ingredientsList && Array.isArray(req.body.ingredientsList)) {
+          await tx.delete(ingredients).where(eq(ingredients.recipeId, id));
+          const ings = req.body.ingredientsList.map((ing: any) => ({
             recipeId: id,
             name: ing.name,
             amount: ing.amount,
             unit: ing.unit,
-            allergens: ing.allergens || []
-          });
+            allergens: ing.allergens || [],
+          }));
+          if (ings.length > 0) await tx.insert(ingredients).values(ings);
         }
+        return updated;
+      });
+      if (!recipe) {
+        return res.status(404).json({ error: "Rezept nicht gefunden" });
       }
+      audit(req, "update", "recipes", id, { name: before?.name, category: before?.category }, { name: recipe.name, category: recipe.category });
 
       res.json(recipe);
     } catch (error: any) {
@@ -110,38 +113,41 @@ export function registerRecipeRoutes(app: Express) {
         return res.status(400).json({ error: "Rezept konnte nicht von URL geladen werden" });
       }
 
-      // Auto-categorize based on recipe content
       const detectedCategory = autoCategorize(
         scraped.name,
         scraped.ingredients.map(i => i.name),
         scraped.steps
       );
 
-      // Create the recipe
-      const recipe = await storage.createRecipe({
-        name: scraped.name,
-        category: detectedCategory,
-        portions: scraped.portions,
-        prepTime: scraped.prepTime,
-        image: scraped.image,
-        sourceUrl: url,
-        steps: scraped.steps,
-        allergens: []
+      const result = await db.transaction(async (tx) => {
+        const [recipe] = await tx.insert(recipes).values({
+          name: scraped.name,
+          category: detectedCategory,
+          portions: scraped.portions,
+          prepTime: scraped.prepTime,
+          image: scraped.image,
+          sourceUrl: url,
+          steps: scraped.steps,
+          allergens: [],
+        }).returning();
+
+        if (scraped.ingredients.length > 0) {
+          await tx.insert(ingredients).values(
+            scraped.ingredients.map(ing => ({
+              recipeId: recipe.id,
+              name: ing.name,
+              amount: ing.amount,
+              unit: ing.unit,
+              allergens: [],
+            }))
+          );
+        }
+
+        const ings = await tx.select().from(ingredients).where(eq(ingredients.recipeId, recipe.id));
+        return { ...recipe, ingredientsList: ings };
       });
 
-      // Create ingredients
-      for (const ing of scraped.ingredients) {
-        await storage.createIngredient({
-          recipeId: recipe.id,
-          name: ing.name,
-          amount: ing.amount,
-          unit: ing.unit,
-          allergens: []
-        });
-      }
-
-      const ingredients = await storage.getIngredients(recipe.id);
-      res.status(201).json({ ...recipe, ingredientsList: ingredients });
+      res.status(201).json(result);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
@@ -182,32 +188,34 @@ export function registerRecipeRoutes(app: Express) {
         }
 
         try {
-          const recipe = await storage.createRecipe({
-            name: r.name,
-            category: r.category,
-            portions: r.portions || 1,
-            prepTime: r.prepTime || 0,
-            image: r.image || null,
-            sourceUrl: r.sourceUrl || null,
-            steps: Array.isArray(r.steps) ? r.steps : [],
-            allergens: Array.isArray(r.allergens) ? r.allergens : [],
-            tags: Array.isArray(r.tags) ? r.tags : [],
-          });
+          const recipe = await db.transaction(async (tx) => {
+            const [created] = await tx.insert(recipes).values({
+              name: r.name,
+              category: r.category,
+              portions: r.portions || 1,
+              prepTime: r.prepTime || 0,
+              image: r.image || null,
+              sourceUrl: r.sourceUrl || null,
+              steps: Array.isArray(r.steps) ? r.steps : [],
+              allergens: Array.isArray(r.allergens) ? r.allergens : [],
+              tags: Array.isArray(r.tags) ? r.tags : [],
+            }).returning();
 
-          // Create ingredients if provided
-          if (Array.isArray(r.ingredients)) {
-            for (const ing of r.ingredients) {
-              if (ing.name && typeof ing.amount === "number" && ing.unit) {
-                await storage.createIngredient({
-                  recipeId: recipe.id,
+            if (Array.isArray(r.ingredients)) {
+              const ings = r.ingredients
+                .filter((ing: any) => ing.name && typeof ing.amount === "number" && ing.unit)
+                .map((ing: any) => ({
+                  recipeId: created.id,
                   name: ing.name,
                   amount: ing.amount,
                   unit: ing.unit,
-                  allergens: Array.isArray(ing.allergens) ? ing.allergens : []
-                });
-              }
+                  allergens: Array.isArray(ing.allergens) ? ing.allergens : [],
+                }));
+              if (ings.length > 0) await tx.insert(ingredients).values(ings);
             }
-          }
+
+            return created;
+          });
 
           created.push({ id: recipe.id, name: recipe.name });
         } catch (err: any) {

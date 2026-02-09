@@ -5,7 +5,10 @@
 
 import { storage } from "./storage";
 import type { InsertMenuPlan, InsertRotationSlot } from "@shared/schema";
+import { menuPlans, rotationSlots as rotationSlotsTable } from "@shared/schema";
 import { MEAL_SLOTS, getWeekDateRange, formatLocalDate } from "@shared/constants";
+import { db } from "./db";
+import { and, eq, gte, lte } from "drizzle-orm";
 
 /**
  * Generate weekly menu plans from a rotation template.
@@ -16,6 +19,7 @@ export async function generateWeekFromRotation(
   templateId: number,
   weekNr: number,
   startDate: string, // YYYY-MM-DD (Monday)
+  txOuter?: Parameters<Parameters<typeof db.transaction>[0]>[0],
 ): Promise<{ created: number }> {
   const slots = await storage.getRotationSlotsByWeek(templateId, weekNr);
   if (slots.length === 0) {
@@ -28,8 +32,7 @@ export async function generateWeekFromRotation(
   const monday = new Date(startDate);
   const getDateForDow = (dow: number): string => {
     const d = new Date(monday);
-    // dow 0=Sun...6=Sat. Monday=1
-    const diff = dow === 0 ? 6 : dow - 1; // offset from Monday
+    const diff = dow === 0 ? 6 : dow - 1;
     d.setDate(monday.getDate() + diff);
     return formatLocalDate(d);
   };
@@ -50,7 +53,6 @@ export async function generateWeekFromRotation(
   }
 
   // Auto-copy City lunch entries to SÜD (SÜD Mittag = City Mittag)
-  // Only copy if there are no existing SÜD lunch plans (agent skips sued-lunch)
   if (locBySlug["sued"]) {
     const hasSuedLunch = plans.some(
       p => p.locationId === locBySlug["sued"] && p.meal === "lunch"
@@ -65,6 +67,13 @@ export async function generateWeekFromRotation(
     }
   }
 
+  if (plans.length === 0) return { created: 0 };
+
+  // Use outer transaction if provided, otherwise insert directly
+  if (txOuter) {
+    const created = await txOuter.insert(menuPlans).values(plans).returning();
+    return { created: created.length };
+  }
   const created = await storage.createMenuPlans(plans);
   return { created: created.length };
 }
@@ -167,16 +176,19 @@ export async function getOrGenerateWeekPlan(year: number, week: number) {
   const template = await ensureDefaultTemplate();
   const rotationWeekNr = ((week - 1) % template.weekCount) + 1;
 
-  await storage.deleteMenuPlansByDateRange(from, to);
+  // Delete old plans and regenerate in one transaction
+  const plans = await db.transaction(async (tx) => {
+    await tx.delete(menuPlans).where(and(gte(menuPlans.date, from), lte(menuPlans.date, to)));
 
-  const rotSlots = await storage.getRotationSlotsByWeek(template.id, rotationWeekNr);
-  const filledSlots = rotSlots.filter(s => s.recipeId !== null);
+    const rotSlots = await storage.getRotationSlotsByWeek(template.id, rotationWeekNr);
+    const filledSlots = rotSlots.filter(s => s.recipeId !== null);
 
-  if (filledSlots.length > 0) {
-    await generateWeekFromRotation(template.id, rotationWeekNr, from);
-  }
+    if (filledSlots.length > 0) {
+      await generateWeekFromRotation(template.id, rotationWeekNr, from, tx);
+    }
 
-  const plans = await storage.getMenuPlans(from, to);
+    return storage.getMenuPlans(from, to);
+  });
 
   return {
     year,

@@ -37,6 +37,12 @@
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
 
+  --color-chart-1: hsl(var(--chart-1));
+  --color-chart-2: hsl(var(--chart-2));
+  --color-chart-3: hsl(var(--chart-3));
+  --color-chart-4: hsl(var(--chart-4));
+  --color-chart-5: hsl(var(--chart-5));
+
   --color-status-info: hsl(var(--status-info));
   --color-status-info-foreground: hsl(var(--status-info-foreground));
   --color-status-info-subtle: hsl(var(--status-info-subtle));
@@ -91,6 +97,13 @@
   --ring: 22 90% 54%;
 
   --radius: 0.5rem;
+
+  /* Chart colors (for Recharts/analytics) */
+  --chart-1: 22 90% 54%;    /* Primary Orange */
+  --chart-2: 142 76% 36%;   /* Accent Green */
+  --chart-3: 217 91% 60%;   /* Info Blue */
+  --chart-4: 38 92% 50%;    /* Warning Amber */
+  --chart-5: 0 84% 60%;     /* Danger Red */
 
   /* Semantic status colors */
   --status-info: 217 91% 60%;
@@ -166,19 +179,31 @@
   --status-neutral-foreground: 210 40% 98%;
   --status-neutral-subtle: 217 33% 17%;
 
+  --chart-1: 22 90% 60%;
+  --chart-2: 142 70% 50%;
+  --chart-3: 217 91% 65%;
+  --chart-4: 38 92% 55%;
+  --chart-5: 0 84% 65%;
+
   --nav-height: 4rem;
 }
 
 @layer base {
   * {
-    @apply border-border;
+    @apply border-border outline-ring/50;
   }
   body {
     @apply font-sans antialiased bg-background text-foreground;
   }
   h1, h2, h3, h4, h5, h6 {
-    @apply font-heading uppercase tracking-wide;
+    @apply font-heading uppercase tracking-wide font-semibold;
   }
+  h1 { @apply text-3xl leading-tight; }   /* 30px */
+  h2 { @apply text-2xl leading-tight; }   /* 24px */
+  h3 { @apply text-xl leading-snug; }     /* 20px */
+  h4 { @apply text-lg leading-snug; }     /* 18px */
+  h5 { @apply text-base leading-normal; } /* 16px */
+  h6 { @apply text-sm leading-normal; }   /* 14px */
 }
 
 @layer utilities {

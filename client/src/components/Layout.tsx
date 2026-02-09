@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { ChefHat, Users, CalendarDays, Thermometer, Dices, Home, ChevronLeft } from "lucide-react";
+import { ChefHat, Users, CalendarDays, Thermometer, Dices, Home, ChevronLeft, Settings2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -15,12 +15,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   ];
 
   const showBackButton = location !== "/today" && location !== "/";
+  const isSettings = location.startsWith("/settings");
 
   return (
     <div className="min-h-screen bg-background flex flex-col md:max-w-2xl lg:max-w-5xl md:mx-auto overflow-hidden relative">
-      {/* Back Button */}
-      {showBackButton && (
-        <div className="sticky top-0 z-40 bg-background/80 backdrop-blur-sm">
+      {/* Top Bar */}
+      <div className="sticky top-0 z-40 bg-background/80 backdrop-blur-sm flex items-center justify-between">
+        {showBackButton ? (
           <button
             onClick={() => window.history.back()}
             className="flex items-center gap-1 px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -28,8 +29,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <ChevronLeft className="h-4 w-4" />
             <span>Zurück</span>
           </button>
-        </div>
-      )}
+        ) : (
+          <div />
+        )}
+        <Link href="/settings" className={cn(
+          "flex items-center gap-1 px-3 py-2 text-sm transition-colors",
+          isSettings ? "text-primary" : "text-muted-foreground hover:text-foreground"
+        )}>
+          <Settings2 className="h-4 w-4" />
+          <span className="hidden sm:inline">Einstellungen</span>
+        </Link>
+      </div>
 
       {/* Content Area - Scrollable */}
       <main className="flex-1 overflow-y-auto pb-20 safe-area-bottom custom-scrollbar">

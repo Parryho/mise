@@ -41,6 +41,17 @@ function uiIndexToDbDow(uiIdx: number): number {
   return uiIdx === 6 ? 0 : uiIdx + 1;
 }
 
+const COURSE_CATEGORIES: Record<string, string[]> = {
+  soup: ["ClearSoups", "CreamSoups"],
+  main1: ["MainMeat", "MainFish"],
+  side1a: ["Sides", "Salads"],
+  side1b: ["Sides", "Salads"],
+  main2: ["MainVegan"],
+  side2a: ["Sides", "Salads"],
+  side2b: ["Sides", "Salads"],
+  dessert: ["HotDesserts", "ColdDesserts"],
+};
+
 const COURSE_SHORT: Record<string, string> = {
   soup: "Suppe",
   main1: "H1",
@@ -312,10 +323,15 @@ export default function Rotation() {
   };
 
   const filteredRecipes = useMemo(() => {
-    if (!recipeSearch.trim()) return recipes;
+    let pool = recipes;
+    if (editSlot) {
+      const cats = COURSE_CATEGORIES[editSlot.course];
+      if (cats) pool = pool.filter(r => cats.includes(r.category));
+    }
+    if (!recipeSearch.trim()) return pool;
     const q = recipeSearch.trim().toLowerCase();
-    return recipes.filter(r => r.name.toLowerCase().startsWith(q));
-  }, [recipes, recipeSearch]);
+    return pool.filter(r => r.name.toLowerCase().startsWith(q));
+  }, [recipes, recipeSearch, editSlot]);
 
   const handleEditSave = () => {
     if (!editSlot) return;

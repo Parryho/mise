@@ -78,7 +78,6 @@ interface Hauptgericht {
 
 interface Quiz {
   id: number;
-  suppe: string;
   hauptgericht: Hauptgericht;
   starch: string | null;
   veggie: string | null;
@@ -88,13 +87,16 @@ interface Quiz {
 interface HistoryEntry {
   timestamp: string;
   combo: string;
-  suppe: string;
   hauptgericht: string;
   type: string;
   starch: string | null;
   veggie: string | null;
   rating: string;
-  swap: string | null;
+  reason: string | null;
+  corrections: { haupt?: string; staerke?: string; gemuese?: string } | null;
+  // legacy compat
+  suppe?: string;
+  swap?: string | null;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -154,7 +156,7 @@ function evaluateCombo(quiz: Quiz): Evaluation {
 
   // Dessert-Mains → always good with their garnishes
   if (h.type === "dessert_main") {
-    return { score: 4, verdict: "Mehlspeisen-Hauptgang mit Garnitur — passt immer!", problem: null, suggestion: null, classic: `${h.name} mit ${quiz.dessert_sides?.join(" & ")}` };
+    return { score: 4, verdict: "Mehlspeisen-Hauptgang mit Garnitur — passt immer!", problem: null, suggestion: null, classic: `${h.name} mit ${(quiz.dessert_sides || []).join(" & ")}` };
   }
 
   // Self-contained → just check veggie
@@ -211,23 +213,22 @@ function evaluateCombo(quiz: Quiz): Evaluation {
 const pick = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
 
 function generateQuiz(): Quiz {
-  const suppe = pick(SUPPEN);
   const h = pick(HAUPTGERICHTE);
 
   if (h.type === "dessert_main") {
     const s1 = pick(MEHLSPEISE_SIDES);
     const s2 = pick(MEHLSPEISE_SIDES.filter(x => x !== s1));
-    return { id: Date.now() + Math.random(), suppe, hauptgericht: h, starch: null, veggie: null, dessert_sides: [s1, s2] };
+    return { id: Date.now() + Math.random(), hauptgericht: h, starch: null, veggie: null, dessert_sides: [s1, s2] };
   }
   if (h.self_contained) {
-    return { id: Date.now() + Math.random(), suppe, hauptgericht: h, starch: null, veggie: pick(GEMUESE), dessert_sides: null };
+    return { id: Date.now() + Math.random(), hauptgericht: h, starch: null, veggie: pick(GEMUESE), dessert_sides: null };
   }
-  return { id: Date.now() + Math.random(), suppe, hauptgericht: h, starch: pick(STAERKE), veggie: pick(GEMUESE), dessert_sides: null };
+  return { id: Date.now() + Math.random(), hauptgericht: h, starch: pick(STAERKE), veggie: pick(GEMUESE), dessert_sides: null };
 }
 
 function formatCombo(q: Quiz): string {
   const h = q.hauptgericht;
-  if (h.type === "dessert_main") return `${h.name} + ${q.dessert_sides?.join(" + ")}`;
+  if (h.type === "dessert_main") return `${h.name} + ${(q.dessert_sides || []).join(" + ")}`;
   if (h.self_contained) return `${h.name}${q.veggie ? ` + ${q.veggie}` : ""}`;
   return `${h.name} + ${q.starch} + ${q.veggie}`;
 }
@@ -235,8 +236,7 @@ function formatCombo(q: Quiz): string {
 const RATINGS = [
   { key: "perfekt", emoji: "\u2705", label: "Perfekt", color: "#1b7a3d", bg: "#e6f4ea" },
   { key: "ok", emoji: "\uD83D\uDC4D", label: "OK", color: "#1565c0", bg: "#e3f2fd" },
-  { key: "getauscht", emoji: "\uD83D\uDD04", label: "Tausch", color: "#e65100", bg: "#fff3e0" },
-  { key: "schlecht", emoji: "\u274C", label: "Nein", color: "#b71c1c", bg: "#ffebee" },
+  { key: "nein", emoji: "\u274C", label: "Nein", color: "#b71c1c", bg: "#ffebee" },
 ] as const;
 
 const TYPE_LABELS: Record<string, { l: string; c: string; bg: string }> = {
@@ -273,7 +273,7 @@ function RegelCheck({ quiz, visible }: { quiz: Quiz; visible: boolean }) {
     fetch("/api/quiz/ai-research", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ suppe: quiz.suppe, combo }),
+      body: JSON.stringify({ suppe: null, combo }),
     })
       .then(r => r.json())
       .then(d => {
@@ -356,20 +356,59 @@ function RegelCheck({ quiz, visible }: { quiz: Quiz; visible: boolean }) {
   );
 }
 
+// ── Prefix-Search Component ──
+function PrefixSearch({ items, onSelect, placeholder }: { items: string[]; onSelect: (item: string) => void; placeholder?: string }) {
+  const [search, setSearch] = useState("");
+  const filtered = search.trim()
+    ? items.filter(i => i.toLowerCase().startsWith(search.trim().toLowerCase()))
+    : items;
+
+  return (
+    <div className="space-y-1.5 animate-in fade-in">
+      <input
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+        placeholder={placeholder || "Suchen..."}
+        autoFocus
+        className="w-full px-3 py-2 border-2 border-border rounded-xl text-sm bg-muted/30 outline-none focus:border-primary transition-colors"
+      />
+      <div className="max-h-40 overflow-y-auto rounded-xl border border-border">
+        {filtered.map(item => (
+          <button
+            key={item}
+            type="button"
+            onClick={() => onSelect(item)}
+            className="w-full text-left px-3 py-2 text-sm hover:bg-muted border-b border-border/30 last:border-b-0 transition-colors"
+          >
+            {item}
+          </button>
+        ))}
+        {filtered.length === 0 && (
+          <p className="px-3 py-3 text-sm text-muted-foreground text-center">Nichts gefunden</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Stats ──
 function Stats({ history }: { history: HistoryEntry[] }) {
   if (history.length === 0) return null;
-  const c: Record<string, number> = { perfekt: 0, ok: 0, getauscht: 0, schlecht: 0 };
-  history.forEach(h => c[h.rating]++);
+  const c: Record<string, number> = { perfekt: 0, ok: 0, nein: 0 };
+  history.forEach(h => {
+    // compat: map old ratings
+    const key = h.rating === "schlecht" ? "nein" : h.rating === "getauscht" ? "nein" : h.rating;
+    if (key in c) c[key]++;
+  });
   const pct = (key: string) => history.length > 0 ? Math.round((c[key] / history.length) * 100) : 0;
 
-  const worst = history.filter(h => h.rating === "schlecht").slice(-5);
+  const neinEntries = history.filter(h => h.rating === "nein" || h.rating === "schlecht" || h.rating === "getauscht").slice(-5);
   const best = history.filter(h => h.rating === "perfekt").slice(-5);
-  const swaps = history.filter(h => h.rating === "getauscht" && h.swap).slice(-3);
+  const corrections = history.filter(h => h.corrections && (h.corrections.haupt || h.corrections.staerke || h.corrections.gemuese)).slice(-3);
 
   return (
     <div className="bg-card rounded-2xl p-5 mb-4 shadow-sm animate-in fade-in">
-      <h3 className="font-heading text-lg font-bold mb-3">📊 Lern-Fortschritt</h3>
+      <h3 className="font-heading text-lg font-bold mb-3">Lern-Fortschritt</h3>
 
       <div className="mb-4">
         <div className="flex h-8 rounded-xl overflow-hidden border border-border">
@@ -394,21 +433,33 @@ function Stats({ history }: { history: HistoryEntry[] }) {
           {best.map((b, i) => <p key={i} className="text-xs py-1 text-muted-foreground border-b border-border/50">{b.combo}</p>)}
         </div>
       )}
-      {worst.length > 0 && (
+      {neinEntries.length > 0 && (
         <div className="mb-3">
           <p className="text-xs font-bold text-red-700 mb-1.5">{"\u274C"} No-Gos</p>
-          {worst.map((w, i) => <p key={i} className="text-xs py-1 text-muted-foreground border-b border-border/50">{w.combo}</p>)}
+          {neinEntries.map((w, i) => (
+            <div key={i} className="text-xs py-1 text-muted-foreground border-b border-border/50">
+              <p>{w.combo}</p>
+              {w.reason && <p className="text-[10px] italic mt-0.5">"{w.reason}"</p>}
+            </div>
+          ))}
         </div>
       )}
-      {swaps.length > 0 && (
+      {corrections.length > 0 && (
         <div>
-          <p className="text-xs font-bold text-orange-700 mb-1.5">🔄 Deine Korrekturen</p>
-          {swaps.map((sw, i) => (
-            <p key={i} className="text-xs py-1 text-muted-foreground border-b border-border/50 leading-relaxed">
-              <span className="line-through opacity-50">{sw.combo}</span>
-              <br />→ {sw.swap}
-            </p>
-          ))}
+          <p className="text-xs font-bold text-orange-700 mb-1.5">Deine Korrekturen</p>
+          {corrections.map((sw, i) => {
+            const c = sw.corrections!;
+            const parts: string[] = [];
+            if (c.haupt) parts.push(`Hauptgericht: ${c.haupt}`);
+            if (c.staerke) parts.push(`Stärke: ${c.staerke}`);
+            if (c.gemuese) parts.push(`Gemüse: ${c.gemuese}`);
+            return (
+              <div key={i} className="text-xs py-1 text-muted-foreground border-b border-border/50 leading-relaxed">
+                <span className="line-through opacity-50">{sw.combo}</span>
+                <br />{parts.join(", ")}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
@@ -421,27 +472,55 @@ function Stats({ history }: { history: HistoryEntry[] }) {
 export default function MenuQuiz() {
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
-  const [showSwap, setShowSwap] = useState(false);
-  const [swapText, setSwapText] = useState("");
+  const [showNeinPanel, setShowNeinPanel] = useState(false);
+  const [neinReason, setNeinReason] = useState("");
+  const [corrections, setCorrections] = useState<{ haupt?: string; staerke?: string; gemuese?: string }>({});
+  const [activeSearch, setActiveSearch] = useState<"haupt" | "staerke" | "gemuese" | null>(null);
   const [showStats, setShowStats] = useState(false);
   const [showAI, setShowAI] = useState(false);
   const [anim, setAnim] = useState("in");
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem("quiz-history-v2");
-      if (saved) setHistory(JSON.parse(saved));
-    } catch {}
+    // Load from server first (cross-device), fall back to localStorage
+    fetch("/api/quiz/game-entries")
+      .then(r => r.json())
+      .then((entries: HistoryEntry[]) => {
+        if (entries && entries.length > 0) {
+          setHistory(entries);
+          try { localStorage.setItem("quiz-history-v2", JSON.stringify(entries)); } catch {}
+        } else {
+          try {
+            const saved = localStorage.getItem("quiz-history-v2");
+            if (saved) setHistory(JSON.parse(saved));
+          } catch {}
+        }
+      })
+      .catch(() => {
+        try {
+          const saved = localStorage.getItem("quiz-history-v2");
+          if (saved) setHistory(JSON.parse(saved));
+        } catch {}
+      });
   }, []);
 
   const save = useCallback((h: HistoryEntry[]) => {
     try { localStorage.setItem("quiz-history-v2", JSON.stringify(h)); } catch {}
   }, []);
 
+  const saveEntryToServer = useCallback((entry: HistoryEntry) => {
+    fetch("/api/quiz/game-entry", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ entry }),
+    }).catch(() => {});
+  }, []);
+
   const next = useCallback(() => {
     setAnim("in");
-    setShowSwap(false);
-    setSwapText("");
+    setShowNeinPanel(false);
+    setNeinReason("");
+    setCorrections({});
+    setActiveSearch(null);
     setShowAI(false);
     setQuiz(generateQuiz());
   }, []);
@@ -450,47 +529,48 @@ export default function MenuQuiz() {
 
   const rate = useCallback((rating: string) => {
     if (!quiz) return;
-    if (rating === "getauscht") { setShowSwap(true); return; }
+    if (rating === "nein") { setShowNeinPanel(true); return; }
     const entry: HistoryEntry = {
       timestamp: new Date().toISOString(),
       combo: formatCombo(quiz),
-      suppe: quiz.suppe,
       hauptgericht: quiz.hauptgericht.name,
       type: quiz.hauptgericht.type,
       starch: quiz.starch,
       veggie: quiz.veggie,
       rating,
-      swap: null,
+      reason: null,
+      corrections: null,
     };
     const nh = [...history, entry];
     setHistory(nh);
     save(nh);
-    // Also send to server for pairing engine
+    saveEntryToServer(entry);
     sendFeedbackToServer(quiz, rating);
     setAnim("out");
     setTimeout(next, 350);
-  }, [quiz, history, next, save]);
+  }, [quiz, history, next, save, saveEntryToServer]);
 
-  const submitSwap = useCallback(() => {
+  const submitNein = useCallback(() => {
     if (!quiz) return;
     const entry: HistoryEntry = {
       timestamp: new Date().toISOString(),
       combo: formatCombo(quiz),
-      suppe: quiz.suppe,
       hauptgericht: quiz.hauptgericht.name,
       type: quiz.hauptgericht.type,
       starch: quiz.starch,
       veggie: quiz.veggie,
-      rating: "getauscht",
-      swap: swapText,
+      rating: "nein",
+      reason: neinReason || null,
+      corrections: (corrections.haupt || corrections.staerke || corrections.gemuese) ? corrections : null,
     };
     const nh = [...history, entry];
     setHistory(nh);
     save(nh);
-    sendFeedbackToServer(quiz, "getauscht");
+    saveEntryToServer(entry);
+    sendFeedbackToServer(quiz, "schlecht");
     setAnim("out");
     setTimeout(next, 350);
-  }, [quiz, history, swapText, next, save]);
+  }, [quiz, history, neinReason, corrections, next, save, saveEntryToServer]);
 
   const reset = useCallback(() => {
     if (!confirm("Alle Lern-Daten löschen?")) return;
@@ -547,17 +627,6 @@ export default function MenuQuiz() {
           className="bg-card rounded-2xl p-5 shadow-sm border border-border/50"
           style={{ animation: anim === "out" ? "quizSlideOut .35s ease forwards" : "quizSlideIn .4s ease forwards" }}
         >
-          {/* Suppe */}
-          <div className="flex items-center gap-3.5">
-            <span className="text-[28px]">🥣</span>
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Suppe</p>
-              <p className="font-heading text-xl text-foreground">{quiz.suppe}</p>
-            </div>
-          </div>
-
-          <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent my-4" />
-
           {/* Hauptgericht */}
           <div className="mb-1.5">
             <div className="flex gap-2 items-center mb-2.5 flex-wrap">
@@ -626,18 +695,17 @@ export default function MenuQuiz() {
           <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent my-4" />
 
           {/* Rating */}
-          {!showSwap ? (
+          {!showNeinPanel ? (
             <div>
               <p className="text-center text-sm font-semibold text-muted-foreground mb-3.5">
                 Passt diese Kombination?
               </p>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 {RATINGS.map(r => (
                   <button
                     key={r.key}
                     onClick={() => rate(r.key)}
                     className="flex flex-col items-center gap-1.5 py-4 px-1.5 border-2 border-border rounded-xl bg-card hover:scale-[1.03] active:scale-95 transition-all"
-                    style={{ ["--hover-bg" as any]: r.bg }}
                     onPointerEnter={e => { (e.currentTarget.style.background = r.bg); (e.currentTarget.style.borderColor = r.color); }}
                     onPointerLeave={e => { (e.currentTarget.style.background = ""); (e.currentTarget.style.borderColor = ""); }}
                   >
@@ -648,21 +716,101 @@ export default function MenuQuiz() {
               </div>
             </div>
           ) : (
-            <div className="animate-in fade-in">
-              <p className="text-sm font-semibold text-muted-foreground mb-2.5">🔄 Was würdest du stattdessen nehmen?</p>
+            <div className="animate-in fade-in space-y-3">
+              <p className="text-sm font-semibold text-muted-foreground">
+                Warum passt die Kombination nicht?
+              </p>
               <textarea
-                value={swapText}
-                onChange={e => setSwapText(e.target.value)}
-                placeholder="z.B. Petersilkartoffeln statt Serviettenknödel..."
-                className="w-full min-h-[70px] p-3 border-2 border-border rounded-xl text-sm bg-muted/30 resize-y outline-none focus:border-primary transition-colors"
+                value={neinReason}
+                onChange={e => setNeinReason(e.target.value)}
+                placeholder="z.B. Paniertes nie mit Knödel..."
+                className="w-full min-h-[60px] p-3 border-2 border-border rounded-xl text-sm bg-muted/30 resize-y outline-none focus:border-primary transition-colors"
                 autoFocus
               />
-              <div className="flex gap-2.5 justify-end mt-2.5">
-                <button onClick={() => setShowSwap(false)} className="px-4 py-2 border border-border rounded-lg bg-card text-[13px] font-semibold text-muted-foreground hover:bg-muted/50 transition-colors">
+
+              <p className="text-xs font-semibold text-muted-foreground">
+                Was würdest du ändern? (klicke auf ein Element)
+              </p>
+
+              <div className="flex flex-col gap-2">
+                {/* Hauptspeise */}
+                <button
+                  type="button"
+                  onClick={() => setActiveSearch(activeSearch === "haupt" ? null : "haupt")}
+                  className={`flex items-center gap-2.5 p-3 rounded-xl border-2 transition-all text-left ${corrections.haupt ? "border-green-500 bg-green-50" : activeSearch === "haupt" ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"}`}
+                >
+                  <span className="text-[20px]">🥩</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Hauptspeise</p>
+                    <p className="text-sm font-semibold truncate">{corrections.haupt || h.name}</p>
+                  </div>
+                  {corrections.haupt && <span className="text-green-600 text-lg">✓</span>}
+                </button>
+                {activeSearch === "haupt" && (
+                  <PrefixSearch
+                    items={HAUPTGERICHTE.map(hg => hg.name)}
+                    onSelect={(name) => { setCorrections(p => ({ ...p, haupt: name })); setActiveSearch(null); }}
+                    placeholder="Hauptgericht suchen..."
+                  />
+                )}
+
+                {/* Stärke (only for non-self-contained) */}
+                {!isSelf && !isDessert && quiz.starch && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setActiveSearch(activeSearch === "staerke" ? null : "staerke")}
+                      className={`flex items-center gap-2.5 p-3 rounded-xl border-2 transition-all text-left ${corrections.staerke ? "border-green-500 bg-green-50" : activeSearch === "staerke" ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"}`}
+                    >
+                      <span className="text-[20px]">🥔</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Beilage 1 (Stärke)</p>
+                        <p className="text-sm font-semibold truncate">{corrections.staerke || quiz.starch}</p>
+                      </div>
+                      {corrections.staerke && <span className="text-green-600 text-lg">✓</span>}
+                    </button>
+                    {activeSearch === "staerke" && (
+                      <PrefixSearch
+                        items={STAERKE}
+                        onSelect={(name) => { setCorrections(p => ({ ...p, staerke: name })); setActiveSearch(null); }}
+                        placeholder="Stärkebeilage suchen..."
+                      />
+                    )}
+                  </>
+                )}
+
+                {/* Gemüse */}
+                {quiz.veggie && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setActiveSearch(activeSearch === "gemuese" ? null : "gemuese")}
+                      className={`flex items-center gap-2.5 p-3 rounded-xl border-2 transition-all text-left ${corrections.gemuese ? "border-green-500 bg-green-50" : activeSearch === "gemuese" ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"}`}
+                    >
+                      <span className="text-[20px]">🥬</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Beilage 2 (Gemüse)</p>
+                        <p className="text-sm font-semibold truncate">{corrections.gemuese || quiz.veggie}</p>
+                      </div>
+                      {corrections.gemuese && <span className="text-green-600 text-lg">✓</span>}
+                    </button>
+                    {activeSearch === "gemuese" && (
+                      <PrefixSearch
+                        items={GEMUESE}
+                        onSelect={(name) => { setCorrections(p => ({ ...p, gemuese: name })); setActiveSearch(null); }}
+                        placeholder="Gemüsebeilage suchen..."
+                      />
+                    )}
+                  </>
+                )}
+              </div>
+
+              <div className="flex gap-2.5 justify-end pt-1">
+                <button onClick={() => setShowNeinPanel(false)} className="px-4 py-2 border border-border rounded-lg bg-card text-[13px] font-semibold text-muted-foreground hover:bg-muted/50 transition-colors">
                   Abbrechen
                 </button>
-                <button onClick={submitSwap} className="px-5 py-2 border-none rounded-lg bg-foreground text-background text-[13px] font-semibold hover:opacity-90 transition-opacity">
-                  Speichern →
+                <button onClick={submitNein} className="px-5 py-2 border-none rounded-lg bg-foreground text-background text-[13px] font-semibold hover:opacity-90 transition-opacity">
+                  Speichern
                 </button>
               </div>
             </div>
@@ -681,7 +829,7 @@ export default function MenuQuiz() {
 // ── Send feedback to server for pairing engine ──
 function sendFeedbackToServer(quiz: Quiz, rating: string) {
   // Map quiz rating to 1-5 score
-  const scoreMap: Record<string, number> = { perfekt: 5, ok: 4, getauscht: 2, schlecht: 1 };
+  const scoreMap: Record<string, number> = { perfekt: 5, ok: 4, nein: 1, schlecht: 1 };
   const score = scoreMap[rating] || 3;
 
   // Send starch pairing if present

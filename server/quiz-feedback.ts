@@ -501,6 +501,46 @@ export async function handleAIResearch(req: Request, res: Response) {
   }
 }
 
+// ── POST /api/quiz/game-entry ───────────────────────────────────────────
+// Stores a quiz history entry for cross-device sync
+
+export async function handleGameEntry(req: Request, res: Response) {
+  const userId = req.session?.userId;
+  if (!userId) return res.status(401).json({ error: "Not logged in" });
+
+  const { entry } = req.body;
+  if (!entry) return res.status(400).json({ error: "entry required" });
+
+  const ratingScore = entry.rating === "perfekt" ? 5 : entry.rating === "ok" ? 4 : 1;
+
+  await pool.query(
+    `INSERT INTO quiz_feedback (user_id, template_id, week_nr, day_of_week, meal, location_slug, main_recipe_id, side_recipe_id, pairing_type, rating, comment)
+     VALUES ($1, NULL, NULL, NULL, 'game-history', NULL, NULL, NULL, NULL, $2, $3)`,
+    [userId, ratingScore, JSON.stringify(entry)]
+  );
+
+  res.json({ ok: true });
+}
+
+// ── GET /api/quiz/game-entries ──────────────────────────────────────────
+// Returns quiz history entries for the current user (cross-device sync)
+
+export async function handleGetGameEntries(req: Request, res: Response) {
+  const userId = req.session?.userId;
+  if (!userId) return res.json([]);
+
+  const { rows } = await pool.query(
+    `SELECT comment FROM quiz_feedback WHERE user_id = $1 AND meal = 'game-history' ORDER BY created_at`,
+    [userId]
+  );
+
+  const entries = rows
+    .map(r => { try { return JSON.parse(r.comment); } catch { return null; } })
+    .filter(Boolean);
+
+  res.json(entries);
+}
+
 // ── Helper: Adaptive Epsilon ────────────────────────────────────────────
 
 export function getAdaptiveEpsilon(totalRatings: number, base = 0.2): number {

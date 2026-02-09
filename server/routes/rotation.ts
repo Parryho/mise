@@ -7,7 +7,7 @@ import {
 import { getRotationOverview, ensureDefaultTemplate } from "../rotation";
 import { autoFillRotation } from "../rotation-agent";
 import { handleOptimizeRotation, handleGetAnalysis } from "../smart-rotation";
-import { handleGetWeekCombos, handleSubmitFeedback, handleGetMyRatings, handleGetPairingScores, handleGetDashboardStats, handleGetLearnedRules, handleAIValidate, handleGameFeedback, handleAIResearch } from "../quiz-feedback";
+import { handleGetWeekCombos, handleSubmitFeedback, handleGetMyRatings, handleGetPairingScores, handleGetDashboardStats, handleGetLearnedRules, handleAIValidate, handleGameFeedback, handleAIResearch, handleGameEntry, handleGetGameEntries } from "../quiz-feedback";
 
 export function registerRotationRoutes(app: Express) {
   // --- Rotation Templates ---
@@ -147,4 +147,6 @@ export function registerRotationRoutes(app: Express) {
   app.post("/api/quiz/ai-validate", requireRole("admin"), handleAIValidate);
   app.post("/api/quiz/game-feedback", requireAuth, handleGameFeedback);
   app.post("/api/quiz/ai-research", requireAuth, handleAIResearch);
+  app.post("/api/quiz/game-entry", requireAuth, handleGameEntry);
+  app.get("/api/quiz/game-entries", requireAuth, handleGetGameEntries);
 }

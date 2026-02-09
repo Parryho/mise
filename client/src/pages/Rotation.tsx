@@ -84,7 +84,6 @@ export default function Rotation() {
   const [creatingTemplate, setCreatingTemplate] = useState(false);
   const { toast } = useToast();
 
-  // Block visibility — persisted in localStorage
   const [showBlocks, setShowBlocks] = useState<Record<string, boolean>>(() => {
     try {
       const saved = localStorage.getItem("mise-blocks-rotation");
@@ -159,7 +158,6 @@ export default function Rotation() {
     }
   };
 
-  // allSlots tracks all weeks for per-week completeness badges
   const [allSlots, setAllSlots] = useState<RotationSlot[]>([]);
 
   useEffect(() => {
@@ -228,7 +226,7 @@ export default function Rotation() {
         existing.push(s.id);
         seen.set(s.recipeId!, existing);
       }
-      for (const [, ids] of Array.from(seen.entries())) {
+      for (const ids of Array.from(seen.values())) {
         if (ids.length > 1) ids.forEach((id: number) => dupes.add(id));
       }
     }
@@ -339,15 +337,9 @@ export default function Rotation() {
             </p>
           </div>
           <div className="flex items-center gap-1">
-            {templates.length > 1 ? (
-              <Button size="icon" variant="ghost" className="text-primary-foreground hover:bg-white/20 h-8 w-8" onClick={() => setNewTemplateOpen(true)} title="Template">
-                <Settings2 className="h-4 w-4" />
-              </Button>
-            ) : (
-              <Button size="icon" variant="ghost" className="text-primary-foreground hover:bg-white/20 h-8 w-8" onClick={() => setNewTemplateOpen(true)} title="Neues Template">
-                <Plus className="h-4 w-4" />
-              </Button>
-            )}
+            <Button size="icon" variant="ghost" className="text-primary-foreground hover:bg-white/20 h-8 w-8" onClick={() => setNewTemplateOpen(true)} title={templates.length > 1 ? "Template" : "Neues Template"}>
+              {templates.length > 1 ? <Settings2 className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+            </Button>
           </div>
         </div>
 
@@ -411,9 +403,8 @@ export default function Rotation() {
         {weekButtons.map(w => {
           const ws = perWeekStats.get(w);
           const isFull = ws && ws.total > 0 && ws.filled === ws.total;
-          const isSlotEmpty = !ws || ws.total === 0 || ws.filled === 0;
+          const isEmpty = !ws || ws.total === 0 || ws.filled === 0;
           const isSelected = weekNr === w;
-          const pct = ws && ws.total > 0 ? Math.round((ws.filled / ws.total) * 100) : 0;
           return (
             <button
               key={w}
@@ -432,7 +423,7 @@ export default function Rotation() {
               {ws && ws.total > 0 && (
                 <span className={cn(
                   "absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full",
-                  isFull ? "bg-green-500" : isSlotEmpty ? "bg-red-400" : "bg-amber-400"
+                  isFull ? "bg-green-500" : isEmpty ? "bg-red-400" : "bg-amber-400"
                 )} />
               )}
             </button>

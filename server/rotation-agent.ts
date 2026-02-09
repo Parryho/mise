@@ -435,9 +435,6 @@ function getDishMeta(name: string): DishMeta {
   return {};
 }
 
-// ============================================================
-// Fisher-Yates Shuffle
-// ============================================================
 function shuffle<T>(arr: T[]): T[] {
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -446,7 +443,6 @@ function shuffle<T>(arr: T[]): T[] {
   return arr;
 }
 
-/** Pick random element from array */
 function pickRandom<T>(arr: T[]): T | null {
   if (arr.length === 0) return null;
   return arr[Math.floor(Math.random() * arr.length)];
@@ -492,18 +488,9 @@ function getAdaptiveEpsilon(totalRatings: number, base = 0.2): number {
   return base + (0.5 - base) * Math.exp(-0.01 * (totalRatings - 50));
 }
 
-// ============================================================
-// Intelligent Side-Dish Selection
-// ============================================================
-
 /**
- * Pick a starch side dish that respects culinary rules.
- *
- * 1. Remove forbidden starches for this main
- * 2. Remove already-used IDs and starch groups (per-meal)
- * 3. If preferred starches exist → random from available preferred
- * 4. Otherwise → random from all remaining
- * 5. Fallback: relax starch-group constraint
+ * Pick a starch side dish respecting culinary rules:
+ * forbidden starches, used IDs/groups, then preferred, then any remaining.
  */
 function pickStarchFor(
   mainName: string,
@@ -517,49 +504,33 @@ function pickStarchFor(
 
   const meta = getDishMeta(mainName);
 
-  // Step 1: Remove forbidden
   const forbiddenNames = new Set(meta.forbiddenStarches || []);
-  let candidates = starchPool.filter(r => !forbiddenNames.has(r.name));
+  const candidates = starchPool.filter(r => !forbiddenNames.has(r.name));
 
-  // Step 2: Remove used IDs + starch groups
   const withoutUsed = candidates.filter(r => {
     if (usedIds.has(r.id)) return false;
-    const group = getStarchGroup(r);
-    if (usedStarchGroups.has(group)) return false;
-    return true;
+    return !usedStarchGroups.has(getStarchGroup(r));
   });
 
-  // Step 3: Try preferred first (DISH_META hard constraint)
-  if (meta.preferredStarches && meta.preferredStarches.length > 0) {
+  // Preferred starches first (DISH_META hard constraint)
+  if (meta.preferredStarches?.length) {
     const preferredNames = new Set(meta.preferredStarches);
-    const preferredCandidates = withoutUsed.filter(r => preferredNames.has(r.name));
-    if (preferredCandidates.length > 0) {
-      // v3: Use score-weighted selection within preferred candidates
-      return pickWeighted(preferredCandidates, scoreMap, epsilon);
-    }
+    const preferred = withoutUsed.filter(r => preferredNames.has(r.name));
+    if (preferred.length > 0) return pickWeighted(preferred, scoreMap, epsilon);
   }
 
-  // Step 4: Any remaining (no collision) — v3: score-weighted
-  if (withoutUsed.length > 0) {
-    return pickWeighted(withoutUsed, scoreMap, epsilon);
-  }
+  if (withoutUsed.length > 0) return pickWeighted(withoutUsed, scoreMap, epsilon);
 
-  // Step 5: Fallback — relax starch-group constraint (still respect forbidden + usedIds)
+  // Fallback: relax starch-group constraint (still respect forbidden + usedIds)
   const relaxed = candidates.filter(r => !usedIds.has(r.id));
-  if (relaxed.length > 0) {
-    return pickWeighted(relaxed, scoreMap, epsilon);
-  }
+  if (relaxed.length > 0) return pickWeighted(relaxed, scoreMap, epsilon);
 
-  // Final fallback: anything from pool
   return pickRandom(candidates.length > 0 ? candidates : starchPool);
 }
 
 /**
- * Pick a veggie side dish that respects culinary rules.
- *
- * 1. Remove already-used IDs
- * 2. If preferred veggies exist → random from available preferred
- * 3. Otherwise → random from all remaining
+ * Pick a veggie side dish respecting culinary rules:
+ * used IDs, then preferred, then any remaining.
  */
 function pickVeggieFor(
   mainName: string,
@@ -572,31 +543,40 @@ function pickVeggieFor(
 
   const meta = getDishMeta(mainName);
 
-  // Remove used IDs
   const available = veggiePool.filter(r => !usedIds.has(r.id));
 
-  // Try preferred first (DISH_META hard constraint)
-  if (meta.preferredVeggies && meta.preferredVeggies.length > 0) {
+  // Preferred veggies first (DISH_META hard constraint)
+  if (meta.preferredVeggies?.length) {
     const preferredNames = new Set(meta.preferredVeggies);
-    const preferredCandidates = available.filter(r => preferredNames.has(r.name));
-    if (preferredCandidates.length > 0) {
-      // v3: Use score-weighted selection within preferred candidates
-      return pickWeighted(preferredCandidates, scoreMap, epsilon);
-    }
+    const preferred = available.filter(r => preferredNames.has(r.name));
+    if (preferred.length > 0) return pickWeighted(preferred, scoreMap, epsilon);
   }
 
-  // Any remaining — v3: score-weighted
-  if (available.length > 0) {
-    return pickWeighted(available, scoreMap, epsilon);
-  }
+  if (available.length > 0) return pickWeighted(available, scoreMap, epsilon);
 
-  // Fallback
   return pickRandom(veggiePool);
 }
 
-// ============================================================
-// Main auto-fill logic
-// ============================================================
+/**
+ * Round-robin pick from a shuffled pool, skipping already-used IDs.
+ * Returns the picked recipe and advances the index counter.
+ */
+function pickFromPool(
+  pool: Recipe[],
+  counter: { value: number },
+  usedIds: Set<number>,
+): Recipe | null {
+  if (pool.length === 0) return null;
+  for (let attempt = 0; attempt < pool.length; attempt++) {
+    const candidate = pool[counter.value % pool.length];
+    counter.value++;
+    if (!usedIds.has(candidate.id)) return candidate;
+  }
+  const fallback = pool[counter.value % pool.length];
+  counter.value++;
+  return fallback;
+}
+
 interface AutoFillOptions {
   overwrite?: boolean;
   useScores?: boolean;
@@ -611,7 +591,6 @@ export async function autoFillRotation(
   const recipes = await storage.getRecipes();
   const allSlots = await storage.getRotationSlots(templateId);
 
-  // v3: Load pairing scores and adaptive epsilon
   let starchScores = new Map<number, Map<number, number>>();
   let veggieScores = new Map<number, Map<number, number>>();
   let epsilon = 0.2;
@@ -637,7 +616,6 @@ export async function autoFillRotation(
     }
   }
 
-  // ── Build recipe pools by role ──
   const soups: Recipe[] = [];
   const mainsMeat: Recipe[] = [];
   const mainsVegan: Recipe[] = [];
@@ -645,8 +623,7 @@ export async function autoFillRotation(
   const sidesVeg: Recipe[] = [];
 
   for (const r of recipes) {
-    // Skip anything tagged kein-rotation
-    if (r.tags && r.tags.includes("kein-rotation")) continue;
+    if (r.tags?.includes("kein-rotation")) continue;
 
     switch (r.category) {
       case "ClearSoups":
@@ -661,28 +638,23 @@ export async function autoFillRotation(
         mainsVegan.push(r);
         break;
       case "Sides":
-        if (r.tags && r.tags.includes("stärke")) {
-          sidesStarch.push(r);
-        } else if (r.tags && r.tags.includes("gemüse")) {
-          sidesVeg.push(r);
-        }
+        if (r.tags?.includes("stärke")) sidesStarch.push(r);
+        else if (r.tags?.includes("gemüse")) sidesVeg.push(r);
         break;
     }
   }
 
   console.log(
-    `[rotation-agent v2] Pools: ${soups.length} Suppen, ${mainsMeat.length} Fleisch, ` +
+    `[rotation-agent v3] Pools: ${soups.length} Suppen, ${mainsMeat.length} Fleisch, ` +
     `${mainsVegan.length} Vegan, ${sidesStarch.length} Stärke, ${sidesVeg.length} Gemüse`
   );
 
-  // ── Shuffle all pools once for variety ──
   shuffle(soups);
   shuffle(mainsMeat);
   shuffle(mainsVegan);
   shuffle(sidesStarch);
   shuffle(sidesVeg);
 
-  // ── Create per-location shuffled copies ──
   const locationSlugs = Array.from(new Set(allSlots.map(s => s.locationSlug)));
 
   type LocationPools = {
@@ -704,7 +676,6 @@ export async function autoFillRotation(
     });
   }
 
-  // ── Group slots for lookup ──
   const slotGroups = new Map<string, RotationSlot[]>();
   for (const slot of allSlots) {
     const key = `${slot.weekNr}-${slot.dayOfWeek}-${slot.locationSlug}-${slot.meal}`;
@@ -716,10 +687,9 @@ export async function autoFillRotation(
   let filled = 0;
   let skipped = 0;
 
-  // ── Per-location pool indices for round-robin main/soup variety across weeks ──
-  const poolIdx = new Map<string, { soup: number; main1: number; main2: number }>();
+  const poolIdx = new Map<string, { soup: { value: number }; main1: { value: number }; main2: { value: number } }>();
   for (const loc of locationSlugs) {
-    poolIdx.set(loc, { soup: 0, main1: 0, main2: 0 });
+    poolIdx.set(loc, { soup: { value: 0 }, main1: { value: 0 }, main2: { value: 0 } });
   }
 
   const weekNrs = Array.from(new Set(allSlots.map(s => s.weekNr))).sort();
@@ -790,73 +760,26 @@ export async function autoFillRotation(
 
             switch (slot.course) {
               case "soup": {
-                // Round-robin through shuffled soup pool
-                const pool = pools.soup;
-                if (pool.length > 0) {
-                  for (let attempt = 0; attempt < pool.length; attempt++) {
-                    const candidate = pool[idx.soup % pool.length];
-                    idx.soup++;
-                    if (!dayUsedIds.has(candidate.id)) {
-                      picked = candidate;
-                      break;
-                    }
-                  }
-                  if (!picked) {
-                    picked = pool[idx.soup % pool.length];
-                    idx.soup++;
-                  }
-                }
+                picked = pickFromPool(pools.soup, idx.soup, dayUsedIds);
                 break;
               }
 
               case "main1": {
-                // Round-robin through shuffled meat/fish pool
-                const pool = pools.main1;
-                if (pool.length > 0) {
-                  for (let attempt = 0; attempt < pool.length; attempt++) {
-                    const candidate = pool[idx.main1 % pool.length];
-                    idx.main1++;
-                    if (!dayUsedIds.has(candidate.id)) {
-                      picked = candidate;
-                      break;
-                    }
-                  }
-                  if (!picked) {
-                    picked = pool[idx.main1 % pool.length];
-                    idx.main1++;
-                  }
-                }
+                picked = pickFromPool(pools.main1, idx.main1, dayUsedIds);
                 main1Recipe = picked;
                 break;
               }
 
               case "main2": {
-                // Round-robin through shuffled vegan pool
-                const pool = pools.main2;
-                if (pool.length > 0) {
-                  for (let attempt = 0; attempt < pool.length; attempt++) {
-                    const candidate = pool[idx.main2 % pool.length];
-                    idx.main2++;
-                    if (!dayUsedIds.has(candidate.id)) {
-                      picked = candidate;
-                      break;
-                    }
-                  }
-                  if (!picked) {
-                    picked = pool[idx.main2 % pool.length];
-                    idx.main2++;
-                  }
-                }
+                picked = pickFromPool(pools.main2, idx.main2, dayUsedIds);
                 main2Recipe = picked;
                 break;
               }
 
               case "side1a": {
-                // Starch for main1
                 if (main1Recipe) {
                   const meta = getDishMeta(main1Recipe.name);
                   if (meta.selfContained || meta.dessertMain) {
-                    // No starch needed — set to null
                     if (overwrite && slot.recipeId !== null) {
                       await storage.updateRotationSlot(slot.id, { recipeId: null });
                     }
@@ -871,11 +794,9 @@ export async function autoFillRotation(
               }
 
               case "side1b": {
-                // Veggie for main1
                 if (main1Recipe) {
                   const meta = getDishMeta(main1Recipe.name);
                   if (meta.dessertMain) {
-                    // No veggie needed — set to null
                     if (overwrite && slot.recipeId !== null) {
                       await storage.updateRotationSlot(slot.id, { recipeId: null });
                     }
@@ -889,7 +810,6 @@ export async function autoFillRotation(
               }
 
               case "side2a": {
-                // Starch for main2
                 if (main2Recipe) {
                   const meta = getDishMeta(main2Recipe.name);
                   if (meta.selfContained || meta.dessertMain) {
@@ -907,7 +827,6 @@ export async function autoFillRotation(
               }
 
               case "side2b": {
-                // Veggie for main2
                 if (main2Recipe) {
                   const meta = getDishMeta(main2Recipe.name);
                   if (meta.dessertMain) {

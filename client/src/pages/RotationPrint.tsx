@@ -63,7 +63,6 @@ export default function RotationPrint() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Block visibility — persisted in localStorage
   const [showBlocks, setShowBlocks] = useState<Record<string, boolean>>(() => {
     try {
       const saved = localStorage.getItem("mise-blocks-print");
@@ -75,12 +74,10 @@ export default function RotationPrint() {
     localStorage.setItem("mise-blocks-print", JSON.stringify(showBlocks));
   }, [showBlocks]);
 
-  // Current rotation week
   const currentKW = getISOWeek(new Date());
   const currentYear = new Date().getFullYear();
   const currentRotWeek = ((currentKW - 1) % 6) + 1;
 
-  // Map rotation week to actual KW
   const kwForWeek = (w: number): number => {
     let kw = currentKW - (currentRotWeek - 1) + (w - 1);
     if (kw < 1) kw += 52;
@@ -88,7 +85,6 @@ export default function RotationPrint() {
     return kw;
   };
 
-  // Dates for the selected rotation week
   const weekDates = useMemo(() => {
     const kw = kwForWeek(weekNr);
     const year = kw >= currentKW ? currentYear : currentYear + 1;
@@ -103,7 +99,6 @@ export default function RotationPrint() {
     return dates;
   }, [weekNr, currentKW, currentYear, currentRotWeek]);
 
-  // Initial load
   useEffect(() => {
     Promise.all([
       fetch("/api/rotation-templates/ensure-default", { method: "POST" }).then(r => r.json()),
@@ -117,7 +112,6 @@ export default function RotationPrint() {
     }).catch(() => setLoading(false));
   }, []);
 
-  // Fetch rotation slots for selected week
   useEffect(() => {
     if (!templateId) return;
     fetch(`/api/rotation-slots/${templateId}?weekNr=${weekNr}`)
@@ -142,7 +136,6 @@ export default function RotationPrint() {
   const visibleBlocks = ALL_BLOCKS.filter(b => showBlocks[b.key]);
   const numBlocks = visibleBlocks.length;
 
-  // Dynamic column widths
   const colWidthPercent = numBlocks > 0 ? Math.floor(99 / numBlocks) : 25;
   const dayCol = Math.floor(colWidthPercent * 0.14);
   const typeCol = Math.floor(colWidthPercent * 0.19);
@@ -259,14 +252,14 @@ export default function RotationPrint() {
           <table className="w-full border-collapse" style={{ tableLayout: "fixed" }}>
             <colgroup>
               {visibleBlocks.map((_, idx) => (
-                <colgroup key={idx}>
-                  {idx > 0 && <col style={{ width: `${spacerWidth}%` }} />}
-                  <col style={{ width: `${dayCol}%` }} />
-                  <col style={{ width: `${typeCol}%` }} />
-                  <col style={{ width: `${nameCol}%` }} />
-                  <col style={{ width: `${allergenCol}%` }} />
-                  <col style={{ width: `${tempCol}%` }} />
-                </colgroup>
+                <>
+                  {idx > 0 && <col key={`sp-${idx}`} style={{ width: `${spacerWidth}%` }} />}
+                  <col key={`d-${idx}`} style={{ width: `${dayCol}%` }} />
+                  <col key={`t-${idx}`} style={{ width: `${typeCol}%` }} />
+                  <col key={`n-${idx}`} style={{ width: `${nameCol}%` }} />
+                  <col key={`a-${idx}`} style={{ width: `${allergenCol}%` }} />
+                  <col key={`tc-${idx}`} style={{ width: `${tempCol}%` }} />
+                </>
               ))}
             </colgroup>
 
@@ -316,11 +309,15 @@ export default function RotationPrint() {
                       )}
                     >
                       {visibleBlocks.map((block, blockIdx) => {
-                        // For SÜD Mittag, show City Mittag data (auto-copy)
                         const effectiveLocSlug = block.locSlug === "sued" && block.meal === "lunch" ? "city" : block.locSlug;
                         const slot = getSlot(dayIdx, block.meal, effectiveLocSlug, course);
                         const recipe = slot?.recipeId ? recipeMap.get(slot.recipeId) : null;
                         const isDessert = course === "dessert";
+                        const allergenText = isDessert && !recipe
+                          ? "A,C,G"
+                          : recipe?.allergens?.length
+                            ? recipe.allergens.join(",")
+                            : "";
 
                         return (
                           <>
@@ -367,11 +364,7 @@ export default function RotationPrint() {
                               className="px-1 py-0.5 border border-border/50 text-center text-orange-600 font-medium"
                               style={{ lineHeight: "1.2", fontSize: "6pt" }}
                             >
-                              {isDessert && !recipe
-                                ? "A,C,G"
-                                : recipe?.allergens && recipe.allergens.length > 0
-                                  ? recipe.allergens.join(",")
-                                  : ""}
+                              {allergenText}
                             </td>
                             <td
                               key={`tc-${block.key}-${course}`}

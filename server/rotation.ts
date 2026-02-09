@@ -5,7 +5,7 @@
 
 import { storage } from "./storage";
 import type { InsertMenuPlan, InsertRotationSlot } from "@shared/schema";
-import { MEAL_SLOTS, getWeekDateRange, getISOWeek, formatLocalDate } from "@shared/constants";
+import { MEAL_SLOTS, getWeekDateRange, formatLocalDate } from "@shared/constants";
 
 /**
  * Generate weekly menu plans from a rotation template.
@@ -22,14 +22,9 @@ export async function generateWeekFromRotation(
     throw new Error(`Keine Rotationsslots für Template ${templateId}, Woche ${weekNr}`);
   }
 
-  // Get location lookup
   const locs = await storage.getLocations();
-  const locBySlug: Record<string, number> = {};
-  for (const loc of locs) {
-    locBySlug[loc.slug] = loc.id;
-  }
+  const locBySlug = Object.fromEntries(locs.map(l => [l.slug, l.id]));
 
-  // Build date for each day of week
   const monday = new Date(startDate);
   const getDateForDow = (dow: number): string => {
     const d = new Date(monday);
@@ -39,19 +34,13 @@ export async function generateWeekFromRotation(
     return formatLocalDate(d);
   };
 
-  // Map meal names: mittag->lunch, abend->dinner
-  const mealMap: Record<string, string> = {
-    mittag: 'lunch',
-    abend: 'dinner',
-  };
-
   const plans: InsertMenuPlan[] = [];
 
   for (const slot of slots) {
     if (!slot.recipeId) continue;
     plans.push({
       date: getDateForDow(slot.dayOfWeek),
-      meal: mealMap[slot.meal] || slot.meal,
+      meal: slot.meal,
       course: slot.course,
       recipeId: slot.recipeId,
       portions: 1,
@@ -89,7 +78,6 @@ export async function getRotationOverview(templateId: number) {
 
   const allSlots = await storage.getRotationSlots(templateId);
 
-  // Group by weekNr
   const weeks: Record<number, typeof allSlots> = {};
   for (const slot of allSlots) {
     if (!weeks[slot.weekNr]) weeks[slot.weekNr] = [];
@@ -113,14 +101,11 @@ export async function ensureDefaultTemplate() {
   const templates = await storage.getRotationTemplates();
   const active = templates.find(t => t.isActive);
   if (active) {
-    // Check if slots exist
     const existingSlots = await storage.getRotationSlots(active.id);
     if (existingSlots.length === 0) {
-      // Template exists but no slots — create them for both locations
       await createAllSlots(active.id, active.weekCount);
       return active;
     }
-    // Backfill: if only "city" slots exist, add "sued" slots
     const hasSued = existingSlots.some(s => s.locationSlug === "sued");
     if (!hasSued) {
       await createSlotsForLocation(active.id, active.weekCount, "sued");
@@ -128,7 +113,6 @@ export async function ensureDefaultTemplate() {
     return active;
   }
 
-  // Create new default template
   const template = await storage.createRotationTemplate({
     name: "Standard-Rotation",
     weekCount: 6,
@@ -183,7 +167,6 @@ export async function getOrGenerateWeekPlan(year: number, week: number) {
   const template = await ensureDefaultTemplate();
   const rotationWeekNr = ((week - 1) % template.weekCount) + 1;
 
-  // Always regenerate: delete old plans, create fresh from rotation
   await storage.deleteMenuPlansByDateRange(from, to);
 
   const rotSlots = await storage.getRotationSlotsByWeek(template.id, rotationWeekNr);

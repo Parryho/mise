@@ -28,7 +28,6 @@ import {
   UtensilsCrossed,
   Soup,
   CakeSlice,
-  Settings,
   ArrowRight,
   AlertTriangle,
   CheckCircle,
@@ -37,6 +36,7 @@ import {
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { getISOWeek } from "@shared/constants";
+import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
 interface Task {
@@ -90,7 +90,6 @@ const COURSE_LABELS: Record<string, string> = {
   dessert: "Dessert",
 };
 
-
 export default function Today() {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -110,7 +109,6 @@ export default function Today() {
   const today = new Date();
   const dateStr = format(today, "yyyy-MM-dd");
 
-  // Greeting based on time of day
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
     if (hour < 6) return "Guten Abend";
@@ -122,7 +120,6 @@ export default function Today() {
 
   const firstName = user?.name?.split(" ")[0] || "Chef";
 
-  // Fetch data
   const fetchTasks = async () => {
     try {
       const res = await fetch(`/api/tasks?date=${dateStr}`);
@@ -185,7 +182,6 @@ export default function Today() {
       .finally(() => setLoading(false));
   }, [dateStr]);
 
-  // Task handlers
   const handleAddTask = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
@@ -244,11 +240,9 @@ export default function Today() {
     }
   };
 
-  // Computed values
   const openTasks = tasks.filter(t => t.status === "open");
   const doneTasks = tasks.filter(t => t.status === "done");
 
-  // HACCP status for today
   const haccpStatus = useMemo(() => {
     const todayStr = new Date().toDateString();
     const todayLogs = haccpLogs.filter(l => new Date(l.timestamp).toDateString() === todayStr);
@@ -259,7 +253,6 @@ export default function Today() {
     return { totalFridges, measured, alerts };
   }, [haccpLogs, fridges]);
 
-  // Menu items already filtered to City+Lunch by fetchMenuPlan
   const cityLunchItems = useMemo(() => {
     return [...menuItems]
       .filter(item => item.recipe)
@@ -271,7 +264,6 @@ export default function Today() {
 
   const hasMenu = cityLunchItems.length > 0;
 
-  // PAX per location
   const paxByLocation = useMemo(() => {
     const result: Record<number, { lunch: number; dinner: number }> = {};
     for (const gc of guestCounts) {
@@ -441,14 +433,15 @@ export default function Today() {
                 {/* Progress bar */}
                 <div className="h-2 bg-muted rounded-full overflow-hidden">
                   <div
-                    className={`h-full rounded-full transition-all ${
+                    className={cn(
+                      "h-full rounded-full transition-all",
                       haccpStatus.alerts > 0
                         ? "bg-destructive"
                         : haccpStatus.measured >= haccpStatus.totalFridges
-                        ? "bg-green-500"
-                        : "bg-amber-500"
-                    }`}
-                    style={{ width: `${haccpStatus.totalFridges > 0 ? (haccpStatus.measured / haccpStatus.totalFridges) * 100 : 0}%` }}
+                          ? "bg-green-500"
+                          : "bg-amber-500"
+                    )}
+                    style={{ width: `${(haccpStatus.measured / haccpStatus.totalFridges) * 100}%` }}
                   />
                 </div>
                 {haccpStatus.alerts > 0 && (
@@ -641,13 +634,10 @@ function TaskItem({
   onDelete: () => void;
 }) {
   const isDone = task.status === "done";
-  const priorityColors: Record<string | number, string> = {
-    0: "border-l-gray-400",
-    1: "border-l-blue-500",
-    2: "border-l-red-500",
-    low: "border-l-gray-400",
-    normal: "border-l-blue-500",
-    high: "border-l-red-500",
+  const priorityColors: Record<string, string> = {
+    "0": "border-l-gray-400",
+    "1": "border-l-blue-500",
+    "2": "border-l-red-500",
   };
 
   return (

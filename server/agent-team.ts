@@ -9,6 +9,7 @@
 
 import Anthropic from "@anthropic-ai/sdk";
 import { storage } from "./storage";
+import { formatLocalDate } from "@shared/constants";
 import {
   type AgentContext,
   type AgentResult,
@@ -231,7 +232,7 @@ export async function runTeamBriefing(
 function addDays(dateStr: string, days: number): string {
   const d = new Date(dateStr);
   d.setDate(d.getDate() + days);
-  return d.toISOString().split("T")[0];
+  return formatLocalDate(d);
 }
 
 async function wrapWithSSE(

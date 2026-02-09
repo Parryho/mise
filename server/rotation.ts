@@ -5,7 +5,7 @@
 
 import { storage } from "./storage";
 import type { InsertMenuPlan, InsertRotationSlot } from "@shared/schema";
-import { MEAL_SLOTS, getWeekDateRange, getISOWeek } from "@shared/constants";
+import { MEAL_SLOTS, getWeekDateRange, getISOWeek, formatLocalDate } from "@shared/constants";
 
 /**
  * Generate weekly menu plans from a rotation template.
@@ -36,7 +36,7 @@ export async function generateWeekFromRotation(
     // dow 0=Sun...6=Sat. Monday=1
     const diff = dow === 0 ? 6 : dow - 1; // offset from Monday
     d.setDate(monday.getDate() + diff);
-    return d.toISOString().split('T')[0];
+    return formatLocalDate(d);
   };
 
   // Map meal names: mittag->lunch, abend->dinner
@@ -58,6 +58,16 @@ export async function generateWeekFromRotation(
       locationId: locBySlug[slot.locationSlug] || null,
       rotationWeekNr: weekNr,
     });
+  }
+
+  // Auto-copy City lunch entries to SÜD (SÜD Mittag = City Mittag)
+  if (locBySlug["sued"]) {
+    const cityLunchPlans = plans.filter(
+      p => p.locationId === locBySlug["city"] && p.meal === "lunch"
+    );
+    for (const plan of cityLunchPlans) {
+      plans.push({ ...plan, locationId: locBySlug["sued"] });
+    }
   }
 
   const created = await storage.createMenuPlans(plans);

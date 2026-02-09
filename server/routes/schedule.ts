@@ -5,6 +5,7 @@ import {
   insertShiftTypeSchema, updateShiftTypeSchema,
   insertScheduleEntrySchema, updateScheduleEntrySchema
 } from "@shared/schema";
+import { formatLocalDate } from "@shared/constants";
 
 export function registerScheduleRoutes(app: Express) {
   // === STAFF ===
@@ -89,8 +90,8 @@ export function registerScheduleRoutes(app: Express) {
   // R2-T9: Added mine=1 filter for "Meine Schichten"
   app.get("/api/schedule", requireAuth, async (req, res) => {
     const { start, end, mine } = req.query;
-    const startDate = (start as string) || new Date().toISOString().split('T')[0];
-    const endDate = (end as string) || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const startDate = (start as string) || formatLocalDate(new Date());
+    const endDate = (end as string) || formatLocalDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
     let entries = await storage.getScheduleEntries(startDate, endDate);
 
     // Filter to only show user's own shifts
@@ -144,8 +145,8 @@ export function registerScheduleRoutes(app: Express) {
   app.get("/api/schedule/export", requireAuth, async (req, res) => {
     try {
       const { start, end, format = 'pdf' } = req.query;
-      const startDate = (start as string) || new Date().toISOString().split('T')[0];
-      const endDate = (end as string) || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      const startDate = (start as string) || formatLocalDate(new Date());
+      const endDate = (end as string) || formatLocalDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
 
       const entries = await storage.getScheduleEntries(startDate, endDate);
       const staffList = await storage.getStaff();
@@ -252,7 +253,7 @@ export function registerScheduleRoutes(app: Express) {
         // Day cells
         for (let i = 0; i < allDates.length; i++) {
           const d = allDates[i];
-          const dateStr = d.toISOString().split('T')[0];
+          const dateStr = formatLocalDate(d);
           const x = startX + nameColWidth + (i * dayColWidth);
           const isWeekend = d.getDay() === 0 || d.getDay() === 6;
 

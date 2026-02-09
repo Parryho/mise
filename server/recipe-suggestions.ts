@@ -9,6 +9,7 @@ import { recipes, ingredients, menuPlans, rotationSlots } from "@shared/schema";
 import { and, gte, lte, eq, sql } from "drizzle-orm";
 import { RECIPE_CATEGORIES } from "@shared/schema";
 import type { Recipe } from "@shared/schema";
+import { formatLocalDate } from "@shared/constants";
 
 // Seasonal mapping: which recipe categories/tags fit which months
 const SUMMER_MONTHS = [5, 6, 7, 8]; // May-Aug
@@ -70,8 +71,8 @@ export async function getRecipeSuggestions(options: SuggestionOptions): Promise<
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
 
-  const weekStart = monday.toISOString().split("T")[0];
-  const weekEnd = sunday.toISOString().split("T")[0];
+  const weekStart = formatLocalDate(monday);
+  const weekEnd = formatLocalDate(sunday);
 
   const weekPlans = await storage.getMenuPlans(weekStart, weekEnd);
 
@@ -97,7 +98,7 @@ export async function getRecipeSuggestions(options: SuggestionOptions): Promise<
   // 3. Get recent usage (last 4 weeks) for recency penalty
   const fourWeeksAgo = new Date(targetDate);
   fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
-  const recentStart = fourWeeksAgo.toISOString().split("T")[0];
+  const recentStart = formatLocalDate(fourWeeksAgo);
 
   const recentPlans = await storage.getMenuPlans(recentStart, weekEnd);
   const recentRecipeUsage: Record<number, number> = {};

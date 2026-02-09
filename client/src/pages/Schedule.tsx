@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { formatLocalDate } from "@shared/constants";
 import { Loader2, ChevronLeft, ChevronRight, X, Trash2, Download, FileSpreadsheet } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -51,7 +52,7 @@ const ENTRY_TYPES = [
 ];
 
 function formatDate(date: Date): string {
-  return date.toISOString().split('T')[0];
+  return formatLocalDate(date);
 }
 
 function getWeekDates(baseDate: Date): Date[] {

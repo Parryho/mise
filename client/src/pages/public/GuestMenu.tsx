@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Loader2, UtensilsCrossed } from "lucide-react";
 import { useParams } from "wouter";
 import { ALLERGENS } from "@shared/allergens";
+import { formatLocalDate } from "@shared/constants";
 
 interface PublicDish {
   course: string;
@@ -27,7 +28,7 @@ interface PublicMenuResponse {
 export default function GuestMenu() {
   const params = useParams<{ locationSlug: string; date?: string }>();
   const locationSlug = params.locationSlug;
-  const date = params.date || new Date().toISOString().split('T')[0];
+  const date = params.date || formatLocalDate(new Date());
 
   const { data: menu, isLoading, error } = useQuery<PublicMenuResponse>({
     queryKey: ["/api/public/menu", locationSlug, date],

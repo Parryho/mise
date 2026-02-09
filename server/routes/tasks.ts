@@ -1,6 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { requireAuth, requireAdmin, getParam, storage } from "./middleware";
 import { insertTaskSchema, updateTaskStatusSchema, updateTaskTemplateSchema } from "@shared/schema";
+import { formatLocalDate } from "@shared/constants";
 
 export function registerTaskRoutes(app: Express) {
   // === TASKS ("Heute" Modul) ===
@@ -8,7 +9,7 @@ export function registerTaskRoutes(app: Express) {
   // Get tasks by date (default: today)
   app.get("/api/tasks", requireAuth, async (req, res) => {
     try {
-      const date = (req.query.date as string) || new Date().toISOString().split("T")[0];
+      const date = (req.query.date as string) || formatLocalDate(new Date());
       const taskList = await storage.getTasksByDate(date);
       res.json(taskList);
     } catch (error: any) {
@@ -107,7 +108,7 @@ export function registerTaskRoutes(app: Express) {
     try {
       const templateId = parseInt(getParam(req.params.id), 10);
       const { date } = req.body;
-      const targetDate = date || new Date().toISOString().split('T')[0];
+      const targetDate = date || formatLocalDate(new Date());
 
       const template = await storage.getTaskTemplate(templateId);
       if (!template) {

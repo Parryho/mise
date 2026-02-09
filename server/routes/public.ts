@@ -4,6 +4,7 @@ import { getDailyAllergenMatrix, getWeeklyAllergenMatrix } from "../allergens";
 import { getBuffetCardsForDate } from "../buffet-cards";
 import { detectAllergensHandler, suggestAllergensForRecipeHandler } from "../allergen-detection";
 import { getPublicMenu } from "../public-menu";
+import { formatLocalDate } from "@shared/constants";
 
 export function registerPublicRoutes(app: Express) {
   // ==========================================
@@ -11,7 +12,7 @@ export function registerPublicRoutes(app: Express) {
   // ==========================================
   app.get("/api/allergens/daily", requireAuth, async (req: Request, res: Response) => {
     try {
-      const date = String(req.query.date || new Date().toISOString().split('T')[0]);
+      const date = String(req.query.date || formatLocalDate(new Date()));
       const locationId = req.query.locationId ? parseInt(String(req.query.locationId)) : undefined;
       const result = await getDailyAllergenMatrix(date, locationId);
       res.json(result);
@@ -35,7 +36,7 @@ export function registerPublicRoutes(app: Express) {
 
   app.get("/api/buffet-cards", requireAuth, async (req: Request, res: Response) => {
     try {
-      const date = String(req.query.date || new Date().toISOString().split('T')[0]);
+      const date = String(req.query.date || formatLocalDate(new Date()));
       const locationId = req.query.locationId ? parseInt(String(req.query.locationId)) : undefined;
       const cards = await getBuffetCardsForDate(date, locationId);
       res.json(cards);

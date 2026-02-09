@@ -1,14 +1,15 @@
 import type { Express, Request, Response } from "express";
 import { requireAuth, requireRole, audit, getParam, storage } from "./middleware";
 import { insertGuestCountSchema, updateGuestCountSchema, insertGuestAllergenProfileSchema, updateGuestAllergenProfileSchema } from "@shared/schema";
+import { formatLocalDate } from "@shared/constants";
 
 export function registerGuestRoutes(app: Express) {
 
   // === GUEST COUNTS ===
   app.get("/api/guests", requireAuth, async (req, res) => {
     const { start, end, locationId } = req.query;
-    const startDate = (start as string) || new Date().toISOString().split('T')[0];
-    const endDate = (end as string) || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const startDate = (start as string) || formatLocalDate(new Date());
+    const endDate = (end as string) || formatLocalDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
     const locId = locationId ? parseInt(locationId as string, 10) : undefined;
     const counts = await storage.getGuestCounts(startDate, endDate, locId);
     res.json(counts);
@@ -51,8 +52,8 @@ export function registerGuestRoutes(app: Express) {
   app.get("/api/guest-counts/export", requireAuth, async (req, res) => {
     try {
       const { start, end, format = 'pdf' } = req.query;
-      const startDate = (start as string) || new Date().toISOString().split('T')[0];
-      const endDate = (end as string) || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      const startDate = (start as string) || formatLocalDate(new Date());
+      const endDate = (end as string) || formatLocalDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
 
       const counts = await storage.getGuestCounts(startDate, endDate);
       const mealNames: Record<string, string> = { breakfast: 'Frühstück', lunch: 'Mittagessen', dinner: 'Abendessen' };

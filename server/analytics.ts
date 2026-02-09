@@ -6,6 +6,7 @@ import { db } from "./db";
 import { storage } from "./storage";
 import { guestCounts, haccpLogs, fridges, menuPlans, rotationSlots, recipes } from "@shared/schema";
 import { and, gte, lte, eq, sql, desc } from "drizzle-orm";
+import { formatLocalDate } from "@shared/constants";
 
 // ==========================================
 // PAX Trends
@@ -118,10 +119,10 @@ export async function getHaccpCompliance(startDate: string, endDate: string): Pr
   const end = new Date(endDate);
 
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-    const dateStr = d.toISOString().split('T')[0];
+    const dateStr = formatLocalDate(d);
     for (const fridge of allFridges) {
       const dayLogs = logs.filter(l => {
-        const logDate = l.timestamp instanceof Date ? l.timestamp.toISOString().split('T')[0] : String(l.timestamp).split('T')[0];
+        const logDate = l.timestamp instanceof Date ? formatLocalDate(l.timestamp) : String(l.timestamp).split('T')[0];
         return l.fridgeId === fridge.id && logDate === dateStr;
       });
       if (dayLogs.length === 0) {

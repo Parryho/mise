@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, UtensilsCrossed } from "lucide-react";
 import { useParams } from "wouter";
+import { formatLocalDate } from "@shared/constants";
 
 interface PublicDish {
   course: string;
@@ -27,7 +28,7 @@ interface PublicMenuResponse {
 export default function DigitalSignage() {
   const params = useParams<{ locationSlug: string }>();
   const locationSlug = params.locationSlug;
-  const today = new Date().toISOString().split('T')[0];
+  const today = formatLocalDate(new Date());
 
   const [currentMealIdx, setCurrentMealIdx] = useState(0);
   const [clock, setClock] = useState(new Date());

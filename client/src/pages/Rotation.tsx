@@ -60,9 +60,8 @@ interface ColDef {
 }
 
 const COLUMNS: ColDef[] = [
-  { locationSlug: "city", meal: "lunch", label: "City Mittag" },
-  { locationSlug: "city", meal: "dinner", label: "City Abend" },
-  { locationSlug: "sued", meal: "lunch", label: "SÜD Mittag" },
+  { locationSlug: "city", meal: "lunch", label: "Mittag (City + SÜD)" },
+  { locationSlug: "city", meal: "dinner", label: "Abend" },
 ];
 
 export default function Rotation() {
@@ -482,6 +481,11 @@ export default function Rotation() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* SÜD=City hint */}
+      <div className="mx-4 mt-3 px-3 py-2 bg-status-info-subtle border border-status-info/20 rounded-lg text-xs text-status-info">
+        SÜD Mittag übernimmt automatisch das City Mittag-Menü.
       </div>
 
       {/* Duplicate warning */}

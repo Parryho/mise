@@ -727,12 +727,15 @@ export async function autoFillRotation(
 
   for (const weekNr of weekNrs) {
     for (const dow of daysOfWeek) {
+      // Per-DAY: no recipe used twice (shared across locations)
+      const dayUsedIds = new Set<number>();
+
       for (const locSlug of locationSlugs) {
+        // SÜD lunch = City lunch, skip auto-fill for SÜD lunch
+        if (locSlug === "sued") continue;
+
         const pools = poolsByLocation.get(locSlug)!;
         const idx = poolIdx.get(locSlug)!;
-
-        // Per-DAY: no recipe used twice
-        const dayUsedIds = new Set<number>();
 
         for (const meal of ["lunch", "dinner"]) {
           // Per-MEAL: starch group collision avoidance resets

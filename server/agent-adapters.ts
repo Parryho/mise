@@ -8,6 +8,7 @@ import { detectAnomalies, getFridgeHealthScore } from "./haccp-anomaly";
 import { getWastePredictions } from "./waste-prediction";
 import { getRecipeSuggestions } from "./recipe-suggestions";
 import { getAllergensFromIngredients } from "./allergen-detection";
+import { formatLocalDate } from "@shared/constants";
 import { getRotationAnalysis } from "./smart-rotation";
 import { scaleRecipe } from "./intelligent-scaling";
 import { storage } from "./storage";
@@ -35,7 +36,7 @@ export interface AgentResult {
 function weekEndDate(weekStart: string): string {
   const d = new Date(weekStart);
   d.setDate(d.getDate() + 6);
-  return d.toISOString().split("T")[0];
+  return formatLocalDate(d);
 }
 
 async function runAdapter(

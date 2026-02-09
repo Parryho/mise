@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { formatLocalDate } from "@shared/constants";
 import { Loader2, Users, Baby, ChevronLeft, ChevronRight, Download, FileSpreadsheet } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -26,7 +27,7 @@ const MEALS = [
 ];
 
 function formatDate(date: Date): string {
-  return date.toISOString().split('T')[0];
+  return formatLocalDate(date);
 }
 
 function getWeekDates(baseDate: Date): Date[] {

@@ -13,6 +13,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
 import { Link } from "wouter";
+import { formatLocalDate } from "@shared/constants";
 
 interface DataCounts {
   profile: number;
@@ -130,7 +131,7 @@ export default function GDPRExport() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `dsgvo_export_${new Date().toISOString().split("T")[0]}.json`;
+      a.download = `dsgvo_export_${formatLocalDate(new Date())}.json`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -154,7 +155,7 @@ export default function GDPRExport() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `dsgvo_export_${selectedUserId.substring(0, 8)}_${new Date().toISOString().split("T")[0]}.json`;
+      a.download = `dsgvo_export_${selectedUserId.substring(0, 8)}_${formatLocalDate(new Date())}.json`;
       document.body.appendChild(a);
       a.click();
       a.remove();

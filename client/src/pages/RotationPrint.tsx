@@ -27,14 +27,14 @@ function uiIndexToDbDow(uiIdx: number): number {
 }
 
 const COURSE_SHORT: Record<string, string> = {
-  soup: "Suppe",
+  soup: "S",
   main1: "H1",
-  side1a: "B1a",
-  side1b: "B1b",
+  side1a: "1a",
+  side1b: "1b",
   main2: "H2",
-  side2a: "B2a",
-  side2b: "B2b",
-  dessert: "Dessert",
+  side2a: "2a",
+  side2b: "2b",
+  dessert: "D",
 };
 
 // Column definitions
@@ -45,9 +45,8 @@ interface ColDef {
 }
 
 const COLUMNS: ColDef[] = [
-  { locationSlug: "city", meal: "lunch", label: "City Mittag" },
-  { locationSlug: "city", meal: "dinner", label: "City Abend" },
-  { locationSlug: "sued", meal: "lunch", label: "SÜD Mittag" },
+  { locationSlug: "city", meal: "lunch", label: "Mittag (City + SÜD)" },
+  { locationSlug: "city", meal: "dinner", label: "Abend" },
 ];
 
 export default function RotationPrint() {
@@ -209,7 +208,7 @@ export default function RotationPrint() {
                             const isDessert = course === "dessert";
                             return (
                               <div key={course} className="flex items-baseline gap-1 min-h-[14px]">
-                                <span className="text-[9px] text-muted-foreground font-medium w-10 shrink-0">
+                                <span className="text-[9px] text-muted-foreground font-medium w-6 shrink-0">
                                   {COURSE_SHORT[course]}:
                                 </span>
                                 {isDessert && !recipe ? (

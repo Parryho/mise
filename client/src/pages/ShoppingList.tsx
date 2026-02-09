@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, ShoppingCart, Printer, Download, Truck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { formatLocalDate } from "@shared/constants";
 
 interface SupplierGroup {
   supplierId: number | null;
@@ -59,8 +60,8 @@ function getWeekRange(): { start: string; end: string } {
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
   return {
-    start: monday.toISOString().split("T")[0],
-    end: sunday.toISOString().split("T")[0],
+    start: formatLocalDate(monday),
+    end: formatLocalDate(sunday),
   };
 }
 

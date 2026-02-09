@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { getISOWeek, MEAL_SLOT_LABELS, type MealSlotName } from "@shared/constants";
+import { getISOWeek, MEAL_SLOT_LABELS, formatLocalDate, type MealSlotName } from "@shared/constants";
 import { RECIPE_CATEGORIES } from "@shared/schema";
 import { cn } from "@/lib/utils";
 import AllergenConflictBanner from "@/components/AllergenConflictBanner";
@@ -48,7 +48,7 @@ const COURSES: { key: string; de: string }[] = (Object.keys(MEAL_SLOT_LABELS) as
 }));
 
 function formatDate(date: Date): string {
-  return date.toISOString().split('T')[0];
+  return formatLocalDate(date);
 }
 
 function getWeekDatesFromRange(from: string): Date[] {
@@ -205,13 +205,13 @@ export default function MenuPlan() {
         await fetch(`/api/menu-plans/${existingPlan.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ recipeId: draggedRecipe.id, portions: existingPlan.portions })
+          body: JSON.stringify({ recipeId: draggedRecipe.id, portions: existingPlan.portions, locationId: selectedLocationId })
         });
       } else {
         await fetch('/api/menu-plans', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ date: dropDate, meal: dropMeal, course: dropCourse, recipeId: draggedRecipe.id, portions: 1 })
+          body: JSON.stringify({ date: dropDate, meal: dropMeal, course: dropCourse, recipeId: draggedRecipe.id, portions: 1, locationId: selectedLocationId })
         });
       }
       toast({ title: `${draggedRecipe.name} zugewiesen` });
@@ -390,6 +390,7 @@ export default function MenuPlan() {
                       recipes={recipes}
                       hasRotation={rotationWeekNr > 0}
                       pax={pax?.total ?? null}
+                      locationId={selectedLocationId}
                       onSave={() => fetchWeekPlan(year, week)}
                     />
                   );
@@ -426,7 +427,7 @@ export default function MenuPlan() {
   );
 }
 
-function CourseCard({ date, dayName, dayNum, meal, course, courseLabel, plan, recipeName, recipes, hasRotation, pax, onSave }: {
+function CourseCard({ date, dayName, dayNum, meal, course, courseLabel, plan, recipeName, recipes, hasRotation, pax, locationId, onSave }: {
   date: string;
   dayName: string;
   dayNum: number;
@@ -438,6 +439,7 @@ function CourseCard({ date, dayName, dayNum, meal, course, courseLabel, plan, re
   recipes: any[];
   hasRotation: boolean;
   pax: number | null;
+  locationId: number | null;
   onSave: () => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -460,7 +462,8 @@ function CourseCard({ date, dayName, dayNum, meal, course, courseLabel, plan, re
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             recipeId: recipeId && recipeId !== 'none' ? parseInt(recipeId) : null,
-            portions: parseInt(portions) || 1
+            portions: parseInt(portions) || 1,
+            locationId,
           })
         });
       } else {
@@ -472,7 +475,8 @@ function CourseCard({ date, dayName, dayNum, meal, course, courseLabel, plan, re
             meal,
             course,
             recipeId: recipeId && recipeId !== 'none' ? parseInt(recipeId) : null,
-            portions: parseInt(portions) || 1
+            portions: parseInt(portions) || 1,
+            locationId,
           })
         });
       }

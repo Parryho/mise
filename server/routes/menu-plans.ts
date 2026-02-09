@@ -2,6 +2,7 @@ import type { Express, Request, Response } from "express";
 import { requireAuth, requireRole, getParam, storage } from "./middleware";
 import { insertMenuPlanSchema, updateMenuPlanSchema, insertMenuPlanTemperatureSchema } from "@shared/schema";
 import { generateWeekFromRotation, getOrGenerateWeekPlan } from "../rotation";
+import { formatLocalDate } from "@shared/constants";
 
 export function registerMenuPlanRoutes(app: Express) {
 
@@ -25,8 +26,8 @@ export function registerMenuPlanRoutes(app: Express) {
   app.get("/api/menu-plans", requireAuth, async (req, res) => {
     const { start, end, date, withRecipes } = req.query;
     // Support single date or date range
-    const startDate = (date as string) || (start as string) || new Date().toISOString().split('T')[0];
-    const endDate = (date as string) || (end as string) || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const startDate = (date as string) || (start as string) || formatLocalDate(new Date());
+    const endDate = (date as string) || (end as string) || formatLocalDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
     const plans = await storage.getMenuPlans(startDate, endDate);
 
     // Optionally include recipe data
@@ -75,8 +76,8 @@ export function registerMenuPlanRoutes(app: Express) {
   app.get("/api/menu-plans/export", requireAuth, async (req, res) => {
     try {
       const { start, end, format = 'pdf' } = req.query;
-      const startDate = (start as string) || new Date().toISOString().split('T')[0];
-      const endDate = (end as string) || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      const startDate = (start as string) || formatLocalDate(new Date());
+      const endDate = (end as string) || formatLocalDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
 
       const plans = await storage.getMenuPlans(startDate, endDate);
       const recipes = await storage.getRecipes();

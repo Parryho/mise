@@ -8,7 +8,7 @@ import { db } from "./db";
 import { menuPlans, recipes, locations } from "@shared/schema";
 import { and, eq } from "drizzle-orm";
 import { ALLERGENS } from "@shared/allergens";
-import { MEAL_SLOT_LABELS, type MealSlotName } from "@shared/constants";
+import { MEAL_SLOT_LABELS, formatLocalDate, type MealSlotName } from "@shared/constants";
 
 interface PublicDish {
   course: string;
@@ -35,7 +35,7 @@ export async function getPublicMenu(locationSlug: string, date?: string): Promis
   const loc = await storage.getLocationBySlug(locationSlug);
   if (!loc) return null;
 
-  const targetDate = date || new Date().toISOString().split('T')[0];
+  const targetDate = date || formatLocalDate(new Date());
 
   const plans = await db.select().from(menuPlans)
     .where(and(eq(menuPlans.date, targetDate), eq(menuPlans.locationId, loc.id)));

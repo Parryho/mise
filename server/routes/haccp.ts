@@ -2,6 +2,7 @@ import type { Express, Request, Response } from "express";
 import { requireAuth, requireAdmin, audit, getParam, storage } from "./middleware";
 import { insertFridgeSchema, updateFridgeSchema, insertHaccpLogSchema } from "@shared/schema";
 import { detectAnomalies, getFridgeHealthScore } from "../haccp-anomaly";
+import { formatLocalDate } from "@shared/constants";
 
 export function registerHaccpRoutes(app: Express) {
 
@@ -112,7 +113,7 @@ export function registerHaccpRoutes(app: Express) {
       const doc = new PDFDocument({ margin: 50, size: 'A4' });
 
       res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="HACCP_Bericht_${new Date().toISOString().split('T')[0]}.pdf"`);
+      res.setHeader('Content-Disposition', `attachment; filename="HACCP_Bericht_${formatLocalDate(new Date())}.pdf"`);
 
       doc.pipe(res);
 

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Printer, ChevronDown, ChevronUp, Clock, DollarSign } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { formatLocalDate } from "@shared/constants";
 
 function formatEuro(val: number): string {
   return val.toLocaleString("de-AT", { style: "currency", currency: "EUR" });
@@ -61,8 +62,8 @@ function getWeekRange(): { start: string; end: string } {
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
   return {
-    start: monday.toISOString().split("T")[0],
-    end: sunday.toISOString().split("T")[0],
+    start: formatLocalDate(monday),
+    end: formatLocalDate(sunday),
   };
 }
 

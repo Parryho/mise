@@ -11,6 +11,7 @@ import type { Request, Response } from "express";
 import { db } from "./db";
 import { guestCounts } from "@shared/schema";
 import { and, gte, lte, eq, sql } from "drizzle-orm";
+import { formatLocalDate } from "@shared/constants";
 
 // ==========================================
 // Types
@@ -46,7 +47,7 @@ const DAY_NAMES_DE = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag',
 const MEALS = ['mittag', 'abend'] as const;
 
 function formatDate(d: Date): string {
-  return d.toISOString().split('T')[0];
+  return formatLocalDate(d);
 }
 
 function addDays(d: Date, days: number): Date {

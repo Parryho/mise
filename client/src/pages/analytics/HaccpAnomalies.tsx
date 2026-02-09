@@ -7,6 +7,7 @@ import { Loader2, ArrowLeft, AlertTriangle, AlertCircle, Info, Activity, Trendin
 import { Link } from "wouter";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine, Scatter } from "recharts";
 import { cn } from "@/lib/utils";
+import { formatLocalDate } from "@shared/constants";
 
 interface Anomaly {
   fridgeId: number;
@@ -52,11 +53,11 @@ export default function HaccpAnomalies() {
   const [days, setDays] = useState(30);
 
   // Calculate date range
-  const endDate = useMemo(() => new Date().toISOString().split('T')[0], []);
+  const endDate = useMemo(() => formatLocalDate(new Date()), []);
   const startDate = useMemo(() => {
     const date = new Date();
     date.setDate(date.getDate() - days);
-    return date.toISOString().split('T')[0];
+    return formatLocalDate(date);
   }, [days]);
 
   // Fetch anomalies

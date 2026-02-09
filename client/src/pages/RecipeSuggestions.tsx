@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, ArrowLeft, Sparkles, Plus, Lightbulb, Star } from "lucide-react";
 import { Link } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { formatLocalDate } from "@shared/constants";
 
 interface SuggestionItem {
   recipeId: number;
@@ -49,7 +50,7 @@ function getScoreBg(score: number): string {
 }
 
 export default function RecipeSuggestions() {
-  const today = new Date().toISOString().split("T")[0];
+  const today = formatLocalDate(new Date());
   const [date, setDate] = useState(today);
   const [meal, setMeal] = useState("mittag");
   const [locationId, setLocationId] = useState<string>("all");

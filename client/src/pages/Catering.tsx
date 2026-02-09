@@ -14,6 +14,7 @@ import {
   TrendingUp, Clock, User, DoorOpen,
 } from "lucide-react";
 import { useLocationFilter } from "@/lib/location-context";
+import { formatLocalDate } from "@shared/constants";
 
 interface CateringEvent {
   id: number;
@@ -52,7 +53,7 @@ const STATUS_OPTIONS = [
 ];
 
 function formatDate(date: Date): string {
-  return date.toISOString().split("T")[0];
+  return formatLocalDate(date);
 }
 
 const emptyForm = {

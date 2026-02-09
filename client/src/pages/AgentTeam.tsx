@@ -19,6 +19,7 @@ import { useLocationFilter } from "@/lib/location-context";
 import { apiRequest } from "@/lib/queryClient";
 import AgentCard, { getAgentLabel, type AgentCardProps } from "@/components/AgentCard";
 import ActionItemList, { type ActionItem } from "@/components/ActionItemList";
+import { formatLocalDate } from "@shared/constants";
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -79,7 +80,7 @@ function getMonday(d: Date): string {
   const day = date.getDay();
   const diff = date.getDate() - day + (day === 0 ? -6 : 1);
   date.setDate(diff);
-  return date.toISOString().split("T")[0];
+  return formatLocalDate(date);
 }
 
 function formatWeek(dateStr: string): string {

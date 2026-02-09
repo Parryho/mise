@@ -7,7 +7,7 @@ import { db } from "./db";
 import { storage } from "./storage";
 import { menuPlans, ingredients, recipes, masterIngredients } from "@shared/schema";
 import { and, gte, lte, eq, sql } from "drizzle-orm";
-import { INGREDIENT_CATEGORIES } from "@shared/constants";
+import { INGREDIENT_CATEGORIES, formatLocalDate } from "@shared/constants";
 import type { Recipe, Ingredient, MasterIngredient } from "@shared/schema";
 
 // Estimated shelf life in days by ingredient category
@@ -139,7 +139,7 @@ export async function getWastePredictions(
   //   - There's a gap between uses that exceeds shelf life
   const atRisk: AtRiskIngredient[] = [];
   const today = new Date();
-  const todayStr = today.toISOString().split("T")[0];
+  const todayStr = formatLocalDate(today);
 
   for (const [key, usage] of Object.entries(ingredientUsage)) {
     const shelfLife = SHELF_LIFE_DAYS[usage.category] || 7;
@@ -156,7 +156,7 @@ export async function getWastePredictions(
     const firstDate = new Date(firstUseDate);
     const expiryDate = new Date(firstDate);
     expiryDate.setDate(firstDate.getDate() + shelfLife);
-    const expiryStr = expiryDate.toISOString().split("T")[0];
+    const expiryStr = formatLocalDate(expiryDate);
 
     // Check if there are dates after shelf life expires with no use
     // (ingredient bought for first use, may expire before next use)

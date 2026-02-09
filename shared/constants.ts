@@ -55,6 +55,14 @@ export const EVENT_STATUSES = [
   { id: 'abgeschlossen', label: 'Abgeschlossen', color: 'bg-gray-100 text-gray-800' },
 ] as const;
 
+/** Format a Date as YYYY-MM-DD using local timezone (avoids UTC shift from toISOString) */
+export function formatLocalDate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 export function getISOWeek(d: Date): number {
   const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
   date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay() || 7));
@@ -77,6 +85,5 @@ export function getWeekDateRange(year: number, week: number): { from: string; to
   monday.setDate(jan4.getDate() - dayOfWeek + 1 + (week - 1) * 7);
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
-  const formatDate = (d: Date) => d.toISOString().split('T')[0];
-  return { from: formatDate(monday), to: formatDate(sunday) };
+  return { from: formatLocalDate(monday), to: formatLocalDate(sunday) };
 }

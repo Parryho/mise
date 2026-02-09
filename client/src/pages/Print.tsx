@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Printer } from "lucide-react";
 import AllergenBadge from "@/components/AllergenBadge";
+import { formatLocalDate } from "@shared/constants";
 
 interface MenuPlanEntry {
   id: number;
@@ -45,8 +46,8 @@ function getWeekRange(): { start: string; end: string } {
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
   return {
-    start: monday.toISOString().split("T")[0],
-    end: sunday.toISOString().split("T")[0],
+    start: formatLocalDate(monday),
+    end: formatLocalDate(sunday),
   };
 }
 

@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Loader2, ArrowLeft, ChevronLeft, ChevronRight, TrendingUp, AlertTriangle } from "lucide-react";
 import { Link } from "wouter";
-import { getWeekDateRange, getISOWeek } from "@shared/constants";
+import { getWeekDateRange, getISOWeek, formatLocalDate } from "@shared/constants";
 import { useLocationFilter } from "@/lib/location-context";
 import {
   BarChart,
@@ -83,7 +83,7 @@ function getNextWeekMonday(): Date {
 }
 
 function formatDateISO(d: Date): string {
-  return d.toISOString().split("T")[0];
+  return formatLocalDate(d);
 }
 
 function getMondayOfISOWeek(year: number, week: number): string {

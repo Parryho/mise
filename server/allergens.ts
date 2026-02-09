@@ -8,6 +8,7 @@ import { db } from "./db";
 import { menuPlans, recipes, ingredients, guestAllergenProfiles } from "@shared/schema";
 import { and, gte, lte, eq } from "drizzle-orm";
 import { ALLERGENS } from "@shared/allergens";
+import { formatLocalDate } from "@shared/constants";
 
 interface DishAllergenInfo {
   recipeId: number;
@@ -155,7 +156,7 @@ export async function getWeeklyAllergenMatrix(startDate: string, endDate: string
   const days: Array<{ date: string; matrix: DayAllergenMatrix[]; guestWarnings: GuestWarning[] }> = [];
 
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-    const dateStr = d.toISOString().split('T')[0];
+    const dateStr = formatLocalDate(d);
     const result = await getDailyAllergenMatrix(dateStr, locationId);
     days.push({ date: dateStr, ...result });
   }

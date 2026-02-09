@@ -15,6 +15,7 @@ import {
   menuPlanTemperatures, tasks, pushSubscriptions, session
 } from "@shared/schema";
 import { eq, sql } from "drizzle-orm";
+import { formatLocalDate } from "@shared/constants";
 
 // ==========================================
 // Core GDPR functions
@@ -279,7 +280,7 @@ export async function handleGdprExportOwn(req: Request, res: Response) {
     const data = await exportUserData(user.id);
 
     res.setHeader("Content-Type", "application/json");
-    res.setHeader("Content-Disposition", `attachment; filename="dsgvo_export_${user.id.substring(0, 8)}_${new Date().toISOString().split("T")[0]}.json"`);
+    res.setHeader("Content-Disposition", `attachment; filename="dsgvo_export_${user.id.substring(0, 8)}_${formatLocalDate(new Date())}.json"`);
     return res.json(data);
   } catch (error: any) {
     console.error("GDPR export error:", error);
@@ -296,7 +297,7 @@ export async function handleGdprExportUser(req: Request, res: Response) {
     const data = await exportUserData(userId);
 
     res.setHeader("Content-Type", "application/json");
-    res.setHeader("Content-Disposition", `attachment; filename="dsgvo_export_${userId.substring(0, 8)}_${new Date().toISOString().split("T")[0]}.json"`);
+    res.setHeader("Content-Disposition", `attachment; filename="dsgvo_export_${userId.substring(0, 8)}_${formatLocalDate(new Date())}.json"`);
     return res.json(data);
   } catch (error: any) {
     console.error("GDPR export error:", error);

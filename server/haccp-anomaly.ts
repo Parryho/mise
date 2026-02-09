@@ -6,6 +6,7 @@ import { db } from "./db";
 import { storage } from "./storage";
 import { haccpLogs, fridges } from "@shared/schema";
 import { and, gte, lte, eq, desc, sql } from "drizzle-orm";
+import { formatLocalDate } from "@shared/constants";
 
 type AnomalySeverity = "CRITICAL" | "WARNING" | "INFO";
 
@@ -274,8 +275,8 @@ export async function getFridgeHealthScore(
   // Run anomaly detection for this fridge
   const result = await detectAnomalies(
     fridge.locationId || undefined,
-    startDate.toISOString().split('T')[0],
-    endDate.toISOString().split('T')[0]
+    formatLocalDate(startDate),
+    formatLocalDate(endDate)
   );
 
   const fridgeAnomalies = result.anomalies.filter(a => a.fridgeId === fridgeId);

@@ -271,6 +271,31 @@ Folgende Skills sind unter `.agents/skills/` installiert und sollten bei der Ums
 
 ---
 
+## Code-Qualität & Architektur (08.02.2026) ✅
+
+| # | Task | Status |
+|---|------|--------|
+| 7.1 | **TypeScript-Fehler behoben** — 5 pre-existing Errors (Set/Map Iteration, Fridge Interface) | ✅ 08.02.2026 |
+| 7.2 | **routes.ts aufgeteilt** — 2903-Zeilen-Monolith → 15 modulare Route-Dateien in `server/routes/` | ✅ 08.02.2026 |
+| 7.3 | **Rotation Template UI** — Template-Erstellung (Name + Wochenanzahl), Template-Auswahl/Switch | ✅ 08.02.2026 |
+| 7.4 | **Rezept-Bilder** — ~120 dish-spezifische Unsplash-Fotos in recipe-images.ts | ✅ 08.02.2026 |
+| 7.5 | **Structured Logging** — server/logging.ts mit Winston-ähnlichen Leveln | ✅ 08.02.2026 |
+
+---
+
+## Phase 7: AGENT TEAM — Küchen-Orchestrator (08.02.2026) ✅
+
+| # | Task | Status |
+|---|------|--------|
+| 7.1 | **DB Schema** — `agent_team_runs` + `agent_team_actions` Tabellen, Zod Schemas, Storage-Methoden | ✅ 08.02.2026 |
+| 7.2 | **Agent Adapters** — 7 Wrapper für bestehende Agents (PAX, HACCP, Waste, Rezepte, Allergene, Rotation, Scaling) | ✅ 08.02.2026 |
+| 7.3 | **Orchestrator** — 4-Phasen Pipeline mit Promise.allSettled, Conflict Resolution, optional AI Synthesis | ✅ 08.02.2026 |
+| 7.4 | **API Routes** — POST /run, GET /runs, GET /runs/:id, GET /stream/:runId (SSE) | ✅ 08.02.2026 |
+| 7.5 | **Client UI** — AgentTeam.tsx, AgentCard.tsx, ActionItemList.tsx — Pipeline-Visualisierung, Aktionspunkte | ✅ 08.02.2026 |
+| 7.6 | **Navigation** — Route /agent-team in App.tsx, Briefing-Shortcut in Today.tsx Quick Actions | ✅ 08.02.2026 |
+
+---
+
 ## Nächster Schritt
 
-**Alle 6 Phasen abgeschlossen** (08.02.2026). Phase 6 fokussierte auf UI-Qualität, Security-Hardening und Datenqualität. Batch-Import-Script für echte Rezeptdaten von gutekueche.at verfügbar.
+**Alle Phasen + Agent Team abgeschlossen** (08.02.2026). Die 7 AI-Agents werden über den Küchen-Orchestrator zu einem einheitlichen Wochen-Briefing koordiniert.

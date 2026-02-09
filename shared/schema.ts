@@ -388,6 +388,37 @@ export const learnedRules = pgTable("learned_rules", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// === Agent Team Runs ===
+export const agentTeamRuns = pgTable("agent_team_runs", {
+  id: serial("id").primaryKey(),
+  locationSlug: text("location_slug").notNull(),
+  weekStart: text("week_start").notNull(),
+  triggeredBy: varchar("triggered_by").references(() => users.id, { onDelete: "set null" }),
+  status: text("status").notNull().default("running"),
+  durationMs: integer("duration_ms"),
+  hasAiSummary: boolean("has_ai_summary").notNull().default(false),
+  summary: text("summary"),
+  briefing: text("briefing"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => [
+  index("idx_agent_team_runs_created").on(table.createdAt),
+]);
+
+// === Agent Team Actions (per-agent results within a run) ===
+export const agentTeamActions = pgTable("agent_team_actions", {
+  id: serial("id").primaryKey(),
+  runId: integer("run_id").references(() => agentTeamRuns.id, { onDelete: "cascade" }).notNull(),
+  agentName: text("agent_name").notNull(),
+  status: text("status").notNull().default("pending"),
+  durationMs: integer("duration_ms"),
+  resultSummary: text("result_summary"),
+  resultData: text("result_data"),
+  confidence: doublePrecision("confidence"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => [
+  index("idx_agent_team_actions_run").on(table.runId),
+]);
+
 // Audit Logs
 export const auditLogs = pgTable("audit_logs", {
   id: serial("id").primaryKey(),
@@ -452,6 +483,10 @@ export const updateRecipeMediaSchema = z.object({
   sortOrder: z.number().optional(),
   step: z.number().nullable().optional(),
 });
+
+// Agent Team schemas
+export const insertAgentTeamRunSchema = createInsertSchema(agentTeamRuns).omit({ id: true, createdAt: true });
+export const insertAgentTeamActionSchema = createInsertSchema(agentTeamActions).omit({ id: true, createdAt: true });
 
 // Phase 2: New insert schemas
 export const insertSupplierSchema = createInsertSchema(suppliers).omit({ id: true, createdAt: true });
@@ -557,6 +592,12 @@ export type PushSubscription = typeof pushSubscriptions.$inferSelect;
 export type InsertPushSubscription = z.infer<typeof insertPushSubscriptionSchema>;
 export type RecipeMedia = typeof recipeMedia.$inferSelect;
 export type InsertRecipeMedia = z.infer<typeof insertRecipeMediaSchema>;
+
+// Agent Team types
+export type AgentTeamRun = typeof agentTeamRuns.$inferSelect;
+export type InsertAgentTeamRun = z.infer<typeof insertAgentTeamRunSchema>;
+export type AgentTeamAction = typeof agentTeamActions.$inferSelect;
+export type InsertAgentTeamAction = z.infer<typeof insertAgentTeamActionSchema>;
 
 // Phase 2 types
 export type Supplier = typeof suppliers.$inferSelect;

@@ -6,6 +6,7 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import crypto from "crypto";
+import { log, sanitizeForLog, createLogger } from "./logging";
 
 const app = express();
 const isDev = process.env.NODE_ENV !== "production";
@@ -57,34 +58,7 @@ app.use((req, _res, next) => {
   next();
 });
 
-export function log(message: string, source = "express") {
-  const formattedTime = new Date().toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: true,
-  });
-
-  console.log(`${formattedTime} [${source}] ${message}`);
-}
-
-// Sensitive fields to redact from logs
-const SENSITIVE_FIELDS = ["password", "token", "secret", "authorization", "cookie"];
-
-function sanitizeForLog(obj: any): any {
-  if (!obj || typeof obj !== "object") return obj;
-  const sanitized: any = Array.isArray(obj) ? [] : {};
-  for (const key of Object.keys(obj)) {
-    if (SENSITIVE_FIELDS.some(f => key.toLowerCase().includes(f))) {
-      sanitized[key] = "[REDACTED]";
-    } else if (typeof obj[key] === "object") {
-      sanitized[key] = sanitizeForLog(obj[key]);
-    } else {
-      sanitized[key] = obj[key];
-    }
-  }
-  return sanitized;
-}
+// log, sanitizeForLog, createLogger imported from ./logging
 
 // R2-T1: Structured logging middleware
 app.use((req, res, next) => {
@@ -128,7 +102,8 @@ app.use((req, res, next) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Interner Serverfehler";
 
-    console.error("Internal Server Error:", err);
+    const serverLog = createLogger("express");
+    serverLog.error("Internal Server Error", { error: err.message, stack: err.stack, status });
 
     if (res.headersSent) {
       return next(err);

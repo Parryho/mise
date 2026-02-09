@@ -115,6 +115,16 @@ Menüplanung, 6-Wochen-Rotation, HACCP-Dokumentation, Rezeptverwaltung, Personal
 | `server/public-menu.ts` | Public Menu API |
 | `server/buffet-cards.ts` | Buffet-Karten Generierung |
 
+### Agent Team (Küchen-Orchestrator)
+| Datei | Beschreibung |
+|-------|-------------|
+| `client/src/pages/AgentTeam.tsx` | Dashboard: Pipeline-Visualisierung, Aktionspunkte, AI-Summary |
+| `client/src/components/AgentCard.tsx` | Agent-Status Karte (pending/running/completed/failed) |
+| `client/src/components/ActionItemList.tsx` | Priorisierte Aktionspunkte (HIGH/MEDIUM/LOW) |
+| `server/agent-team.ts` | Orchestrator: 4-Phasen Pipeline, Conflict Resolution, AI Synthesis |
+| `server/agent-adapters.ts` | 7 Wrapper für bestehende Agents |
+| `server/routes/agent-team.ts` | API: POST /run, GET /runs, GET /runs/:id, GET /stream/:runId (SSE) |
+
 ### Admin & System
 | Datei | Beschreibung |
 |-------|-------------|
@@ -156,7 +166,7 @@ Menüplanung, 6-Wochen-Rotation, HACCP-Dokumentation, Rezeptverwaltung, Personal
 
 ### Einstiegspunkte
 - **Server**: `server/index.ts` — Express App Setup, CORS, Logging, Error Handler
-- **Routes**: `server/routes.ts` — Alle API-Endpunkte (sehr große Datei)
+- **Routes**: `server/routes/index.ts` — Orchestrator, 15 modulare Route-Dateien unter `server/routes/`
 - **Client**: `client/src/main.tsx` — React Entry + Sentry + i18n Init
 - **Router**: `client/src/App.tsx` — Wouter Router + Auth + Layout
 
@@ -344,7 +354,6 @@ Docker Compose Services: `app` (Node 22), `db` (PostgreSQL 16), `nginx` (Reverse
 
 ## Bekannte Probleme / TODOs
 
-- **Rotation braucht Template**: Um die Rotation zu nutzen, muss zuerst ein Template erstellt werden — es gibt dafür aber keine intuitive UI
-- **routes.ts ist zu groß**: Alle API-Routen in einer einzigen Datei (~44k Tokens), sollte in Module aufgeteilt werden
-- **Phase 5 geplant**: Adaptive Learning — Quiz-Feedback, Pairing-Scores, Rotation-Agent v3 mit Lernfähigkeit (siehe `docs/MASTERPLAN.md`)
+- ~~**Rotation braucht Template**: Template-Erstellung + Auswahl-UI jetzt in Rotation.tsx~~  ✅ Behoben
+- ~~**routes.ts ist zu groß**: Aufgeteilt in 15 modulare Dateien unter `server/routes/`~~ ✅ Behoben
 - **Seed-Script nicht im Docker-Image**: `script/` wird nicht ins Production-Image kopiert, Seeding muss via SQL oder temporärem Container erfolgen

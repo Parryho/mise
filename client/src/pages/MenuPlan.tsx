@@ -622,7 +622,7 @@ function ShoppingListDialog({ open, onOpenChange, plans, recipes }: {
     const ingredientMap = new Map<string, { amount: number; unit: string }>();
 
     try {
-      const recipeIds = [...new Set(plans.filter(p => p.recipeId).map(p => p.recipeId!))];
+      const recipeIds = Array.from(new Set(plans.filter(p => p.recipeId).map(p => p.recipeId!)));
       if (recipeIds.length === 0) { setIngredients(ingredientMap); return; }
 
       const res = await fetch(`/api/ingredients/bulk?recipeIds=${recipeIds.join(",")}`);

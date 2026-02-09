@@ -35,6 +35,7 @@ export interface Fridge {
   name: string;
   tempMin: number;
   tempMax: number;
+  locationId?: number | null;
 }
 
 export interface HaccpLog {

@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Allow: /speisekarte/
+Allow: /signage/
+
+Sitemap: https://mise.at/sitemap.xml

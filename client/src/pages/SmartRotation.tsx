@@ -208,7 +208,7 @@ export default function SmartRotation() {
     onSuccess: (swap) => {
       const idx = optimizeResult?.swaps.indexOf(swap);
       if (idx !== undefined && idx >= 0) {
-        setAppliedSwaps((prev) => new Set([...prev, idx]));
+        setAppliedSwaps((prev) => new Set(Array.from(prev).concat([idx])));
       }
       toast({
         title: "Tausch übernommen",

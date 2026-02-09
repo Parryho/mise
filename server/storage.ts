@@ -23,11 +23,14 @@ import {
   type Supplier, type InsertSupplier,
   type SubRecipeLink, type InsertSubRecipeLink,
   type GuestAllergenProfile, type InsertGuestAllergenProfile,
+  type AgentTeamRun, type InsertAgentTeamRun,
+  type AgentTeamAction, type InsertAgentTeamAction,
   users, recipes, ingredients, masterIngredients, fridges, haccpLogs,
   guestCounts, cateringEvents, cateringMenuItems, staff, shiftTypes,
   scheduleEntries, menuPlans, menuPlanTemperatures, appSettings, tasks,
   taskTemplates, locations, rotationTemplates, rotationSlots, auditLogs,
-  suppliers, subRecipeLinks, guestAllergenProfiles
+  suppliers, subRecipeLinks, guestAllergenProfiles,
+  agentTeamRuns, agentTeamActions
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, gte, lte, sql } from "drizzle-orm";
@@ -379,6 +382,11 @@ export class DatabaseStorage {
   async getMenuPlans(startDate: string, endDate: string): Promise<MenuPlan[]> {
     return db.select().from(menuPlans).where(and(gte(menuPlans.date, startDate), lte(menuPlans.date, endDate)));
   }
+  async getMenuPlansByDateRange(startDate: string, endDate: string, locationId?: number): Promise<MenuPlan[]> {
+    const conditions = [gte(menuPlans.date, startDate), lte(menuPlans.date, endDate)];
+    if (locationId) conditions.push(eq(menuPlans.locationId, locationId));
+    return db.select().from(menuPlans).where(and(...conditions));
+  }
   async getMenuPlan(id: number): Promise<MenuPlan | undefined> {
     const [plan] = await db.select().from(menuPlans).where(eq(menuPlans.id, id));
     return plan;
@@ -531,6 +539,36 @@ export class DatabaseStorage {
   }
   async deleteGuestAllergenProfile(id: number): Promise<void> {
     await db.delete(guestAllergenProfiles).where(eq(guestAllergenProfiles.id, id));
+  }
+
+  // === Agent Team Runs ===
+  async createTeamRun(run: InsertAgentTeamRun): Promise<AgentTeamRun> {
+    const [created] = await db.insert(agentTeamRuns).values(run).returning();
+    return created;
+  }
+  async updateTeamRun(id: number, data: Partial<InsertAgentTeamRun>): Promise<AgentTeamRun | undefined> {
+    const [updated] = await db.update(agentTeamRuns).set(data).where(eq(agentTeamRuns.id, id)).returning();
+    return updated;
+  }
+  async getTeamRun(id: number): Promise<AgentTeamRun | undefined> {
+    const [run] = await db.select().from(agentTeamRuns).where(eq(agentTeamRuns.id, id));
+    return run;
+  }
+  async getTeamRuns(limit = 20): Promise<AgentTeamRun[]> {
+    return db.select().from(agentTeamRuns).orderBy(desc(agentTeamRuns.createdAt)).limit(limit);
+  }
+
+  // === Agent Team Actions ===
+  async createTeamAction(action: InsertAgentTeamAction): Promise<AgentTeamAction> {
+    const [created] = await db.insert(agentTeamActions).values(action).returning();
+    return created;
+  }
+  async updateTeamAction(id: number, data: Partial<InsertAgentTeamAction>): Promise<AgentTeamAction | undefined> {
+    const [updated] = await db.update(agentTeamActions).set(data).where(eq(agentTeamActions.id, id)).returning();
+    return updated;
+  }
+  async getTeamActions(runId: number): Promise<AgentTeamAction[]> {
+    return db.select().from(agentTeamActions).where(eq(agentTeamActions.runId, runId));
   }
 }
 

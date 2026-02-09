@@ -151,7 +151,7 @@ export default function RecipeDetailDialog({ recipe, open, onOpenChange, readOnl
       <DialogContent className="max-w-lg h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <div className="relative h-48 shrink-0">
           <img
-            src={recipe.image || getDefaultRecipeImage(recipe.category)}
+            src={recipe.image || getDefaultRecipeImage(recipe.category, recipe.name)}
             alt={recipe.name}
             className="w-full h-full object-cover"
           />

@@ -21,6 +21,7 @@ import {
   ClipboardList,
   Users,
   Plus,
+  Bot,
   Trash2,
   Loader2,
   CheckCircle2,
@@ -568,7 +569,7 @@ export default function Today() {
           <QuickAction href="/rotation" icon={RefreshCw} label="Rotation" color="text-purple-600" />
           <QuickAction href="/shopping" icon={ShoppingCart} label="Einkauf" color="text-green-600" />
           <QuickAction href="/production" icon={ClipboardList} label="Produktion" color="text-amber-600" />
-          <QuickAction href="/settings" icon={Settings} label="Einstellungen" color="text-gray-600" />
+          <QuickAction href="/agent-team" icon={Bot} label="Briefing" color="text-indigo-600" />
         </div>
       </div>
 

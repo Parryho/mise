@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, ChefHat, Printer, AlertTriangle, Star } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Loader2, ChefHat, Printer, AlertTriangle, Star, Plus, Settings2 } from "lucide-react";
 import { Link } from "wouter";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -26,6 +27,12 @@ interface Recipe {
   name: string;
   category: string;
   allergens?: string[];
+}
+
+interface RotationTemplate {
+  id: number;
+  name: string;
+  weekCount: number;
 }
 
 const DAY_LABELS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
@@ -59,6 +66,7 @@ const COLUMNS: ColDef[] = [
 ];
 
 export default function Rotation() {
+  const [templates, setTemplates] = useState<RotationTemplate[]>([]);
   const [templateId, setTemplateId] = useState<number | null>(null);
   const [weekCount, setWeekCount] = useState(6);
   const [weekNr, setWeekNr] = useState(1);
@@ -69,22 +77,73 @@ export default function Rotation() {
   const [autoFilling, setAutoFilling] = useState(false);
   const [editSlot, setEditSlot] = useState<RotationSlot | null>(null);
   const [editRecipeId, setEditRecipeId] = useState("none");
+  const [newTemplateOpen, setNewTemplateOpen] = useState(false);
+  const [newTemplateName, setNewTemplateName] = useState("");
+  const [newTemplateWeeks, setNewTemplateWeeks] = useState("6");
+  const [creatingTemplate, setCreatingTemplate] = useState(false);
   const { toast } = useToast();
 
   const currentRotationWeek = ((getISOWeek(new Date()) - 1) % 6) + 1;
+
+  const loadTemplates = async () => {
+    try {
+      const res = await fetch("/api/rotation-templates");
+      const data = await res.json();
+      setTemplates(data);
+      return data as RotationTemplate[];
+    } catch {
+      return [] as RotationTemplate[];
+    }
+  };
 
   useEffect(() => {
     Promise.all([
       fetch("/api/rotation-templates/ensure-default", { method: "POST" }).then(r => r.json()),
       fetch("/api/recipes").then(r => r.json()),
-    ]).then(([tmpl, recs]) => {
+    ]).then(async ([tmpl, recs]) => {
       setTemplateId(tmpl.id);
       setWeekCount(tmpl.weekCount || 6);
       setRecipes(recs);
       setWeekNr(currentRotationWeek);
+      await loadTemplates();
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
+
+  const handleCreateTemplate = async () => {
+    if (!newTemplateName.trim()) return;
+    setCreatingTemplate(true);
+    try {
+      const res = await fetch("/api/rotation-templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newTemplateName.trim(), weekCount: parseInt(newTemplateWeeks) }),
+      });
+      if (!res.ok) throw new Error("Fehler beim Erstellen");
+      const created = await res.json();
+      await loadTemplates();
+      setTemplateId(created.id);
+      setWeekCount(created.weekCount);
+      setWeekNr(1);
+      setNewTemplateOpen(false);
+      setNewTemplateName("");
+      setNewTemplateWeeks("6");
+      toast({ title: "Template erstellt", description: `"${created.name}" mit ${created.weekCount} Wochen` });
+    } catch {
+      toast({ title: "Fehler", variant: "destructive" });
+    } finally {
+      setCreatingTemplate(false);
+    }
+  };
+
+  const handleSwitchTemplate = (id: string) => {
+    const tmpl = templates.find(t => t.id === parseInt(id));
+    if (tmpl) {
+      setTemplateId(tmpl.id);
+      setWeekCount(tmpl.weekCount);
+      setWeekNr(1);
+    }
+  };
 
   // allSlots tracks all weeks for per-week completeness badges
   const [allSlots, setAllSlots] = useState<RotationSlot[]>([]);
@@ -161,8 +220,8 @@ export default function Rotation() {
         existing.push(s.id);
         seen.set(s.recipeId!, existing);
       }
-      for (const [, ids] of seen) {
-        if (ids.length > 1) ids.forEach(id => dupes.add(id));
+      for (const [, ids] of Array.from(seen.entries())) {
+        if (ids.length > 1) ids.forEach((id: number) => dupes.add(id));
       }
     }
     return dupes;
@@ -232,7 +291,7 @@ export default function Rotation() {
       {/* Orange Header */}
       <div className="bg-primary text-primary-foreground px-4 pt-4 pb-3">
         <div className="flex items-center justify-between mb-2">
-          <h1 className="font-heading text-xl font-bold uppercase tracking-wide">6-Wochen-Rotation</h1>
+          <h1 className="font-heading text-xl font-bold uppercase tracking-wide">{weekCount}-Wochen-Rotation</h1>
           <div className="flex items-center gap-1">
             <Link href={`/rotation/quiz?template=${templateId}&week=${weekNr}`}>
               <Button size="icon" variant="ghost" className="text-primary-foreground hover:bg-white/20 h-8 w-8" title="Bewerten">
@@ -256,6 +315,46 @@ export default function Rotation() {
             </Link>
           </div>
         </div>
+
+        {/* Template Selector */}
+        {templates.length > 1 && (
+          <div className="flex items-center gap-2 mb-2">
+            <Settings2 className="h-3.5 w-3.5 text-primary-foreground/70" />
+            <select
+              value={templateId ?? ""}
+              onChange={(e) => handleSwitchTemplate(e.target.value)}
+              className="bg-white/15 text-primary-foreground text-xs rounded px-2 py-1 border border-white/20 flex-1"
+            >
+              {templates.map(t => (
+                <option key={t.id} value={t.id} className="text-foreground bg-background">
+                  {t.name} ({t.weekCount}W)
+                </option>
+              ))}
+            </select>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="text-primary-foreground hover:bg-white/20 h-7 w-7"
+              onClick={() => setNewTemplateOpen(true)}
+              title="Neues Template"
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        )}
+        {templates.length <= 1 && (
+          <div className="flex items-center gap-2 mb-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-primary-foreground hover:bg-white/20 text-xs h-7 px-2"
+              onClick={() => setNewTemplateOpen(true)}
+            >
+              <Plus className="h-3 w-3 mr-1" /> Neues Template
+            </Button>
+          </div>
+        )}
+
         <div className="flex items-center gap-3 bg-white/15 rounded-lg px-3 py-1.5">
           <span className="text-xs text-primary-foreground/80">
             KW {getISOWeek(new Date())} = W{currentRotationWeek}
@@ -418,6 +517,43 @@ export default function Rotation() {
             </div>
             <Button onClick={handleEditSave} className="w-full">
               Speichern
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* New Template Dialog */}
+      <Dialog open={newTemplateOpen} onOpenChange={setNewTemplateOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Neues Rotations-Template</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Name</Label>
+              <Input
+                value={newTemplateName}
+                onChange={(e) => setNewTemplateName(e.target.value)}
+                placeholder="z.B. Winterrotation 2026"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Anzahl Wochen</Label>
+              <Select value={newTemplateWeeks} onValueChange={setNewTemplateWeeks}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="4">4 Wochen</SelectItem>
+                  <SelectItem value="5">5 Wochen</SelectItem>
+                  <SelectItem value="6">6 Wochen</SelectItem>
+                  <SelectItem value="8">8 Wochen</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button onClick={handleCreateTemplate} disabled={creatingTemplate || !newTemplateName.trim()} className="w-full">
+              {creatingTemplate ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
+              Template erstellen
             </Button>
           </div>
         </DialogContent>

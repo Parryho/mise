@@ -53,6 +53,9 @@ import EmailSettings from "@/pages/EmailSettings";
 import BackupRestore from "@/pages/BackupRestore";
 import GDPRExport from "@/pages/GDPRExport";
 
+// Phase 6: Agent Team
+import AgentTeam from "@/pages/AgentTeam";
+
 // Phase 5: Quiz Feedback + Learning Dashboard
 import QuizFeedback from "@/pages/QuizFeedback";
 import LearningDashboard from "@/pages/analytics/LearningDashboard";
@@ -157,6 +160,9 @@ function AuthenticatedRoutes() {
       </Route>
       <Route path="/settings/guest-profiles">
         <Layout><GuestProfiles /></Layout>
+      </Route>
+      <Route path="/agent-team">
+        <Layout><AgentTeam /></Layout>
       </Route>
       <Route path="/rotation/quiz">
         <Layout><QuizFeedback /></Layout>

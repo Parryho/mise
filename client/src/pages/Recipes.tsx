@@ -253,7 +253,7 @@ function AddRecipeDialog({ defaultCategory }: { defaultCategory?: string }) {
         category,
         portions: 1,
         prepTime: 0,
-        image: getDefaultRecipeImage(category),
+        image: getDefaultRecipeImage(category, name),
         sourceUrl: null,
         steps: [],
         allergens: [],
@@ -596,7 +596,7 @@ function RecipeCard({ recipe }: { recipe: Recipe }) {
       >
         <div className="relative h-36 w-full overflow-hidden">
           <img
-            src={recipe.image || getDefaultRecipeImage(recipe.category)}
+            src={recipe.image || getDefaultRecipeImage(recipe.category, recipe.name)}
             alt={recipe.name}
             className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />

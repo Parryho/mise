@@ -61,12 +61,18 @@ export async function generateWeekFromRotation(
   }
 
   // Auto-copy City lunch entries to SÜD (SÜD Mittag = City Mittag)
+  // Only copy if there are no existing SÜD lunch plans (agent skips sued-lunch)
   if (locBySlug["sued"]) {
-    const cityLunchPlans = plans.filter(
-      p => p.locationId === locBySlug["city"] && p.meal === "lunch"
+    const hasSuedLunch = plans.some(
+      p => p.locationId === locBySlug["sued"] && p.meal === "lunch"
     );
-    for (const plan of cityLunchPlans) {
-      plans.push({ ...plan, locationId: locBySlug["sued"] });
+    if (!hasSuedLunch) {
+      const cityLunchPlans = plans.filter(
+        p => p.locationId === locBySlug["city"] && p.meal === "lunch"
+      );
+      for (const plan of cityLunchPlans) {
+        plans.push({ ...plan, locationId: locBySlug["sued"] });
+      }
     }
   }
 

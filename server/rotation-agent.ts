@@ -736,6 +736,9 @@ export async function autoFillRotation(
         const idx = poolIdx.get(locSlug)!;
 
         for (const meal of ["lunch", "dinner"]) {
+          // SÜD Mittag = City Mittag (auto-copied during menu plan generation)
+          if (locSlug === "sued" && meal === "lunch") continue;
+
           // Per-MEAL: starch group collision avoidance resets
           const mealUsedStarchGroups = new Set<string>();
 

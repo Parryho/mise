@@ -1,32 +1,34 @@
 import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Loader2, Printer, ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, Printer, ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
-import { MEAL_SLOTS, MEAL_SLOT_LABELS, getISOWeek, getWeekDateRange, formatLocalDate, type MealSlotName } from "@shared/constants";
+import { MEAL_SLOTS, getISOWeek, getWeekDateRange, formatLocalDate } from "@shared/constants";
 import { ALLERGENS } from "@shared/allergens";
 import { cn } from "@/lib/utils";
-import RecipeDetailDialog from "@/components/RecipeDetailDialog";
-import type { Recipe } from "@/lib/store";
 
-interface MenuPlanEntry {
+interface RotationSlot {
   id: number;
-  date: string;
+  templateId: number;
+  weekNr: number;
+  dayOfWeek: number;
   meal: string;
+  locationSlug: string;
   course: string;
   recipeId: number | null;
-  portions: number;
-  notes: string | null;
-  locationId: number | null;
-  rotationWeekNr: number | null;
 }
 
-interface Location {
+interface Recipe {
   id: number;
-  slug: string;
   name: string;
+  category: string;
+  allergens?: string[];
 }
 
-const DAY_LABELS_SHORT = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+const DAY_LABELS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+
+function uiIndexToDbDow(uiIdx: number): number {
+  return uiIdx === 6 ? 0 : uiIdx + 1;
+}
 
 const SLOT_LABELS: Record<string, string> = {
   soup: "Suppe",
@@ -54,16 +56,12 @@ const ALL_BLOCKS: BlockDef[] = [
 ];
 
 export default function RotationPrint() {
-  const now = new Date();
-  const [year, setYear] = useState(now.getFullYear());
-  const [week, setWeek] = useState(getISOWeek(now));
-
-  const [loading, setLoading] = useState(true);
-  const [plans, setPlans] = useState<MenuPlanEntry[]>([]);
+  const [templateId, setTemplateId] = useState<number | null>(null);
+  const [weekCount, setWeekCount] = useState(6);
+  const [weekNr, setWeekNr] = useState(1);
+  const [slots, setSlots] = useState<RotationSlot[]>([]);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [locations, setLocations] = useState<Location[]>([]);
-  const [rotationWeekNr, setRotationWeekNr] = useState(0);
-  const [wpFrom, setWpFrom] = useState("");
+  const [loading, setLoading] = useState(true);
 
   // Block visibility — persisted in localStorage
   const [showBlocks, setShowBlocks] = useState<Record<string, boolean>>(() => {
@@ -71,104 +69,80 @@ export default function RotationPrint() {
       const saved = localStorage.getItem("mise-blocks-print");
       if (saved) return JSON.parse(saved);
     } catch {}
-    return { "city-lunch": true, "city-dinner": true, "sued-lunch": true, "sued-dinner": true };
+    return { "city-lunch": true, "city-dinner": true, "sued-lunch": false, "sued-dinner": false };
   });
   useEffect(() => {
     localStorage.setItem("mise-blocks-print", JSON.stringify(showBlocks));
   }, [showBlocks]);
 
-  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  // Current rotation week
+  const currentKW = getISOWeek(new Date());
+  const currentYear = new Date().getFullYear();
+  const currentRotWeek = ((currentKW - 1) % 6) + 1;
 
-  // Initial load: locations + recipes
-  useEffect(() => {
-    Promise.all([
-      fetch("/api/recipes").then(r => r.json()),
-      fetch("/api/locations").then(r => r.json()),
-    ]).then(([recs, locs]) => {
-      setRecipes(recs);
-      setLocations(locs);
-    });
-  }, []);
+  // Map rotation week to actual KW
+  const kwForWeek = (w: number): number => {
+    let kw = currentKW - (currentRotWeek - 1) + (w - 1);
+    if (kw < 1) kw += 52;
+    if (kw > 52) kw -= 52;
+    return kw;
+  };
 
-  // Fetch week plan whenever year/week changes
-  useEffect(() => {
-    setLoading(true);
-    fetch(`/api/menu-plans/week?year=${year}&week=${week}`)
-      .then(r => r.json())
-      .then(data => {
-        setPlans(data.plans || []);
-        setRotationWeekNr(data.rotationWeekNr || 0);
-        setWpFrom(data.from || "");
-      })
-      .catch(err => console.error("Failed to load week plan:", err))
-      .finally(() => setLoading(false));
-  }, [year, week]);
-
-  // Lookup maps
-  const recipeMap = useMemo(() => {
-    const m = new Map<number, Recipe>();
-    for (const r of recipes) m.set(r.id, r);
-    return m;
-  }, [recipes]);
-
-  const locIdToSlug = useMemo(() => {
-    const m = new Map<number, string>();
-    for (const loc of locations) m.set(loc.id, loc.slug);
-    return m;
-  }, [locations]);
-
-  // Get dates for this week (Mon-Sun)
+  // Dates for the selected rotation week
   const weekDates = useMemo(() => {
-    if (!wpFrom) return [];
+    const kw = kwForWeek(weekNr);
+    const year = kw >= currentKW ? currentYear : currentYear + 1;
+    const { from } = getWeekDateRange(year, kw);
     const dates: string[] = [];
-    const start = new Date(wpFrom + "T00:00:00");
+    const start = new Date(from + "T00:00:00");
     for (let i = 0; i < 7; i++) {
       const d = new Date(start);
       d.setDate(start.getDate() + i);
       dates.push(formatLocalDate(d));
     }
     return dates;
-  }, [wpFrom]);
+  }, [weekNr, currentKW, currentYear, currentRotWeek]);
 
-  // Find a plan entry for given date + meal + locSlug + course
-  const getPlan = (date: string, meal: string, locSlug: string, course: string): MenuPlanEntry | undefined => {
-    return plans.find(p => {
-      const pLocSlug = p.locationId ? locIdToSlug.get(p.locationId) : null;
-      return p.date === date && p.meal === meal && pLocSlug === locSlug && p.course === course;
-    });
+  // Initial load
+  useEffect(() => {
+    Promise.all([
+      fetch("/api/rotation-templates/ensure-default", { method: "POST" }).then(r => r.json()),
+      fetch("/api/recipes").then(r => r.json()),
+    ]).then(([tmpl, recs]) => {
+      setTemplateId(tmpl.id);
+      setWeekCount(tmpl.weekCount || 6);
+      setRecipes(recs);
+      setWeekNr(currentRotWeek);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, []);
+
+  // Fetch rotation slots for selected week
+  useEffect(() => {
+    if (!templateId) return;
+    fetch(`/api/rotation-slots/${templateId}?weekNr=${weekNr}`)
+      .then(r => r.json())
+      .then(data => setSlots(data))
+      .catch(() => {});
+  }, [templateId, weekNr]);
+
+  const recipeMap = useMemo(() => {
+    const m = new Map<number, Recipe>();
+    for (const r of recipes) m.set(r.id, r);
+    return m;
+  }, [recipes]);
+
+  const getSlot = (dayUiIdx: number, meal: string, locSlug: string, course: string): RotationSlot | undefined => {
+    const dbDow = uiIndexToDbDow(dayUiIdx);
+    return slots.find(
+      s => s.dayOfWeek === dbDow && s.meal === meal && s.locationSlug === locSlug && s.course === course
+    );
   };
 
-  const handleRecipeClick = (recipeId: number) => {
-    const recipe = recipeMap.get(recipeId);
-    if (recipe) {
-      setSelectedRecipe(recipe);
-      setDialogOpen(true);
-    }
-  };
-
-  // Navigation helpers
-  const goToCurrentWeek = () => {
-    const d = new Date();
-    setYear(d.getFullYear());
-    setWeek(getISOWeek(d));
-  };
-
-  const prevWeek = () => {
-    if (week <= 1) { setYear(y => y - 1); setWeek(52); }
-    else setWeek(w => w - 1);
-  };
-
-  const nextWeek = () => {
-    if (week >= 52) { setYear(y => y + 1); setWeek(1); }
-    else setWeek(w => w + 1);
-  };
-
-  // Visible blocks
   const visibleBlocks = ALL_BLOCKS.filter(b => showBlocks[b.key]);
   const numBlocks = visibleBlocks.length;
 
-  // Dynamic column widths (percentages)
+  // Dynamic column widths
   const colWidthPercent = numBlocks > 0 ? Math.floor(99 / numBlocks) : 25;
   const dayCol = Math.floor(colWidthPercent * 0.14);
   const typeCol = Math.floor(colWidthPercent * 0.19);
@@ -177,75 +151,79 @@ export default function RotationPrint() {
   const tempCol = Math.floor(colWidthPercent * 0.12);
   const spacerWidth = 0.5;
 
-  // Format date short: "10.02."
   const formatDateShort = (dateStr: string) => {
     const d = new Date(dateStr + "T00:00:00");
     return `${d.getDate()}.${d.getMonth() + 1}.`;
   };
 
+  const weekButtons = Array.from({ length: weekCount }, (_, i) => i + 1);
+  const selectedKW = kwForWeek(weekNr);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <div className="pb-24 print:pb-0 print:m-0 print:p-0">
-      {/* Print controls — hidden when printing */}
+      {/* Controls — hidden when printing */}
       <div className="print:hidden bg-primary text-primary-foreground px-4 pt-4 pb-3">
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <Link href="/rotation">
               <Button size="icon" variant="ghost" className="text-primary-foreground hover:bg-primary-foreground/10 h-8 w-8">
                 <ArrowLeft className="h-4 w-4" />
               </Button>
             </Link>
-            <h1 className="font-heading text-xl font-bold uppercase tracking-wide">Wochenplan Druck</h1>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="ghost"
-              className="text-primary-foreground hover:bg-primary-foreground/10"
-              onClick={goToCurrentWeek}
-            >
-              Heute
-            </Button>
-
-            <div className="flex items-center bg-primary-foreground/10 rounded-lg">
-              <Button size="icon" variant="ghost" className="text-primary-foreground hover:bg-primary-foreground/20 h-8 w-8" onClick={prevWeek}>
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <div className="flex items-center gap-2 px-2">
-                <span className="text-xs opacity-70">Jahr</span>
-                <input
-                  type="number"
-                  value={year}
-                  onChange={e => setYear(parseInt(e.target.value) || year)}
-                  className="w-16 bg-primary-foreground/20 text-primary-foreground rounded px-2 py-1 text-sm text-center font-bold border-0 outline-none"
-                />
-                <span className="text-xs opacity-70">KW</span>
-                <input
-                  type="number"
-                  value={week}
-                  min={1}
-                  max={53}
-                  onChange={e => setWeek(parseInt(e.target.value) || week)}
-                  className="w-12 bg-primary-foreground/20 text-primary-foreground rounded px-2 py-1 text-sm text-center font-bold border-0 outline-none"
-                />
-              </div>
-              <Button size="icon" variant="ghost" className="text-primary-foreground hover:bg-primary-foreground/20 h-8 w-8" onClick={nextWeek}>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+            <div>
+              <h1 className="font-heading text-xl font-bold uppercase tracking-wide">Druckansicht</h1>
+              <p className="text-[10px] text-primary-foreground/60">
+                W{weekNr} = KW {selectedKW}
+              </p>
             </div>
-
-            <Button
-              size="sm"
-              variant="ghost"
-              className="text-primary-foreground hover:bg-primary-foreground/10 gap-1"
-              onClick={() => window.print()}
-            >
-              <Printer className="h-4 w-4" /> Drucken
-            </Button>
           </div>
+          <Button
+            size="sm"
+            variant="secondary"
+            className="gap-1.5 text-xs font-semibold"
+            onClick={() => window.print()}
+          >
+            <Printer className="h-3.5 w-3.5" /> Drucken
+          </Button>
         </div>
 
-        {/* Block visibility toggles */}
+        {/* W1-W6 Buttons */}
+        <div className="flex gap-1.5 mb-2">
+          {weekButtons.map(w => {
+            const kw = kwForWeek(w);
+            const isSelected = weekNr === w;
+            return (
+              <button
+                key={w}
+                onClick={() => setWeekNr(w)}
+                className={cn(
+                  "relative flex-1 flex flex-col items-center py-1.5 rounded-xl text-xs font-bold transition-all press",
+                  isSelected
+                    ? "bg-white text-primary shadow-sm"
+                    : "bg-white/15 text-primary-foreground/70 hover:bg-white/25"
+                )}
+              >
+                <span>W{w}</span>
+                <span className={cn("text-[9px] font-normal", isSelected ? "text-primary/60" : "text-primary-foreground/40")}>
+                  KW {kw}
+                </span>
+                {w === currentRotWeek && (
+                  <span className="absolute -top-0.5 right-1/2 translate-x-1/2 w-2 h-2 rounded-full bg-status-info border-2 border-primary" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Block toggles */}
         <div className="flex gap-1.5">
           {ALL_BLOCKS.map(block => (
             <button
@@ -264,11 +242,7 @@ export default function RotationPrint() {
         </div>
       </div>
 
-      {loading ? (
-        <div className="flex items-center justify-center h-64 print:hidden">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      ) : numBlocks === 0 ? (
+      {numBlocks === 0 ? (
         <div className="text-center py-8 text-muted-foreground print:hidden">
           Bitte mindestens einen Block auswählen.
         </div>
@@ -277,11 +251,9 @@ export default function RotationPrint() {
           {/* Print-only header */}
           <div className="hidden print:flex print:items-center print:justify-between print:mb-1">
             <span className="font-heading text-[10pt] font-bold uppercase tracking-wide">
-              Wochenplan KW {week} / {year}
+              Wochenplan KW {selectedKW} / {currentYear}
             </span>
-            {rotationWeekNr > 0 && (
-              <span className="text-[8pt] text-muted-foreground">Rotationswoche W{rotationWeekNr}</span>
-            )}
+            <span className="text-[8pt] text-muted-foreground">Rotationswoche W{weekNr}</span>
           </div>
 
           <table className="w-full border-collapse" style={{ tableLayout: "fixed" }}>
@@ -298,7 +270,6 @@ export default function RotationPrint() {
               ))}
             </colgroup>
 
-            {/* Block headers */}
             <thead>
               <tr>
                 {visibleBlocks.map((block, idx) => (
@@ -312,7 +283,7 @@ export default function RotationPrint() {
                         : "bg-gradient-to-b from-primary/80 to-primary/70"
                     )}
                   >
-                    KW {week} {block.label}
+                    KW {selectedKW} {block.label}
                   </th>
                 ))}
               </tr>
@@ -331,27 +302,29 @@ export default function RotationPrint() {
             </thead>
 
             <tbody>
-              {weekDates.map((date, dayIdx) => {
+              {DAY_LABELS.map((dayLabel, dayIdx) => {
+                const dateStr = weekDates[dayIdx] || "";
                 return MEAL_SLOTS.map((course, slotIdx) => {
                   const isMainCourse = course === "main1" || course === "main2";
 
                   return (
                     <tr
-                      key={`${date}-${course}`}
+                      key={`${dayIdx}-${course}`}
                       className={cn(
                         slotIdx === 0 && "border-t-2 border-foreground/30",
                         isMainCourse ? "bg-amber-50" : slotIdx % 2 === 0 ? "bg-background" : "bg-muted/20"
                       )}
                     >
                       {visibleBlocks.map((block, blockIdx) => {
-                        const plan = getPlan(date, block.meal, block.locSlug, course);
-                        const recipe = plan?.recipeId ? recipeMap.get(plan.recipeId) : null;
+                        // For SÜD Mittag, show City Mittag data (auto-copy)
+                        const effectiveLocSlug = block.locSlug === "sued" && block.meal === "lunch" ? "city" : block.locSlug;
+                        const slot = getSlot(dayIdx, block.meal, effectiveLocSlug, course);
+                        const recipe = slot?.recipeId ? recipeMap.get(slot.recipeId) : null;
                         const isDessert = course === "dessert";
 
                         return (
                           <>
                             {blockIdx > 0 && <td key={`sp-${blockIdx}-${slotIdx}`} className="border-0" />}
-                            {/* Day column */}
                             <td
                               key={`d-${block.key}-${course}`}
                               className="px-1 py-0.5 border border-border/50"
@@ -359,11 +332,10 @@ export default function RotationPrint() {
                             >
                               {slotIdx === 0 && (
                                 <span className="font-bold text-foreground">
-                                  {DAY_LABELS_SHORT[dayIdx]} <span className="font-normal text-muted-foreground">{formatDateShort(date)}</span>
+                                  {dayLabel} <span className="font-normal text-muted-foreground">{dateStr ? formatDateShort(dateStr) : ""}</span>
                                 </span>
                               )}
                             </td>
-                            {/* Type column */}
                             <td
                               key={`t-${block.key}-${course}`}
                               className={cn(
@@ -374,7 +346,6 @@ export default function RotationPrint() {
                             >
                               {SLOT_LABELS[course]}
                             </td>
-                            {/* Name column */}
                             <td
                               key={`n-${block.key}-${course}`}
                               className={cn(
@@ -386,18 +357,11 @@ export default function RotationPrint() {
                               {isDessert && !recipe ? (
                                 <span className="italic text-muted-foreground">Dessertvariation</span>
                               ) : recipe ? (
-                                <button
-                                  onClick={() => handleRecipeClick(recipe.id)}
-                                  className="text-left hover:text-primary hover:underline truncate cursor-pointer print:no-underline"
-                                  title={recipe.name}
-                                >
-                                  {recipe.name}
-                                </button>
+                                <span title={recipe.name}>{recipe.name}</span>
                               ) : (
                                 <span className="text-muted-foreground/30">—</span>
                               )}
                             </td>
-                            {/* Allergen column */}
                             <td
                               key={`a-${block.key}-${course}`}
                               className="px-1 py-0.5 border border-border/50 text-center text-orange-600 font-medium"
@@ -409,7 +373,6 @@ export default function RotationPrint() {
                                   ? recipe.allergens.join(",")
                                   : ""}
                             </td>
-                            {/* Temperature column */}
                             <td
                               key={`tc-${block.key}-${course}`}
                               className="px-1 py-0.5 border border-border/50 text-center text-muted-foreground/40"
@@ -438,24 +401,10 @@ export default function RotationPrint() {
               ))}
             </p>
             <p className="text-muted-foreground/60 mt-1">
-              Gedruckt: {new Date().toLocaleDateString("de-AT")} | KW {week}/{year}
-              {rotationWeekNr > 0 && ` | Rotationswoche W${rotationWeekNr}`}
+              Gedruckt: {new Date().toLocaleDateString("de-AT")} | KW {selectedKW}/{currentYear} | Rotationswoche W{weekNr}
             </p>
           </div>
         </div>
-      )}
-
-      {/* Recipe Detail Dialog */}
-      {selectedRecipe && (
-        <RecipeDetailDialog
-          recipe={selectedRecipe}
-          open={dialogOpen}
-          onOpenChange={(open) => {
-            setDialogOpen(open);
-            if (!open) setSelectedRecipe(null);
-          }}
-          readOnly
-        />
       )}
     </div>
   );

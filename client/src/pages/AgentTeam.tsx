@@ -13,6 +13,7 @@ import {
   Sparkles,
   History,
   Clock,
+  FlaskConical,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLocationFilter } from "@/lib/location-context";
@@ -89,6 +90,108 @@ function formatWeek(dateStr: string): string {
   const kw = Math.ceil(((d.getTime() - oneJan.getTime()) / 86400000 + oneJan.getDay() + 1) / 7);
   return `KW ${kw} (${dateStr})`;
 }
+
+// ── Demo Data ─────────────────────────────────────────────────────
+
+const DEMO_AGENT_DATA: Record<string, { summary: string; durationMs: number; status: "completed" | "failed" }> = {
+  "pax-forecast": {
+    summary: "Prognose: Mo 58, Di 62, Mi 55, Do 67, Fr 71 Gäste. Freitag +15% wegen Firmenfeier.",
+    durationMs: 1240,
+    status: "completed",
+  },
+  "haccp-anomaly": {
+    summary: "Kühlhaus 2 zeigte 3x Temperatur über 5°C (max 6.2°C). Tiefkühler OK. 2 Messungen fehlen.",
+    durationMs: 890,
+    status: "completed",
+  },
+  "waste-prediction": {
+    summary: "Erwarteter Abfall: 8.3kg/Tag. Risiko bei Fisch-Freitag (+2.1kg). Suppen-Überschuss Di/Mi.",
+    durationMs: 1560,
+    status: "completed",
+  },
+  "recipe-suggestions": {
+    summary: "5 Rezepte vorgeschlagen: Kürbiscremesuppe (Saison), Rindsgulasch, Zander, Kaiserschmarrn, Gemüsestrudel.",
+    durationMs: 2100,
+    status: "completed",
+  },
+  "allergen-check": {
+    summary: "2 Konflikte: Gast #12 (Gluten) ↔ Mittwoch Palatschinken. Gast #8 (Laktose) ↔ Donnerstag Rahmspinat.",
+    durationMs: 680,
+    status: "completed",
+  },
+  "rotation-analysis": {
+    summary: "Woche 3 von 6. Keine Wiederholungen zu Vorwoche. Fisch-Tag fehlt. Vegetarisch-Quote: 28% (Ziel: 30%).",
+    durationMs: 1820,
+    status: "completed",
+  },
+  "portion-scaling": {
+    summary: "Scaling für 58-71 PAX berechnet. Rindsgulasch: 14.2kg Rindfleisch, 3.8kg Zwiebel. Knödel: 142 Stück.",
+    durationMs: 950,
+    status: "completed",
+  },
+  "ai-synthesis": {
+    summary: "Briefing erstellt mit 6 Aktionspunkten. Gesamtbewertung: Gut (82/100).",
+    durationMs: 3200,
+    status: "completed",
+  },
+};
+
+const DEMO_ACTION_ITEMS: ActionItem[] = [
+  {
+    priority: "HIGH",
+    source: "haccp-anomaly",
+    title: "Kühlhaus 2 Temperatur prüfen",
+    detail: "3x über 5°C in den letzten 24h (max 6.2°C). Techniker kontaktieren oder Thermostat nachstellen.",
+    date: "2026-02-09",
+  },
+  {
+    priority: "HIGH",
+    source: "allergen-check",
+    title: "Gluten-Konflikt Mittwoch",
+    detail: "Gast #12 hat Glutenunverträglichkeit — Palatschinken durch glutenfreie Alternative ersetzen.",
+    date: "2026-02-12",
+  },
+  {
+    priority: "MEDIUM",
+    source: "rotation-analysis",
+    title: "Fisch-Tag einplanen",
+    detail: "Aktuelle Woche hat keinen Fisch-Tag. Empfehlung: Donnerstag Zanderfilet mit Petersilkartoffeln.",
+  },
+  {
+    priority: "MEDIUM",
+    source: "waste-prediction",
+    title: "Suppen-Menge reduzieren Di/Mi",
+    detail: "Historisch 1.8kg Suppen-Überschuss an Dienstag/Mittwoch. Portionen um 15% reduzieren.",
+  },
+  {
+    priority: "LOW",
+    source: "allergen-check",
+    title: "Laktose-Alternative Donnerstag",
+    detail: "Gast #8 hat Laktoseintoleranz — Rahmspinat durch Blattspinat mit Olivenöl ersetzen.",
+    date: "2026-02-13",
+  },
+  {
+    priority: "LOW",
+    source: "pax-forecast",
+    title: "Freitag Mehrbestellung",
+    detail: "Firmenfeier erwartet (+15% Gäste). Fleisch und Beilagen für 71 statt 62 Portionen bestellen.",
+    date: "2026-02-14",
+  },
+];
+
+const DEMO_SUMMARY = `Wochenbriefing KW 7 — JUFA City
+
+Gästeaufkommen: 313 Gäste gesamt (Ø 63/Tag), Freitag Spitzentag mit 71 Gästen wegen Firmenfeier.
+
+Kritisch: Kühlhaus 2 zeigt wiederholt erhöhte Temperaturen — sofortige Prüfung erforderlich. Zwei Allergen-Konflikte bei Stammgästen müssen vor Mittwoch gelöst werden.
+
+Menüplanung: Rotation Woche 3 ist solide, aber es fehlt ein Fisch-Tag. Empfehlung: Donnerstag Zanderfilet einsetzen. Vegetarisch-Quote liegt bei 28%, knapp unter dem 30%-Ziel.
+
+Einkauf: Freitag-Mehrbestellung einplanen. Suppen-Mengen Di/Mi reduzieren um Abfall zu vermeiden. Erwarteter Gesamtabfall: 41.5kg (8.3kg/Tag), optimierbar auf ~35kg durch Portionsanpassung.
+
+Gesamtbewertung: 82/100 — Gut, mit 2 kritischen Punkten die bis Mittwoch zu lösen sind.`;
+
+const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
 // ── Component ──────────────────────────────────────────────────────
 
@@ -181,6 +284,66 @@ export default function AgentTeam() {
     }
   };
 
+  // Demo simulation
+  const startDemo = async () => {
+    setIsRunning(true);
+    setBriefing(null);
+    setAgentStates({});
+    setAgentSummaries({});
+    setAgentDurations({});
+    setCurrentPhase(0);
+
+    for (const phase of [1, 2, 3, 4]) {
+      const agents = PHASE_AGENTS[phase];
+      setCurrentPhase(phase);
+
+      // Set all agents in phase to pending
+      for (const agent of agents) {
+        setAgentStates(prev => ({ ...prev, [agent]: "pending" }));
+      }
+      await sleep(300);
+
+      // Set all to running
+      for (const agent of agents) {
+        setAgentStates(prev => ({ ...prev, [agent]: "running" }));
+      }
+
+      // Complete agents with staggered timing
+      for (const agent of agents) {
+        const data = DEMO_AGENT_DATA[agent];
+        await sleep(400 + Math.random() * 600);
+        setAgentStates(prev => ({ ...prev, [agent]: data.status }));
+        setAgentSummaries(prev => ({ ...prev, [agent]: data.summary }));
+        setAgentDurations(prev => ({ ...prev, [agent]: data.durationMs }));
+      }
+
+      await sleep(200);
+    }
+
+    // Show final briefing
+    setBriefing({
+      runId: 0,
+      locationSlug,
+      weekStart,
+      status: "completed",
+      durationMs: 12440,
+      phases: Object.entries(PHASE_AGENTS).map(([phase, agents]) => ({
+        phase: parseInt(phase),
+        agents: agents.map(a => ({
+          agentName: a,
+          ...DEMO_AGENT_DATA[a],
+          confidence: 75 + Math.random() * 20,
+          resultSummary: DEMO_AGENT_DATA[a].summary,
+          data: null,
+        })),
+      })),
+      actionItems: DEMO_ACTION_ITEMS,
+      summary: DEMO_SUMMARY,
+      hasAiSummary: true,
+    });
+    setIsRunning(false);
+  };
+
   // Load a past run
   const loadRun = async (runId: number) => {
     try {
@@ -259,6 +422,9 @@ export default function AgentTeam() {
               ) : (
                 <><Play className="h-4 w-4" /> Briefing starten</>
               )}
+            </Button>
+            <Button onClick={startDemo} disabled={isRunning} variant="outline" className="gap-2">
+              <FlaskConical className="h-4 w-4" /> Demo
             </Button>
           </div>
 

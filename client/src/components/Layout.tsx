@@ -1,9 +1,13 @@
 import { Link, useLocation } from "wouter";
-import { ChefHat, Users, CalendarDays, Thermometer, Dices, Home, ChevronLeft, Settings2 } from "lucide-react";
+import { useTheme } from "next-themes";
+import { ChefHat, Users, CalendarDays, Thermometer, Dices, Home, ChevronLeft, Settings2, Moon, Sun, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
+  const { user, logout } = useAuth();
+  const { theme, setTheme } = useTheme();
 
   const navItems = [
     { icon: Home, label: "Home", href: "/today" },
@@ -20,25 +24,44 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background flex flex-col md:max-w-2xl lg:max-w-5xl md:mx-auto overflow-hidden relative">
       {/* Top Bar */}
-      <div className="sticky top-0 z-40 bg-background/80 backdrop-blur-sm flex items-center justify-between">
-        {showBackButton ? (
+      <div className="sticky top-0 z-40 bg-card/90 backdrop-blur-sm border-b border-border/50 flex items-center justify-between px-3 py-1.5">
+        <div className="flex items-center gap-2">
+          {showBackButton && (
+            <button
+              onClick={() => window.history.back()}
+              className="flex items-center gap-0.5 text-sm text-muted-foreground hover:text-foreground transition-colors mr-1"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+          )}
+          <span className="text-sm text-muted-foreground">
+            Willkommen, <span className="text-foreground font-medium">{user?.name || "Gast"}</span>
+          </span>
+        </div>
+        <div className="flex items-center gap-1">
           <button
-            onClick={() => window.history.back()}
-            className="flex items-center gap-1 px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className="p-2 text-muted-foreground hover:text-foreground transition-colors rounded-md"
+            title={theme === "dark" ? "Light Mode" : "Dark Mode"}
           >
-            <ChevronLeft className="h-4 w-4" />
-            <span>Zurück</span>
+            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </button>
-        ) : (
-          <div />
-        )}
-        <Link href="/settings" className={cn(
-          "flex items-center gap-1 px-3 py-2 text-sm transition-colors",
-          isSettings ? "text-primary" : "text-muted-foreground hover:text-foreground"
-        )}>
-          <Settings2 className="h-4 w-4" />
-          <span className="hidden sm:inline">Einstellungen</span>
-        </Link>
+          <Link href="/settings" className={cn(
+            "flex items-center gap-1 p-2 text-sm transition-colors rounded-md",
+            isSettings ? "text-primary" : "text-muted-foreground hover:text-foreground"
+          )}>
+            <Settings2 className="h-4 w-4" />
+            <span className="hidden sm:inline">Einstellungen</span>
+          </Link>
+          <button
+            onClick={() => logout()}
+            className="flex items-center gap-1 p-2 text-sm text-muted-foreground hover:text-destructive transition-colors rounded-md"
+            title="Abmelden"
+          >
+            <LogOut className="h-4 w-4" />
+            <span className="hidden sm:inline">Abmelden</span>
+          </button>
+        </div>
       </div>
 
       {/* Content Area - Scrollable */}

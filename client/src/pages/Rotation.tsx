@@ -78,6 +78,7 @@ export default function Rotation() {
   const [autoFilling, setAutoFilling] = useState(false);
   const [editSlot, setEditSlot] = useState<RotationSlot | null>(null);
   const [editRecipeId, setEditRecipeId] = useState("none");
+  const [recipeSearch, setRecipeSearch] = useState("");
   const [newTemplateOpen, setNewTemplateOpen] = useState(false);
   const [newTemplateName, setNewTemplateName] = useState("");
   const [newTemplateWeeks, setNewTemplateWeeks] = useState("6");
@@ -307,7 +308,14 @@ export default function Rotation() {
   const openEditDialog = (slot: RotationSlot) => {
     setEditSlot(slot);
     setEditRecipeId(slot.recipeId ? String(slot.recipeId) : "none");
+    setRecipeSearch("");
   };
+
+  const filteredRecipes = useMemo(() => {
+    if (!recipeSearch.trim()) return recipes;
+    const q = recipeSearch.trim().toLowerCase();
+    return recipes.filter(r => r.name.toLowerCase().startsWith(q));
+  }, [recipes, recipeSearch]);
 
   const handleEditSave = () => {
     if (!editSlot) return;
@@ -545,20 +553,43 @@ export default function Rotation() {
               {editSlot ? MEAL_SLOT_LABELS[editSlot.course as keyof typeof MEAL_SLOT_LABELS] || editSlot.course : ""}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label>Rezept</Label>
-              <Select value={editRecipeId} onValueChange={setEditRecipeId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Gericht wählen..." />
-                </SelectTrigger>
-                <SelectContent className="max-h-60">
-                  <SelectItem value="none">— leer —</SelectItem>
-                  {recipes.map(r => (
-                    <SelectItem key={r.id} value={String(r.id)}>{r.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <div className="space-y-3 py-2">
+            <Input
+              placeholder="Rezept suchen..."
+              value={recipeSearch}
+              onChange={e => setRecipeSearch(e.target.value)}
+              autoFocus
+            />
+            <div className="max-h-60 overflow-y-auto rounded-md border border-border">
+              <button
+                type="button"
+                className={cn(
+                  "w-full text-left px-3 py-2 text-sm border-b border-border/50 transition-colors",
+                  editRecipeId === "none" ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted"
+                )}
+                onClick={() => setEditRecipeId("none")}
+              >
+                — leer —
+              </button>
+              {filteredRecipes.map(r => (
+                <button
+                  key={r.id}
+                  type="button"
+                  className={cn(
+                    "w-full text-left px-3 py-2 text-sm border-b border-border/30 last:border-b-0 transition-colors",
+                    editRecipeId === String(r.id) ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted"
+                  )}
+                  onClick={() => { setEditRecipeId(String(r.id)); setRecipeSearch(""); }}
+                >
+                  {r.name}
+                  {r.allergens && r.allergens.length > 0 && (
+                    <span className="ml-1.5 text-[10px] text-orange-600">{r.allergens.join(",")}</span>
+                  )}
+                </button>
+              ))}
+              {filteredRecipes.length === 0 && recipeSearch && (
+                <p className="px-3 py-4 text-sm text-muted-foreground text-center">Kein Rezept gefunden</p>
+              )}
             </div>
             <Button onClick={handleEditSave} className="w-full">
               Speichern

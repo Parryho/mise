@@ -418,6 +418,9 @@ export class DatabaseStorage {
   async deleteMenuPlan(id: number): Promise<void> {
     await db.delete(menuPlans).where(eq(menuPlans.id, id));
   }
+  async deleteMenuPlansByDateRange(startDate: string, endDate: string): Promise<void> {
+    await db.delete(menuPlans).where(and(gte(menuPlans.date, startDate), lte(menuPlans.date, endDate)));
+  }
 
   // === Menu Plan Temperatures ===
   async getMenuPlanTemperatures(menuPlanId: number): Promise<MenuPlanTemperature[]> {

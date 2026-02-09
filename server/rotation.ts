@@ -169,30 +169,25 @@ async function createAllSlots(templateId: number, weekCount: number) {
 }
 
 /**
- * Get menu plans for a calendar week, auto-generating from rotation if empty.
+ * Get menu plans for a calendar week, always regenerating from the current rotation state.
+ * Old plans for that week are deleted and recreated from the rotation template.
  */
 export async function getOrGenerateWeekPlan(year: number, week: number) {
   const { from, to } = getWeekDateRange(year, week);
-  let plans = await storage.getMenuPlans(from, to);
-
-  if (plans.length === 0) {
-    // Auto-generate from rotation
-    const template = await ensureDefaultTemplate();
-    const rotationWeekNr = ((week - 1) % template.weekCount) + 1;
-
-    // Check if rotation has any filled slots for this week
-    const rotSlots = await storage.getRotationSlotsByWeek(template.id, rotationWeekNr);
-    const filledSlots = rotSlots.filter(s => s.recipeId !== null);
-
-    if (filledSlots.length > 0) {
-      await generateWeekFromRotation(template.id, rotationWeekNr, from);
-      plans = await storage.getMenuPlans(from, to);
-    }
-  }
-
-  // Compute rotation week number for display
   const template = await ensureDefaultTemplate();
   const rotationWeekNr = ((week - 1) % template.weekCount) + 1;
+
+  // Always regenerate: delete old plans, create fresh from rotation
+  await storage.deleteMenuPlansByDateRange(from, to);
+
+  const rotSlots = await storage.getRotationSlotsByWeek(template.id, rotationWeekNr);
+  const filledSlots = rotSlots.filter(s => s.recipeId !== null);
+
+  if (filledSlots.length > 0) {
+    await generateWeekFromRotation(template.id, rotationWeekNr, from);
+  }
+
+  const plans = await storage.getMenuPlans(from, to);
 
   return {
     year,

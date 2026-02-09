@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
+import { getISOWeek } from "@shared/constants";
 import { useToast } from "@/hooks/use-toast";
 
 interface Task {
@@ -134,9 +135,30 @@ export default function Today() {
 
   const fetchMenuPlan = async () => {
     try {
-      const res = await fetch(`/api/menu-plans?date=${dateStr}&withRecipes=1`);
-      if (!res.ok) throw new Error("Fehler beim Laden des Menüplans");
-      return await res.json();
+      const year = today.getFullYear();
+      const week = getISOWeek(today);
+      // Use week endpoint to ensure plans are generated from current rotation
+      const [weekRes, recipesRes, locsRes] = await Promise.all([
+        fetch(`/api/menu-plans/week?year=${year}&week=${week}`),
+        fetch("/api/recipes"),
+        fetch("/api/locations"),
+      ]);
+      if (!weekRes.ok) throw new Error("Fehler beim Laden des Menüplans");
+      const weekData = await weekRes.json();
+      const recipes = await recipesRes.json();
+      const locs = await locsRes.json();
+
+      const recipeMap = new Map(recipes.map((r: any) => [r.id, r]));
+      const cityLoc = locs.find((l: any) => l.slug === "city");
+      const cityLocId = cityLoc?.id ?? null;
+
+      // Filter for today + city + lunch, attach recipe data
+      return (weekData.plans || [])
+        .filter((p: any) => p.date === dateStr && p.meal === "lunch" && p.locationId === cityLocId)
+        .map((p: any) => ({
+          ...p,
+          recipe: p.recipeId ? recipeMap.get(p.recipeId) : null,
+        }));
     } catch {
       return [];
     }
@@ -237,21 +259,15 @@ export default function Today() {
     return { totalFridges, measured, alerts };
   }, [haccpLogs, fridges]);
 
-  // City location ID
-  const cityLocId = useMemo(() => {
-    const city = locations.find(l => l.slug === "city");
-    return city?.id ?? null;
-  }, [locations]);
-
-  // Only show City Mittag menu
+  // Menu items already filtered to City+Lunch by fetchMenuPlan
   const cityLunchItems = useMemo(() => {
-    return menuItems
-      .filter(item => item.recipe && item.meal === "lunch" && (cityLocId === null || item.locationId === cityLocId))
+    return [...menuItems]
+      .filter(item => item.recipe)
       .sort((a, b) => {
         const order = ["soup", "main1", "side1a", "side1b", "main2", "side2a", "side2b", "dessert"];
         return order.indexOf(a.course) - order.indexOf(b.course);
       });
-  }, [menuItems, cityLocId]);
+  }, [menuItems]);
 
   const hasMenu = cityLunchItems.length > 0;
 

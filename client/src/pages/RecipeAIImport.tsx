@@ -279,17 +279,17 @@ export default function RecipeAIImport() {
         {/* Header */}
         <div className="flex items-center gap-3">
           <Link href="/recipes">
-            <Button variant="ghost" size="icon" className="shrink-0">
-              <ArrowLeft className="h-5 w-5" />
+            <Button variant="ghost" size="sm" className="shrink-0 gap-1 min-h-[44px]">
+              <ArrowLeft className="h-4 w-4" />
+              Rezepte
             </Button>
           </Link>
-          <div>
-            <h1 className="text-2xl font-heading font-bold flex items-center gap-2">
-              <Sparkles className="h-6 w-6 text-primary" />
+          <div className="flex-1">
+            <h1 className="text-xl font-heading font-bold">
               KI-Rezeptimport
             </h1>
-            <p className="text-sm text-muted-foreground">
-              Rezepttext oder Foto analysieren und automatisch strukturieren
+            <p className="text-xs text-muted-foreground">
+              Text einfuegen oder Foto hochladen
             </p>
           </div>
         </div>
@@ -317,7 +317,7 @@ export default function RecipeAIImport() {
                 className="min-h-[300px] font-mono text-sm"
               />
               <p className="text-xs text-muted-foreground">
-                Rezepttext aus einer Website, einem Kochbuch oder handschriftlichen Notizen einfach hier einfuegen.
+                Aus Website, Kochbuch oder Notizen hier einfuegen.
               </p>
             </div>
           </TabsContent>
@@ -352,7 +352,7 @@ export default function RecipeAIImport() {
                       <Upload className="h-8 w-8 text-primary" />
                     </div>
                     <p className="text-sm font-medium text-foreground">
-                      Klicken Sie hier oder ziehen Sie ein Bild hierher
+                      Tippen um Bild auszuwaehlen
                     </p>
                     <p className="text-xs text-muted-foreground">
                       JPG, PNG, WebP (max. 20 MB)
@@ -423,19 +423,19 @@ export default function RecipeAIImport() {
       <div className="flex items-center gap-3">
         <Button
           variant="ghost"
-          size="icon"
-          className="shrink-0"
+          size="sm"
+          className="shrink-0 gap-1 min-h-[44px]"
           onClick={() => setResult(null)}
         >
-          <ArrowLeft className="h-5 w-5" />
+          <ArrowLeft className="h-4 w-4" />
+          Zurueck
         </Button>
         <div className="flex-1">
-          <h1 className="text-2xl font-heading font-bold flex items-center gap-2">
-            <CheckCircle2 className="h-6 w-6 text-green-600" />
+          <h1 className="text-xl font-heading font-bold">
             Ergebnis pruefen
           </h1>
-          <p className="text-sm text-muted-foreground">
-            Daten pruefen und bei Bedarf korrigieren
+          <p className="text-xs text-muted-foreground">
+            Pruefen und bei Bedarf korrigieren
           </p>
         </div>
         <Badge className={conf.color}>{conf.label} ({Math.round(result.confidence * 100)}%)</Badge>
@@ -722,28 +722,21 @@ export default function RecipeAIImport() {
       </Card>
 
       {/* Action buttons */}
-      <div className="flex gap-3">
+      <div className="sticky bottom-16 bg-background border-t pt-3 -mx-4 px-4 pb-3">
         <Button
-          variant="outline"
-          className="flex-1 gap-2"
-          onClick={() => setResult(null)}
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Zurueck
-        </Button>
-        <Button
-          className="flex-1 gap-2"
+          className="w-full gap-2 h-12 text-base"
+          size="lg"
           onClick={saveRecipe}
           disabled={isSaving || !result.name.trim()}
         >
           {isSaving ? (
             <>
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-5 w-5 animate-spin" />
               Speichern...
             </>
           ) : (
             <>
-              <Save className="h-4 w-4" />
+              <Save className="h-5 w-5" />
               Rezept speichern
             </>
           )}

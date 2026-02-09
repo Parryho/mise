@@ -102,17 +102,17 @@ export default function RecipeSuggestions() {
       {/* Header */}
       <div className="flex items-center gap-3">
         <Link href="/rotation">
-          <Button variant="ghost" size="icon" className="shrink-0">
-            <ArrowLeft className="h-5 w-5" />
+          <Button variant="ghost" size="sm" className="shrink-0 gap-1 min-h-[44px]">
+            <ArrowLeft className="h-4 w-4" />
+            Rotation
           </Button>
         </Link>
-        <div>
-          <h1 className="text-2xl font-heading font-bold flex items-center gap-2">
-            <Lightbulb className="h-6 w-6 text-primary" />
-            Rezeptvorschläge
+        <div className="flex-1">
+          <h1 className="text-xl font-heading font-bold">
+            Rezeptvorschlaege
           </h1>
-          <p className="text-sm text-muted-foreground">
-            Intelligente Empfehlungen basierend auf Abwechslung, Saison und Kategoriebalance
+          <p className="text-xs text-muted-foreground">
+            Empfehlungen nach Abwechslung, Saison und Balance
           </p>
         </div>
       </div>
@@ -210,9 +210,16 @@ export default function RecipeSuggestions() {
 
           {data.suggestions.length === 0 && (
             <Card>
-              <CardContent className="pt-6 text-center text-muted-foreground">
-                <Lightbulb className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p>Keine Vorschläge verfügbar. Erstellen Sie zuerst einige Rezepte.</p>
+              <CardContent className="pt-6 pb-6 text-center space-y-3">
+                <Lightbulb className="h-10 w-10 mx-auto text-muted-foreground/40" />
+                <p className="text-muted-foreground font-medium">Keine Vorschlaege verfuegbar</p>
+                <p className="text-sm text-muted-foreground">Erstellen Sie zuerst Rezepte in der Rezeptbibliothek.</p>
+                <Link href="/recipes">
+                  <Button variant="outline" size="sm" className="gap-1 min-h-[44px]">
+                    <Plus className="h-4 w-4" />
+                    Rezepte anlegen
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
           )}
@@ -267,10 +274,10 @@ export default function RecipeSuggestions() {
                       size="sm"
                       onClick={() => addToMenuPlan.mutate(suggestion.recipeId)}
                       disabled={addToMenuPlan.isPending}
-                      className="gap-1"
+                      className="gap-1 min-h-[44px] min-w-[44px]"
                     >
                       <Plus className="h-4 w-4" />
-                      Hinzufuegen
+                      Zum Plan
                     </Button>
                   </div>
                 </div>

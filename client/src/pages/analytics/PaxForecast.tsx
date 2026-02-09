@@ -221,32 +221,35 @@ export default function PaxForecast() {
   }
 
   return (
-    <div className="p-4 space-y-6">
+    <div className="p-4 space-y-6 pb-24">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
         <Link href="/reports">
-          <Button variant="ghost" size="icon">
-            <ArrowLeft className="h-5 w-5" />
+          <Button variant="ghost" size="sm" className="gap-1.5 min-h-[44px]">
+            <ArrowLeft className="h-4 w-4" />
+            Reports
           </Button>
         </Link>
         <div className="flex-1">
           <h1 className="text-2xl font-heading font-bold">PAX-Prognose</h1>
           <p className="text-sm text-muted-foreground">
-            Vorhersage der Gästezahlen basierend auf historischen Daten
+            Vorhersage basierend auf historischen Daten
           </p>
         </div>
-        {data?.accuracy && data.accuracy.dataPoints > 0 && (
-          <div className="flex items-center gap-2">
-            <Badge className={getMapeColor(data.accuracy.mape)}>
-              <TrendingUp className="h-3 w-3 mr-1" />
-              MAPE {data.accuracy.mape}% - {getMapeLabel(data.accuracy.mape)}
-            </Badge>
-            <span className="text-xs text-muted-foreground">
-              ({data.accuracy.dataPoints} Datenpunkte)
-            </span>
-          </div>
-        )}
       </div>
+
+      {/* Accuracy Badge - shown separately for clarity */}
+      {data?.accuracy && data.accuracy.dataPoints > 0 && (
+        <div className="flex items-center gap-2">
+          <Badge className={getMapeColor(data.accuracy.mape)}>
+            <TrendingUp className="h-3 w-3 mr-1" />
+            Genauigkeit: {getMapeLabel(data.accuracy.mape)} ({data.accuracy.mape}%)
+          </Badge>
+          <span className="text-xs text-muted-foreground">
+            {data.accuracy.dataPoints} Datenpunkte
+          </span>
+        </div>
+      )}
 
       {/* Filters: Week Navigation + Location + Meal */}
       <Card>
@@ -254,15 +257,14 @@ export default function PaxForecast() {
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             {/* Week Navigation */}
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={handlePrevWeek}>
+              <Button variant="outline" size="sm" onClick={handlePrevWeek} className="min-h-[44px] min-w-[44px]">
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <div className="text-center min-w-[140px]">
-                <p className="text-sm text-muted-foreground">Kalenderwoche</p>
-                <p className="text-lg font-semibold">KW {week} / {year}</p>
+                <p className="text-lg font-bold">KW {week} / {year}</p>
                 <p className="text-xs text-muted-foreground">{from} bis {to}</p>
               </div>
-              <Button variant="outline" size="sm" onClick={handleNextWeek}>
+              <Button variant="outline" size="sm" onClick={handleNextWeek} className="min-h-[44px] min-w-[44px]">
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
@@ -532,42 +534,15 @@ export default function PaxForecast() {
         </CardContent>
       </Card>
 
-      {/* Accuracy Info */}
-      {data?.accuracy && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Prognosegenauigkeit</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="text-sm font-medium">MAPE (Mean Absolute Percentage Error):</div>
-                <Badge className={getMapeColor(data.accuracy.mape)}>
-                  {data.accuracy.mape}%
-                </Badge>
-              </div>
-              <div className="text-sm text-muted-foreground">
-                {data.accuracy.dataPoints > 0 ? (
-                  <>
-                    Basierend auf {data.accuracy.dataPoints} historischen Datenpunkten.
-                    {data.accuracy.mape <= 15
-                      ? " Die Prognose ist zuverlaessig und kann fuer die Planung verwendet werden."
-                      : data.accuracy.mape <= 25
-                      ? " Die Prognose bietet eine gute Orientierung, sollte aber mit Erfahrungswerten abgeglichen werden."
-                      : " Die Datenlage ist noch duenn. Die Prognose verbessert sich mit mehr historischen Daten."}
-                  </>
-                ) : (
-                  "Noch keine historischen Daten vorhanden. Die Prognose wird genauer, sobald mehr Gästezahlen erfasst sind."
-                )}
-              </div>
-              <div className="text-xs text-muted-foreground border-t pt-2 mt-2">
-                Methodik: 50% 4-Wochen-Durchschnitt, 30% Wochentags-Muster, 20% Vorjahresvergleich (gleiche KW).
-                Konfidenzintervall: +/- 1,5 Standardabweichungen.
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Methodology Note */}
+      <Card className="bg-muted/30">
+        <CardContent className="p-4">
+          <p className="text-xs text-muted-foreground">
+            Methodik: 50% 4-Wochen-Schnitt, 30% Wochentags-Muster, 20% Vorjahresvergleich.
+            Konfidenzintervall: +/- 1,5 Standardabweichungen.
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Star, TrendingUp, TrendingDown, Lightbulb, Brain, RefreshCw } from "lucide-react";
+import { Loader2, Star, TrendingUp, TrendingDown, Lightbulb, Brain, RefreshCw, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 import {
@@ -11,6 +11,7 @@ import {
   LineChart, Line
 } from "recharts";
 import StarRating from "@/components/StarRating";
+import { Link } from "wouter";
 
 interface DashboardStats {
   totalRatings: number;
@@ -130,8 +131,16 @@ export default function LearningDashboard() {
   );
 
   return (
-    <div className="p-4 space-y-4">
-      <h1 className="text-2xl font-heading font-bold">{t("learning.title")}</h1>
+    <div className="p-4 space-y-4 pb-24">
+      <div className="flex items-center gap-3">
+        <Link href="/reports">
+          <Button variant="ghost" size="sm" className="gap-1.5 min-h-[44px]">
+            <ArrowLeft className="h-4 w-4" />
+            Reports
+          </Button>
+        </Link>
+        <h1 className="text-2xl font-heading font-bold">{t("learning.title")}</h1>
+      </div>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 gap-3">

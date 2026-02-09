@@ -65,11 +65,12 @@ export default function AllergenOverview() {
     <div className="p-4 space-y-6">
       <div className="flex items-center gap-3 print:hidden">
         <Link href="/reports">
-          <Button variant="ghost" size="icon">
-            <ArrowLeft className="h-5 w-5" />
+          <Button variant="ghost" size="sm" className="gap-1 min-h-[44px]">
+            <ArrowLeft className="h-4 w-4" />
+            Reports
           </Button>
         </Link>
-        <h1 className="text-2xl font-heading font-bold">Allergen-Übersicht</h1>
+        <h1 className="text-xl font-heading font-bold">Allergen-Uebersicht</h1>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4 print:hidden">
@@ -164,7 +165,9 @@ export default function AllergenOverview() {
                     {(!allergenData?.dishes || allergenData.dishes.length === 0) && (
                       <tr>
                         <td colSpan={ALLERGEN_CODES.length + 2} className="p-8 text-center text-muted-foreground">
-                          Keine Gerichte für dieses Datum vorhanden
+                          <AlertTriangle className="h-8 w-8 mx-auto mb-2 opacity-40" />
+                          <p className="font-medium">Keine Gerichte fuer dieses Datum</p>
+                          <p className="text-sm mt-1">Erstellen Sie zuerst einen Menuplan fuer diesen Tag.</p>
                         </td>
                       </tr>
                     )}

@@ -90,7 +90,6 @@ export default function Print() {
     fetchData();
   }, [startDate, endDate]);
 
-  // Get unique dates
   const dates = Array.from(new Set(plans.map(p => p.date))).sort();
 
   // Get location columns
@@ -130,7 +129,13 @@ export default function Print() {
             <h2 className="text-lg font-bold">Menüplan {startDate} - {endDate}</h2>
           </div>
 
-          {/* Table */}
+          {dates.length === 0 && !loading && (
+            <div className="text-center py-12 text-muted-foreground">
+              <p className="text-lg font-medium">Keine Menüpläne vorhanden</p>
+              <p className="text-sm mt-1">Für den gewählten Zeitraum sind keine Einträge vorhanden.</p>
+            </div>
+          )}
+
           <table className="w-full border-collapse text-xs">
             <thead>
               <tr className="border-b-2 border-foreground">

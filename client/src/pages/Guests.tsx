@@ -167,12 +167,19 @@ function GuestCountsView() {
       </div>
 
       <div className="flex items-center justify-between">
-        <Button variant="outline" size="icon" onClick={() => navigate(-1)} data-testid="button-nav-prev">
-          <ChevronLeft className="h-4 w-4" />
+        <Button variant="outline" size="icon" className="h-10 w-10" onClick={() => navigate(-1)} data-testid="button-nav-prev">
+          <ChevronLeft className="h-5 w-5" />
         </Button>
-        <span className="font-medium text-sm text-center" data-testid="text-date-label">{getDateLabel()}</span>
-        <Button variant="outline" size="icon" onClick={() => navigate(1)} data-testid="button-nav-next">
-          <ChevronRight className="h-4 w-4" />
+        <button
+          className="font-medium text-sm text-center px-2 py-1 rounded hover:bg-secondary/50 transition-colors"
+          onClick={() => setBaseDate(new Date())}
+          data-testid="text-date-label"
+          title="Zurück zu heute"
+        >
+          {getDateLabel()}
+        </button>
+        <Button variant="outline" size="icon" className="h-10 w-10" onClick={() => navigate(1)} data-testid="button-nav-next">
+          <ChevronRight className="h-5 w-5" />
         </Button>
       </div>
 
@@ -310,7 +317,7 @@ function MonthDayCell({ date, dayNum, isToday, total, getCount, onSave }: {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <button className={`h-16 p-1 rounded border text-center ${isToday ? 'border-primary bg-primary/10' : 'border-border'} hover:bg-secondary/50 transition-colors`}>
+        <button className={`h-16 p-1.5 rounded-lg border text-center ${isToday ? 'border-primary bg-primary/10' : 'border-border'} hover:bg-secondary/50 active:scale-95 transition-all`}>
           <div className="text-xs text-muted-foreground">{dayNum}</div>
           <div className="text-lg font-bold">{total || '-'}</div>
         </button>
@@ -432,7 +439,7 @@ function GuestCell({ date, dayName, dayNum, meal, count, isToday, onSave, showDa
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <button className={`p-1 rounded border ${isToday ? 'border-primary bg-primary/10' : 'border-border'} hover:bg-secondary/50 transition-colors`}>
+        <button className={`p-2 rounded-lg border min-h-[48px] ${isToday ? 'border-primary bg-primary/10' : 'border-border'} hover:bg-secondary/50 active:scale-95 transition-all`}>
           {showDayName && <div className="text-[10px] text-muted-foreground">{dayName}</div>}
           <div className="font-bold text-lg">{total || '-'}</div>
         </button>

@@ -86,11 +86,12 @@ export default function BuffetCards() {
       <div className="p-4 space-y-6">
         <div className="flex items-center gap-3 print:hidden">
           <Link href="/reports">
-            <Button variant="ghost" size="icon">
-              <ArrowLeft className="h-5 w-5" />
+            <Button variant="ghost" size="sm" className="gap-1 min-h-[44px]">
+              <ArrowLeft className="h-4 w-4" />
+              Reports
             </Button>
           </Link>
-          <h1 className="text-2xl font-heading font-bold">Buffet-Allergenkarten</h1>
+          <h1 className="text-xl font-heading font-bold flex-1">Buffet-Allergenkarten</h1>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 print:hidden">
@@ -188,8 +189,10 @@ export default function BuffetCards() {
             ))}
 
             {(!cards || cards.length === 0) && (
-              <div className="col-span-full text-center py-12 text-muted-foreground">
-                Keine Gerichte für dieses Datum vorhanden
+              <div className="col-span-full text-center py-12 space-y-2">
+                <Printer className="h-10 w-10 mx-auto text-muted-foreground/40" />
+                <p className="text-muted-foreground font-medium">Keine Gerichte fuer dieses Datum</p>
+                <p className="text-sm text-muted-foreground">Erstellen Sie zuerst einen Menuplan.</p>
               </div>
             )}
           </div>

@@ -31,7 +31,6 @@ interface Rating {
   rating: number;
 }
 
-const DAY_LABELS = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
 const DAY_TABS = [
   { label: "Mo", dow: 1 },
   { label: "Di", dow: 2 },

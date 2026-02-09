@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft, ChevronLeft, ChevronRight, Euro } from "lucide-react";
+import { Loader2, ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "wouter";
 import { getWeekDateRange, getISOWeek } from "@shared/constants";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
@@ -76,10 +76,11 @@ export default function FoodCost() {
 
   return (
     <div className="p-4 space-y-6 pb-24">
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
         <Link href="/reports">
-          <Button variant="ghost" size="icon">
-            <ArrowLeft className="h-5 w-5" />
+          <Button variant="ghost" size="sm" className="gap-1.5 min-h-[44px]">
+            <ArrowLeft className="h-4 w-4" />
+            Reports
           </Button>
         </Link>
         <h1 className="text-2xl font-heading font-bold">Food-Cost-Analyse</h1>
@@ -87,20 +88,22 @@ export default function FoodCost() {
 
       {/* Week Navigation */}
       <div className="flex items-center justify-between">
-        <Button variant="outline" size="icon" onClick={handlePrevWeek}>
+        <Button variant="outline" size="sm" onClick={handlePrevWeek} className="gap-1 min-h-[44px] min-w-[44px]">
           <ChevronLeft className="h-4 w-4" />
+          <span className="sr-only sm:not-sr-only">Vor</span>
         </Button>
         <div className="text-center">
-          <p className="text-sm font-semibold">KW {week} / {year}</p>
+          <p className="text-lg font-bold">KW {week} / {year}</p>
           <p className="text-xs text-muted-foreground">{from} bis {to}</p>
         </div>
-        <Button variant="outline" size="icon" onClick={handleNextWeek}>
+        <Button variant="outline" size="sm" onClick={handleNextWeek} className="gap-1 min-h-[44px] min-w-[44px]">
+          <span className="sr-only sm:not-sr-only">Vor</span>
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
+      <div className="grid gap-3 grid-cols-2">
         <Card className="border-l-4 border-l-primary">
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground font-medium">Woche gesamt</p>

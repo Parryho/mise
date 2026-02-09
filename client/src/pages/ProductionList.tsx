@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Printer, ChevronDown, ChevronUp, Clock, DollarSign } from "lucide-react";
+import { Loader2, Printer, ChevronDown, ChevronUp, Clock, DollarSign, ClipboardList } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatLocalDate } from "@shared/constants";
 
@@ -113,12 +113,20 @@ export default function ProductionList() {
       <div className="flex items-end gap-2">
         <div className="space-y-1 flex-1">
           <Label className="text-xs">Von</Label>
-          <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="h-8 text-xs" />
+          <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="h-9 text-xs" />
         </div>
         <div className="space-y-1 flex-1">
           <Label className="text-xs">Bis</Label>
-          <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="h-8 text-xs" />
+          <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="h-9 text-xs" />
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-9 text-xs shrink-0"
+          onClick={() => { const r = getWeekRange(); setStartDate(r.start); setEndDate(r.end); }}
+        >
+          Diese Woche
+        </Button>
       </div>
 
       {loading ? (
@@ -126,8 +134,10 @@ export default function ProductionList() {
           <Loader2 className="h-6 w-6 animate-spin" />
         </div>
       ) : entries.length === 0 ? (
-        <div className="text-center py-8 text-muted-foreground">
-          Keine Menüpläne für diesen Zeitraum
+        <div className="text-center py-12 text-muted-foreground">
+          <ClipboardList className="h-10 w-10 mx-auto mb-3 opacity-30" />
+          <p className="font-medium text-sm">Keine Menüpläne für diesen Zeitraum</p>
+          <p className="text-xs mt-1">Erstellen Sie Menüpläne im Wochenplan, um die Produktionsliste zu sehen.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -151,7 +161,7 @@ export default function ProductionList() {
 
                   return (
                     <Collapsible key={dIdx} open={isExpanded} onOpenChange={() => toggleDish(dishKey)}>
-                      <CollapsibleTrigger className="w-full flex items-center justify-between p-2 rounded hover:bg-secondary/50 transition-colors">
+                      <CollapsibleTrigger className="w-full flex items-center justify-between p-2.5 rounded-lg hover:bg-secondary/50 active:bg-secondary/70 transition-colors min-h-[44px]">
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-medium">{dish.dishName}</span>
                           {dish.prepTime != null && dish.prepTime > 0 && (

@@ -141,27 +141,28 @@ export default function QRGenerator() {
 
         <div className="print:hidden">
           <label className="block text-sm font-medium mb-1">
-            Datum (optional) — Speisekarte für bestimmtes Datum
+            Datum (optional)
           </label>
           <div className="flex gap-2 items-center">
             <input
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="px-3 py-2 border rounded-md"
+              className="px-3 py-2 border rounded-md min-h-[44px]"
             />
             {selectedDate && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setSelectedDate("")}
+                className="min-h-[44px]"
               >
-                Zurücksetzen
+                Zuruecksetzen
               </Button>
             )}
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            Ohne Datum: QR-Code zeigt immer die aktuelle Tageskarte
+            Ohne Datum zeigt der QR-Code immer die aktuelle Tageskarte.
           </p>
         </div>
 
@@ -213,21 +214,18 @@ export default function QRGenerator() {
           })}
 
           {(!locations || locations.length === 0) && (
-            <div className="col-span-full text-center py-12 text-muted-foreground">
-              Keine Standorte vorhanden
+            <div className="col-span-full text-center py-12 space-y-2">
+              <Download className="h-10 w-10 mx-auto text-muted-foreground/40" />
+              <p className="text-muted-foreground font-medium">Keine Standorte vorhanden</p>
+              <p className="text-sm text-muted-foreground">Standorte muessen zuerst in den Einstellungen angelegt werden.</p>
             </div>
           )}
         </div>
 
-        <div className="print:hidden bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h3 className="font-semibold text-blue-900 mb-2">Verwendung:</h3>
-          <ul className="text-sm text-blue-800 space-y-1">
-            <li>1. QR-Code ausdrucken oder als PNG herunterladen</li>
-            <li>2. An Rezeption, Restaurant-Eingang oder Zimmer anbringen</li>
-            <li>3. Gäste scannen mit Smartphone → sehen aktuelle Speisekarte</li>
-            <li>4. Optional: Datum wählen für Events oder Vorab-Ankündigungen</li>
-          </ul>
-        </div>
+        {/* Info hint - compact */}
+        <p className="print:hidden text-xs text-muted-foreground text-center">
+          QR-Codes ausdrucken und an Rezeption oder Restaurant-Eingang anbringen.
+        </p>
       </div>
     </>
   );

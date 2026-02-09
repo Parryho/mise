@@ -97,16 +97,17 @@ export default function MasterIngredients() {
     <div className="p-4 space-y-4 pb-24">
       <div className="flex items-center gap-3">
         <Link href="/recipes">
-          <Button variant="ghost" size="icon" className="h-8 w-8">
+          <Button variant="ghost" size="sm" className="gap-1 min-h-[44px]">
             <ArrowLeft className="h-4 w-4" />
+            Rezepte
           </Button>
         </Link>
         <div className="flex-1">
           <h1 className="text-xl font-heading font-bold">Zutatenstammdaten</h1>
           <p className="text-xs text-muted-foreground">{items.length} Zutaten mit Preisen</p>
         </div>
-        <Button size="sm" className="gap-1" onClick={() => setShowAdd(true)}>
-          <PlusCircle className="h-4 w-4" /> Neu
+        <Button size="sm" className="gap-1 min-h-[44px]" onClick={() => setShowAdd(true)}>
+          <PlusCircle className="h-4 w-4" /> Neue Zutat
         </Button>
       </div>
 
@@ -150,8 +151,16 @@ export default function MasterIngredients() {
 
       {/* Items list */}
       {filtered.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          {items.length === 0 ? "Keine Zutatenstammdaten vorhanden." : "Keine Ergebnisse."}
+        <div className="text-center py-12 space-y-3">
+          <Search className="h-10 w-10 mx-auto text-muted-foreground/40" />
+          <p className="text-muted-foreground font-medium">
+            {items.length === 0 ? "Noch keine Zutatenstammdaten" : "Keine Ergebnisse"}
+          </p>
+          {items.length === 0 && (
+            <Button variant="outline" size="sm" className="gap-1 min-h-[44px]" onClick={() => setShowAdd(true)}>
+              <PlusCircle className="h-4 w-4" /> Erste Zutat anlegen
+            </Button>
+          )}
         </div>
       ) : (
         <div className="space-y-2">

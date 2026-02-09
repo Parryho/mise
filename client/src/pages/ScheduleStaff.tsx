@@ -66,8 +66,11 @@ export default function StaffView() {
           <Loader2 className="h-6 w-6 animate-spin" />
         </div>
       ) : staffList.length === 0 ? (
-        <div className="text-center py-8 text-muted-foreground">
-          Keine Mitarbeiter vorhanden
+        <div className="text-center py-12 space-y-3">
+          <UserPlus className="h-10 w-10 mx-auto text-muted-foreground/40" />
+          <p className="text-muted-foreground font-medium">Noch keine Mitarbeiter</p>
+          <p className="text-sm text-muted-foreground">Fuegen Sie Ihr Kuechenteam hinzu.</p>
+          <AddStaffDialog onSave={fetchStaff} />
         </div>
       ) : (
         <div className="space-y-2">
@@ -163,7 +166,7 @@ function AddStaffDialog({ onSave }: { onSave: () => void }) {
                 <button
                   key={c}
                   type="button"
-                  className={`w-8 h-8 rounded-full border-2 ${color === c ? 'border-foreground' : 'border-transparent'}`}
+                  className={`w-10 h-10 rounded-full border-2 ${color === c ? 'border-foreground' : 'border-transparent'}`}
                   style={{ backgroundColor: c }}
                   onClick={() => setColor(c)}
                 />
@@ -244,7 +247,7 @@ function EditStaffDialog({ member, onSave }: { member: Staff; onSave: () => void
                 <button
                   key={c}
                   type="button"
-                  className={`w-8 h-8 rounded-full border-2 ${color === c ? 'border-foreground' : 'border-transparent'}`}
+                  className={`w-10 h-10 rounded-full border-2 ${color === c ? 'border-foreground' : 'border-transparent'}`}
                   style={{ backgroundColor: c }}
                   onClick={() => setColor(c)}
                 />

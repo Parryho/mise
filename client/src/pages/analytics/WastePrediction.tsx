@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, ArrowLeft, AlertTriangle, Leaf, Clock, ChevronRight } from "lucide-react";
+import { Loader2, ArrowLeft, AlertTriangle, Leaf, Clock, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "wouter";
 import { getWeekDateRange, getISOWeek } from "@shared/constants";
 
@@ -110,18 +110,19 @@ export default function WastePrediction() {
   };
 
   return (
-    <div className="p-4 space-y-6">
+    <div className="p-4 space-y-6 pb-24">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
         <Link href="/reports">
-          <Button variant="ghost" size="icon">
-            <ArrowLeft className="h-5 w-5" />
+          <Button variant="ghost" size="sm" className="gap-1.5 min-h-[44px]">
+            <ArrowLeft className="h-4 w-4" />
+            Reports
           </Button>
         </Link>
         <div>
           <h1 className="text-2xl font-heading font-bold">Waste-Prediction</h1>
           <p className="text-sm text-muted-foreground">
-            Zutaten mit Ablaufrisiko basierend auf Menüplanung und Haltbarkeit
+            Ablaufrisiko basierend auf Menüplan und Haltbarkeit
           </p>
         </div>
       </div>
@@ -132,16 +133,18 @@ export default function WastePrediction() {
           <div className="flex flex-col md:flex-row items-center gap-4">
             {/* Week navigation */}
             <div className="flex items-center gap-2 flex-1">
-              <Button variant="outline" size="sm" onClick={handlePrevWeek}>
-                Vorherige
+              <Button variant="outline" size="sm" onClick={handlePrevWeek} className="min-h-[44px]">
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Vorige
               </Button>
               <div className="text-center min-w-[140px]">
                 <p className="text-sm text-muted-foreground">Kalenderwoche</p>
                 <p className="text-lg font-semibold">KW {week} / {year}</p>
                 <p className="text-xs text-muted-foreground">{from} bis {to}</p>
               </div>
-              <Button variant="outline" size="sm" onClick={handleNextWeek}>
+              <Button variant="outline" size="sm" onClick={handleNextWeek} className="min-h-[44px]">
                 Nächste
+                <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
             </div>
             {/* Location filter */}

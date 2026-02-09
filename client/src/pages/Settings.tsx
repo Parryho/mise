@@ -61,7 +61,7 @@ export default function SettingsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-heading font-bold">{t("settings")}</h1>
         {user && (
-          <Button variant="outline" size="sm" onClick={handleLogout} className="gap-2">
+          <Button variant="outline" size="sm" onClick={handleLogout} className="gap-2 min-h-[44px]">
             <LogOut className="h-4 w-4" />
             Abmelden
           </Button>
@@ -106,62 +106,29 @@ export default function SettingsPage() {
             </h2>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <Card
-              className="cursor-pointer hover:bg-secondary/30 transition-all active:scale-[0.98]"
-              onClick={() => setLocation("/settings/email")}
-            >
-              <CardContent className="p-4 flex flex-col items-center text-center gap-2">
-                <div className="p-2.5 rounded-lg bg-blue-50">
-                  <Mail className="h-5 w-5 text-blue-600" />
-                </div>
-                <div>
-                  <div className="font-medium text-sm">E-Mail</div>
-                  <div className="text-[11px] text-muted-foreground leading-tight">SMTP & Alerts</div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card
-              className="cursor-pointer hover:bg-secondary/30 transition-all active:scale-[0.98]"
-              onClick={() => setLocation("/settings/backup")}
-            >
-              <CardContent className="p-4 flex flex-col items-center text-center gap-2">
-                <div className="p-2.5 rounded-lg bg-green-50">
-                  <Database className="h-5 w-5 text-green-600" />
-                </div>
-                <div>
-                  <div className="font-medium text-sm">Backup</div>
-                  <div className="text-[11px] text-muted-foreground leading-tight">Sicherung & Restore</div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card
-              className="cursor-pointer hover:bg-secondary/30 transition-all active:scale-[0.98]"
-              onClick={() => setLocation("/settings/gdpr")}
-            >
-              <CardContent className="p-4 flex flex-col items-center text-center gap-2">
-                <div className="p-2.5 rounded-lg bg-purple-50">
-                  <Shield className="h-5 w-5 text-purple-600" />
-                </div>
-                <div>
-                  <div className="font-medium text-sm">DSGVO</div>
-                  <div className="text-[11px] text-muted-foreground leading-tight">Export & Löschung</div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card
-              className="cursor-pointer hover:bg-secondary/30 transition-all active:scale-[0.98]"
-              onClick={() => setLocation("/settings/server-status")}
-            >
-              <CardContent className="p-4 flex flex-col items-center text-center gap-2">
-                <div className="p-2.5 rounded-lg bg-amber-50">
-                  <Activity className="h-5 w-5 text-amber-600" />
-                </div>
-                <div>
-                  <div className="font-medium text-sm">Server</div>
-                  <div className="text-[11px] text-muted-foreground leading-tight">Monitoring & Status</div>
-                </div>
-              </CardContent>
-            </Card>
+            {[
+              { href: "/settings/email", icon: Mail, label: "E-Mail", desc: "SMTP & Alerts", bg: "bg-blue-50", color: "text-blue-600" },
+              { href: "/settings/backup", icon: Database, label: "Backup", desc: "Sicherung & Restore", bg: "bg-green-50", color: "text-green-600" },
+              { href: "/settings/gdpr", icon: Shield, label: "DSGVO", desc: "Export & Löschung", bg: "bg-purple-50", color: "text-purple-600" },
+              { href: "/settings/server-status", icon: Activity, label: "Server", desc: "Monitoring & Status", bg: "bg-amber-50", color: "text-amber-600" },
+            ].map(({ href, icon: Icon, label, desc, bg, color }) => (
+              <Card
+                key={href}
+                className="cursor-pointer hover:bg-secondary/30 transition-all active:scale-[0.98]"
+                onClick={() => setLocation(href)}
+              >
+                <CardContent className="p-4 flex items-center gap-3 min-h-[72px]">
+                  <div className={`p-2.5 rounded-lg ${bg} shrink-0`}>
+                    <Icon className={`h-5 w-5 ${color}`} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-medium text-sm">{label}</div>
+                    <div className="text-[11px] text-muted-foreground leading-tight">{desc}</div>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground ml-auto shrink-0" />
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </section>
       )}

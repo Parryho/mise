@@ -174,96 +174,95 @@ export default function HaccpAnomalies() {
   };
 
   return (
-    <div className="p-4 space-y-6">
-      <div className="flex items-center gap-4">
+    <div className="p-4 space-y-6 pb-24">
+      <div className="flex items-center gap-3">
         <Link href="/reports">
-          <Button variant="ghost" size="icon">
-            <ArrowLeft className="h-5 w-5" />
+          <Button variant="ghost" size="sm" className="gap-1.5 min-h-[44px]">
+            <ArrowLeft className="h-4 w-4" />
+            Reports
           </Button>
         </Link>
         <h1 className="text-2xl font-heading font-bold">Anomalie-Erkennung</h1>
       </div>
 
       {/* Controls */}
-      <div className="flex flex-wrap gap-4 items-center">
-        <div className="flex gap-2">
-          <Button
-            variant={days === 7 ? "default" : "outline"}
-            size="sm"
-            onClick={() => setDays(7)}
-          >
-            7 Tage
-          </Button>
-          <Button
-            variant={days === 30 ? "default" : "outline"}
-            size="sm"
-            onClick={() => setDays(30)}
-          >
-            30 Tage
-          </Button>
-          <Button
-            variant={days === 90 ? "default" : "outline"}
-            size="sm"
-            onClick={() => setDays(90)}
-          >
-            90 Tage
-          </Button>
-        </div>
+      <Card>
+        <CardContent className="p-4 space-y-3">
+          <div className="flex flex-wrap gap-3 items-end">
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground">Zeitraum</p>
+              <div className="flex gap-1.5">
+                {[
+                  { value: 7, label: "7 Tage" },
+                  { value: 30, label: "30 Tage" },
+                  { value: 90, label: "90 Tage" },
+                ].map((opt) => (
+                  <Button
+                    key={opt.value}
+                    variant={days === opt.value ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setDays(opt.value)}
+                    className="min-h-[44px]"
+                  >
+                    {opt.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
 
-        <div className="flex gap-2">
-          <Button
-            variant={selectedSeverity === "ALL" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setSelectedSeverity("ALL")}
-          >
-            Alle
-          </Button>
-          <Button
-            variant={selectedSeverity === "CRITICAL" ? "destructive" : "outline"}
-            size="sm"
-            onClick={() => setSelectedSeverity("CRITICAL")}
-          >
-            <AlertCircle className="h-4 w-4 mr-1" />
-            Kritisch
-          </Button>
-          <Button
-            variant={selectedSeverity === "WARNING" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setSelectedSeverity("WARNING")}
-            className={selectedSeverity === "WARNING" ? "bg-amber-600 hover:bg-amber-700" : ""}
-          >
-            <AlertTriangle className="h-4 w-4 mr-1" />
-            Warnung
-          </Button>
-          <Button
-            variant={selectedSeverity === "INFO" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setSelectedSeverity("INFO")}
-          >
-            <Info className="h-4 w-4 mr-1" />
-            Information
-          </Button>
-        </div>
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground">Schweregrad</p>
+              <div className="flex gap-1.5">
+                <Button
+                  variant={selectedSeverity === "ALL" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedSeverity("ALL")}
+                  className="min-h-[44px]"
+                >
+                  Alle
+                </Button>
+                <Button
+                  variant={selectedSeverity === "CRITICAL" ? "destructive" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedSeverity("CRITICAL")}
+                  className="min-h-[44px]"
+                >
+                  Kritisch ({anomalyData?.summary.critical || 0})
+                </Button>
+                <Button
+                  variant={selectedSeverity === "WARNING" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedSeverity("WARNING")}
+                  className={`min-h-[44px] ${selectedSeverity === "WARNING" ? "bg-amber-600 hover:bg-amber-700" : ""}`}
+                >
+                  Warnung ({anomalyData?.summary.warning || 0})
+                </Button>
+              </div>
+            </div>
 
-        {uniqueFridges.length > 0 && (
-          <select
-            className="px-3 py-2 border rounded-md text-sm"
-            value={selectedFridge || ""}
-            onChange={(e) => setSelectedFridge(e.target.value ? parseInt(e.target.value) : null)}
-          >
-            <option value="">Alle Kühlschränke</option>
-            {uniqueFridges.map(fridge => (
-              <option key={fridge.id} value={fridge.id}>
-                {fridge.name}
-              </option>
-            ))}
-          </select>
-        )}
-      </div>
-
-      <p className="text-sm text-muted-foreground">
-        Zeitraum: {startDate} bis {endDate} ({days} Tage)
-      </p>
+            {uniqueFridges.length > 0 && (
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">Kühlschrank</p>
+                <select
+                  className="px-3 py-2 border rounded-md text-sm min-h-[44px]"
+                  value={selectedFridge || ""}
+                  onChange={(e) => setSelectedFridge(e.target.value ? parseInt(e.target.value) : null)}
+                >
+                  <option value="">Alle Kühlschränke</option>
+                  {uniqueFridges.map(fridge => (
+                    <option key={fridge.id} value={fridge.id}>
+                      {fridge.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {startDate} bis {endDate}
+          </p>
+        </CardContent>
+      </Card>
 
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-3">
@@ -443,22 +442,13 @@ export default function HaccpAnomalies() {
         </CardContent>
       </Card>
 
-      {/* Info Box */}
-      <Card className="border-blue-200 bg-blue-50">
-        <CardContent className="pt-6">
-          <div className="flex gap-3">
-            <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-            <div className="text-sm space-y-2">
-              <p className="font-semibold text-blue-900">Anomalie-Typen:</p>
-              <ul className="space-y-1 text-blue-800">
-                <li><strong>Kritisch:</strong> Temperatur außerhalb des Sollbereichs</li>
-                <li><strong>Trend:</strong> 3+ aufeinanderfolgende Messungen mit steigender/fallender Tendenz</li>
-                <li><strong>Temperaturspitze:</strong> Einzelne Messung weicht stark vom 7-Tage-Durchschnitt ab</li>
-                <li><strong>Messlücke:</strong> Keine Messung für &gt;8 Stunden während der Betriebszeit (6-22 Uhr)</li>
-                <li><strong>Sensor-Fehler:</strong> Gleiche Temperatur 5+ Mal hintereinander gemessen</li>
-              </ul>
-            </div>
-          </div>
+      {/* Info Box - compact legend */}
+      <Card className="bg-muted/30">
+        <CardContent className="p-4">
+          <p className="text-xs text-muted-foreground">
+            <span className="font-medium">Legende:</span>{" "}
+            Kritisch = ausserhalb Sollbereich | Trend = 3+ steigende/fallende Messungen | Spitze = starke Abweichung vom 7-Tage-Schnitt | Lücke = &gt;8h ohne Messung | Sensor = 5+ gleiche Werte
+          </p>
         </CardContent>
       </Card>
     </div>

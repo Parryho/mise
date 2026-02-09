@@ -62,17 +62,22 @@ export default function ShiftTypesView() {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <p className="text-sm text-muted-foreground">
-          Hier können Sie eigene Dienste mit Namen und Zeiten erstellen.
+          {shiftTypes.length} Diensttypen
         </p>
-        <Button size="sm" onClick={() => setShowAdd(true)} className="gap-1">
+        <Button size="sm" onClick={() => setShowAdd(true)} className="gap-1 min-h-[44px]">
           <PlusCircle className="h-4 w-4" /> Neuer Dienst
         </Button>
       </div>
 
       {shiftTypes.length === 0 ? (
         <Card>
-          <CardContent className="py-8 text-center text-muted-foreground">
-            Keine Dienste vorhanden. Erstellen Sie Ihren ersten Dienst.
+          <CardContent className="py-12 text-center space-y-3">
+            <PlusCircle className="h-10 w-10 mx-auto text-muted-foreground/40" />
+            <p className="text-muted-foreground font-medium">Noch keine Dienste</p>
+            <p className="text-sm text-muted-foreground">Erstellen Sie Schichttypen wie Fruehstueck, Mittag, Abend.</p>
+            <Button size="sm" onClick={() => setShowAdd(true)} className="gap-1 min-h-[44px]">
+              <PlusCircle className="h-4 w-4" /> Ersten Dienst erstellen
+            </Button>
           </CardContent>
         </Card>
       ) : (
@@ -186,14 +191,14 @@ function ShiftTypeAddDialog({ open, onOpenChange, onSave }: {
                 <button
                   key={c}
                   type="button"
-                  className={`w-8 h-8 rounded-full border-2 ${color === c ? 'border-foreground' : 'border-transparent'}`}
+                  className={`w-10 h-10 rounded-full border-2 ${color === c ? 'border-foreground' : 'border-transparent'}`}
                   style={{ backgroundColor: c }}
                   onClick={() => setColor(c)}
                 />
               ))}
               <button
                 type="button"
-                className={`w-8 h-8 rounded-full border-2 ${color === '#F37021' ? 'border-foreground' : 'border-transparent'}`}
+                className={`w-10 h-10 rounded-full border-2 ${color === '#F37021' ? 'border-foreground' : 'border-transparent'}`}
                 style={{ backgroundColor: '#F37021' }}
                 onClick={() => setColor('#F37021')}
               />
@@ -270,14 +275,14 @@ function ShiftTypeEditDialog({ shiftType, onSave }: { shiftType: ShiftType; onSa
                 <button
                   key={c}
                   type="button"
-                  className={`w-8 h-8 rounded-full border-2 ${color === c ? 'border-foreground' : 'border-transparent'}`}
+                  className={`w-10 h-10 rounded-full border-2 ${color === c ? 'border-foreground' : 'border-transparent'}`}
                   style={{ backgroundColor: c }}
                   onClick={() => setColor(c)}
                 />
               ))}
               <button
                 type="button"
-                className={`w-8 h-8 rounded-full border-2 ${color === '#F37021' ? 'border-foreground' : 'border-transparent'}`}
+                className={`w-10 h-10 rounded-full border-2 ${color === '#F37021' ? 'border-foreground' : 'border-transparent'}`}
                 style={{ backgroundColor: '#F37021' }}
                 onClick={() => setColor('#F37021')}
               />

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatLocalDate } from "@shared/constants";
-import { Loader2, ChevronLeft, ChevronRight, X, Trash2, Download, FileSpreadsheet } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, X, Trash2, Download, FileSpreadsheet, Users } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
@@ -215,12 +215,19 @@ function ScheduleView() {
       </div>
 
       <div className="flex items-center justify-between">
-        <Button variant="outline" size="icon" onClick={() => navigate(-1)} data-testid="button-nav-prev">
-          <ChevronLeft className="h-4 w-4" />
+        <Button variant="outline" size="icon" className="h-10 w-10" onClick={() => navigate(-1)} data-testid="button-nav-prev">
+          <ChevronLeft className="h-5 w-5" />
         </Button>
-        <span className="font-medium text-sm text-center" data-testid="text-date-label">{getDateLabel()}</span>
-        <Button variant="outline" size="icon" onClick={() => navigate(1)} data-testid="button-nav-next">
-          <ChevronRight className="h-4 w-4" />
+        <button
+          className="font-medium text-sm text-center px-2 py-1 rounded hover:bg-secondary/50 transition-colors"
+          onClick={() => setBaseDate(new Date())}
+          data-testid="text-date-label"
+          title="Zurück zu heute"
+        >
+          {getDateLabel()}
+        </button>
+        <Button variant="outline" size="icon" className="h-10 w-10" onClick={() => navigate(1)} data-testid="button-nav-next">
+          <ChevronRight className="h-5 w-5" />
         </Button>
       </div>
 
@@ -229,8 +236,10 @@ function ScheduleView() {
           <Loader2 className="h-6 w-6 animate-spin" />
         </div>
       ) : staffList.length === 0 ? (
-        <div className="text-center py-8 text-muted-foreground">
-          Keine Mitarbeiter vorhanden. Bitte zuerst Mitarbeiter anlegen.
+        <div className="text-center py-12 text-muted-foreground">
+          <Users className="h-10 w-10 mx-auto mb-3 opacity-30" />
+          <p className="font-medium text-sm">Keine Mitarbeiter vorhanden</p>
+          <p className="text-xs mt-1">Wechseln Sie zum Tab "Mitarbeiter", um Personal anzulegen.</p>
         </div>
       ) : viewMode === "month" ? (
         <MonthScheduleView dates={dates} staffList={staffList} entries={entries} getEntry={getEntry} shiftTypes={shiftTypes} onSave={fetchData} />
@@ -612,8 +621,8 @@ function ScheduleCell({ staffId, date, entry, staffColor, isToday, isWeekend, sh
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <td className={`p-1 text-center cursor-pointer hover:bg-secondary/50 transition-colors border ${isToday ? 'ring-2 ring-primary ring-inset' : ''} ${bgColor()}`}>
-          <div className="min-h-[32px] flex items-center justify-center">
+        <td className={`p-1 text-center cursor-pointer hover:bg-secondary/50 active:bg-secondary/70 transition-colors border ${isToday ? 'ring-2 ring-primary ring-inset' : ''} ${bgColor()}`}>
+          <div className="min-h-[40px] flex items-center justify-center">
             {getDisplayContent()}
           </div>
         </td>

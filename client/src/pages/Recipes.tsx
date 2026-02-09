@@ -357,8 +357,8 @@ function AddRecipeDialog({ defaultCategory }: { defaultCategory?: string }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="icon" variant="outline" className="rounded-full h-10 w-10 border-primary text-primary hover:bg-primary/10">
-          <PlusCircle className="h-6 w-6" />
+        <Button variant="outline" size="sm" className="h-9 gap-1.5 border-primary text-primary hover:bg-primary/10">
+          <PlusCircle className="h-4 w-4" /> Neu
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md max-h-[85vh] flex flex-col">

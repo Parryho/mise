@@ -67,7 +67,7 @@ export default function Register() {
             </div>
           </div>
           <CardTitle className="text-2xl font-heading">Registrierung</CardTitle>
-          <CardDescription>Erstellen Sie Ihr ChefMate-Konto</CardDescription>
+          <CardDescription>Erstellen Sie Ihr mise-Konto</CardDescription>
         </CardHeader>
         <CardContent>
           {success ? (

@@ -99,9 +99,7 @@ export default function ShoppingList() {
   return (
     <div className="p-4 space-y-4 pb-24">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-heading font-bold flex items-center gap-2">
-          <ShoppingCart className="h-6 w-6" /> Einkaufsliste
-        </h1>
+        <h1 className="text-2xl font-heading font-bold">Einkaufsliste</h1>
         <Button variant="outline" size="sm" className="gap-1" onClick={() => window.print()}>
           <Printer className="h-4 w-4" /> Drucken
         </Button>
@@ -110,21 +108,29 @@ export default function ShoppingList() {
       <div className="flex items-end gap-2">
         <div className="space-y-1 flex-1">
           <Label className="text-xs">Von</Label>
-          <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="h-8 text-xs" />
+          <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="h-9 text-xs" />
         </div>
         <div className="space-y-1 flex-1">
           <Label className="text-xs">Bis</Label>
-          <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="h-8 text-xs" />
+          <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="h-9 text-xs" />
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-9 text-xs shrink-0"
+          onClick={() => { const r = getWeekRange(); setStartDate(r.start); setEndDate(r.end); }}
+        >
+          Diese Woche
+        </Button>
       </div>
 
       {/* View toggle */}
-      <div className="flex gap-1">
-        <Button variant={viewMode === 'category' ? 'default' : 'outline'} size="sm" className="text-xs flex-1" onClick={() => setViewMode('category')}>
-          <ShoppingCart className="h-3 w-3 mr-1" /> Kategorie
+      <div className="flex gap-2">
+        <Button variant={viewMode === 'category' ? 'default' : 'outline'} size="sm" className="text-xs flex-1 h-9 gap-1.5" onClick={() => setViewMode('category')}>
+          <ShoppingCart className="h-3.5 w-3.5" /> Nach Kategorie
         </Button>
-        <Button variant={viewMode === 'supplier' ? 'default' : 'outline'} size="sm" className="text-xs flex-1" onClick={() => setViewMode('supplier')}>
-          <Truck className="h-3 w-3 mr-1" /> Lieferant
+        <Button variant={viewMode === 'supplier' ? 'default' : 'outline'} size="sm" className="text-xs flex-1 h-9 gap-1.5" onClick={() => setViewMode('supplier')}>
+          <Truck className="h-3.5 w-3.5" /> Nach Lieferant
         </Button>
       </div>
 
@@ -153,8 +159,10 @@ export default function ShoppingList() {
           <Loader2 className="h-6 w-6 animate-spin" />
         </div>
       ) : categories.length === 0 ? (
-        <div className="text-center py-8 text-muted-foreground">
-          Keine Menüpläne für diesen Zeitraum
+        <div className="text-center py-12 text-muted-foreground">
+          <ShoppingCart className="h-10 w-10 mx-auto mb-3 opacity-30" />
+          <p className="font-medium text-sm">Keine Einkaufsdaten vorhanden</p>
+          <p className="text-xs mt-1">Erstellen Sie Menüpläne mit Rezepten, um die Einkaufsliste zu generieren.</p>
         </div>
       ) : viewMode === 'category' ? (
         <div className="space-y-3">

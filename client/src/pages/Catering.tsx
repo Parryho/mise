@@ -370,8 +370,12 @@ export default function Catering() {
           <Loader2 className="h-6 w-6 animate-spin" />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-8 text-muted-foreground">
-          {events.length === 0 ? "Keine Events vorhanden" : "Keine Events für diesen Filter"}
+        <div className="text-center py-12 text-muted-foreground">
+          <CalendarDays className="h-10 w-10 mx-auto mb-3 opacity-30" />
+          <p className="font-medium text-sm">{events.length === 0 ? "Noch keine Events vorhanden" : "Keine Events für diesen Filter"}</p>
+          {events.length === 0 && (
+            <Button variant="link" className="mt-1 text-sm h-auto p-0" onClick={startNew}>Erstes Event erstellen</Button>
+          )}
         </div>
       ) : (
         <div className="space-y-3">
@@ -465,16 +469,16 @@ export default function Catering() {
 
                       {/* Actions */}
                       <div className="flex flex-col gap-1 flex-shrink-0">
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => startEdit(event)}>
-                          <Pencil className="h-3 w-3" />
+                        <Button size="icon" variant="ghost" className="h-9 w-9" onClick={() => startEdit(event)}>
+                          <Pencil className="h-4 w-4" />
                         </Button>
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-7 w-7 text-destructive"
+                          className="h-9 w-9 text-destructive"
                           onClick={() => handleDelete(event.id)}
                         >
-                          <Trash2 className="h-3 w-3" />
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>

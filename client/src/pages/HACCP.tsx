@@ -117,7 +117,9 @@ export default function HACCP() {
       <div className="grid gap-4 sm:grid-cols-2">
         {fridges.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
-            <p>{t("noData")}</p>
+            <ThermometerSnowflake className="h-10 w-10 mx-auto mb-3 opacity-30" />
+            <p className="font-medium text-sm">Keine Kühlgeräte vorhanden</p>
+            <p className="text-xs mt-1">Fügen Sie oben ein Kühlgerät hinzu, um Temperaturen zu erfassen.</p>
           </div>
         ) : (
           fridges.map(fridge => {
@@ -204,8 +206,8 @@ function AddFridgeDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="icon" variant="outline" className="h-8 w-8">
-          <PlusCircle className="h-4 w-4" />
+        <Button variant="outline" size="sm" className="h-8 gap-1">
+          <PlusCircle className="h-4 w-4" /> Gerät
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-sm">
@@ -283,8 +285,8 @@ function EditFridgeDialog({ fridge }: { fridge: Fridge }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="icon" variant="ghost" className="h-6 w-6">
-          <Pencil className="h-3 w-3" />
+        <Button size="icon" variant="ghost" className="h-8 w-8">
+          <Pencil className="h-3.5 w-3.5" />
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-sm">

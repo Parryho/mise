@@ -115,8 +115,8 @@ export default function GuestProfiles() {
             {profiles?.length || 0} Gastgruppen mit Allergien/Diät
           </p>
         </div>
-        <Button size="sm" className="gap-1" onClick={() => setShowAdd(true)}>
-          <PlusCircle className="h-4 w-4" /> Neu
+        <Button size="sm" className="gap-1 min-h-[44px]" onClick={() => setShowAdd(true)}>
+          <PlusCircle className="h-4 w-4" /> Neues Profil
         </Button>
       </div>
 
@@ -159,10 +159,21 @@ export default function GuestProfiles() {
 
       {/* Profiles list */}
       {filteredProfiles.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          {profiles?.length === 0
-            ? "Noch keine Gastprofile erfasst."
-            : "Keine Ergebnisse für gewählten Filter."}
+        <div className="text-center py-12 space-y-3">
+          <Users className="h-10 w-10 mx-auto text-muted-foreground/40" />
+          <p className="text-muted-foreground font-medium">
+            {profiles?.length === 0
+              ? "Noch keine Gastprofile"
+              : "Keine Ergebnisse fuer diesen Filter"}
+          </p>
+          {profiles?.length === 0 && (
+            <>
+              <p className="text-sm text-muted-foreground">Erfassen Sie Gastgruppen mit Allergien oder Diaethinweisen.</p>
+              <Button variant="outline" size="sm" className="gap-1 min-h-[44px]" onClick={() => setShowAdd(true)}>
+                <PlusCircle className="h-4 w-4" /> Erstes Profil anlegen
+              </Button>
+            </>
+          )}
         </div>
       ) : (
         <div className="space-y-2">

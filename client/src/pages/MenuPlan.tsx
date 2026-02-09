@@ -277,18 +277,18 @@ export default function MenuPlan() {
             <Button
               variant="ghost"
               size="sm"
-              className={cn("h-7 text-xs text-primary-foreground hover:bg-white/20 gap-1", recipePanelOpen && "bg-white/20")}
+              className={cn("h-8 text-xs text-primary-foreground hover:bg-white/20 gap-1 px-2", recipePanelOpen && "bg-white/20")}
               onClick={() => setRecipePanelOpen(!recipePanelOpen)}
             >
-              <BookOpen className="h-3.5 w-3.5" />
+              <BookOpen className="h-3.5 w-3.5" /> Rezepte
             </Button>
-            <Button variant="ghost" size="sm" className="h-7 text-xs text-primary-foreground hover:bg-white/20 gap-1" onClick={() => setShowShoppingList(true)}>
-              <ShoppingCart className="h-3.5 w-3.5" />
+            <Button variant="ghost" size="sm" className="h-8 text-xs text-primary-foreground hover:bg-white/20 gap-1 px-2" onClick={() => setShowShoppingList(true)}>
+              <ShoppingCart className="h-3.5 w-3.5" /> Einkauf
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-7 text-xs text-primary-foreground hover:bg-white/20 gap-1">
-                  <Download className="h-3.5 w-3.5" />
+                <Button variant="ghost" size="sm" className="h-8 text-xs text-primary-foreground hover:bg-white/20 gap-1 px-2">
+                  <Download className="h-3.5 w-3.5" /> Export
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
@@ -319,7 +319,7 @@ export default function MenuPlan() {
               key={label}
               onClick={() => setSelectedDay(idx)}
               className={cn(
-                "flex-1 flex flex-col items-center gap-0.5 py-1.5 rounded-xl text-xs font-bold transition-all relative press",
+                "flex-1 flex flex-col items-center gap-0.5 py-2 rounded-xl text-xs font-bold transition-all relative press min-h-[48px]",
                 isSelected
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "bg-muted text-muted-foreground hover:bg-muted/80"
@@ -542,8 +542,8 @@ function CourseCard({ date, dayName, dayNum, meal, course, courseLabel, plan, re
               <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium mb-0.5">
                 {courseLabel}
               </div>
-              <div className={cn("text-sm font-medium truncate", !recipeName && "text-muted-foreground/40")}>
-                {recipeName || "Nicht belegt"}
+              <div className={cn("text-sm font-medium truncate", !recipeName && "text-muted-foreground/50 italic")}>
+                {recipeName || "Tippen zum Belegen"}
               </div>
             </div>
             <div className="flex items-center gap-1.5 shrink-0 ml-2">

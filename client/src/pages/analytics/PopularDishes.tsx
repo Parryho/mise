@@ -76,18 +76,20 @@ export default function PopularDishes() {
 
   return (
     <div className="p-4 space-y-6 pb-24">
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
         <Link href="/reports">
-          <Button variant="ghost" size="icon">
-            <ArrowLeft className="h-5 w-5" />
+          <Button variant="ghost" size="sm" className="gap-1.5 min-h-[44px]">
+            <ArrowLeft className="h-4 w-4" />
+            Reports
           </Button>
         </Link>
-        <h1 className="text-2xl font-heading font-bold">Beliebteste Gerichte</h1>
+        <div>
+          <h1 className="text-2xl font-heading font-bold">Beliebteste Gerichte</h1>
+          <p className="text-sm text-muted-foreground">
+            Top 20 aus Menüplänen und Rotationen
+          </p>
+        </div>
       </div>
-
-      <p className="text-sm text-muted-foreground">
-        Top 20 am häufigsten eingesetzte Gerichte über alle Menüpläne und Rotationen
-      </p>
 
       {/* Top 10 Bar Chart */}
       <Card>

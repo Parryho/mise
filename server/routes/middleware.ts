@@ -162,7 +162,7 @@ export async function setupMiddleware(app: Express): Promise<void> {
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: process.env.FORCE_HTTPS === "true",
+      secure: isProduction || process.env.FORCE_HTTPS === "true",
       httpOnly: true,
       sameSite: "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000

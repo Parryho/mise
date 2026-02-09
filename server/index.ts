@@ -2,6 +2,7 @@ import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
 import cors from "cors";
 import helmet from "helmet";
+import compression from "compression";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
@@ -41,6 +42,9 @@ declare global {
     }
   }
 }
+
+// Gzip/Brotli compression for all responses
+app.use(compression());
 
 app.use(
   express.json({

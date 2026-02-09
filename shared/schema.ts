@@ -84,7 +84,9 @@ export const ingredients = pgTable("ingredients", {
   amount: doublePrecision("amount").notNull(),
   unit: text("unit").notNull(),
   allergens: text("allergens").array().notNull().default([]),
-});
+}, (table) => [
+  index("idx_ingredients_recipe_id").on(table.recipeId),
+]);
 
 // === NEW: Master ingredients (Zutatenstammdaten mit Preisen) ===
 export const masterIngredients = pgTable("master_ingredients", {

@@ -12,7 +12,11 @@ import { db } from "../server/db";
 import { recipes } from "../shared/schema";
 import { eq, isNull, or, sql } from "drizzle-orm";
 
-const PEXELS_API_KEY = process.env.PEXELS_API_KEY || "hdFZokAFOLDxv26EIEbenblkthNmFHjcqzEf3LcL2RagZwQCPGzxauPK";
+const PEXELS_API_KEY = process.env.PEXELS_API_KEY;
+if (!PEXELS_API_KEY) {
+  console.error("PEXELS_API_KEY environment variable required");
+  process.exit(1);
+}
 const PEXELS_BASE = "https://api.pexels.com/v1/search";
 
 // Delay between requests to be nice to the API

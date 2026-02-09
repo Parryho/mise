@@ -598,6 +598,8 @@ function RecipeCard({ recipe }: { recipe: Recipe }) {
           <img
             src={recipe.image || getDefaultRecipeImage(recipe.category, recipe.name)}
             alt={recipe.name}
+            loading="lazy"
+            decoding="async"
             className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />

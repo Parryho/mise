@@ -2,7 +2,8 @@ import { createContext, useContext, useState, useEffect } from "react";
 import { AllergenCode } from "./i18n";
 
 // Types matching the backend
-export type Category = "ClearSoups" | "CreamSoups" | "MainMeat" | "MainVegan" | "Sides" | "ColdSauces" | "HotSauces" | "Salads" | "HotDesserts" | "ColdDesserts";
+// Derived from RECIPE_CATEGORIES in shared/schema.ts
+export type Category = "ClearSoups" | "CreamSoups" | "MainMeat" | "MainFish" | "MainVegan" | "Sides" | "ColdSauces" | "HotSauces" | "Salads" | "HotDesserts" | "ColdDesserts";
 
 export interface Ingredient {
   id?: number;
@@ -98,8 +99,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    // Seed data on first load
-    fetch('/api/seed', { method: 'POST' }).then(() => fetchAll());
+    fetchAll();
   }, []);
 
   const addRecipe = async (recipe: Omit<Recipe, 'id'> & { ingredientsList?: Ingredient[] }): Promise<Recipe> => {

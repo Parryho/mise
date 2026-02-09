@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Switch, Route, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -10,63 +11,62 @@ import Layout from "@/components/Layout";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Loader2 } from "lucide-react";
 
+// Static: Always needed immediately
 import Login from "@/pages/Login";
-import Recipes from "@/pages/Recipes";
-import HACCP from "@/pages/HACCP";
-import Reports from "@/pages/Reports";
-import Settings from "@/pages/Settings";
-import Guests from "@/pages/Guests";
-import Schedule from "@/pages/Schedule";
 import Today from "@/pages/Today";
-
-import Rotation from "@/pages/Rotation";
-import RotationPrint from "@/pages/RotationPrint";
-import ProductionList from "@/pages/ProductionList";
-import ShoppingList from "@/pages/ShoppingList";
-import Print from "@/pages/Print";
-import Catering from "@/pages/Catering";
-import MasterIngredients from "@/pages/MasterIngredients";
 import NotFound from "@/pages/not-found";
 
-// Phase 2: New pages
-import Suppliers from "@/pages/Suppliers";
-import GuestProfiles from "@/pages/GuestProfiles";
-import AllergenOverview from "@/pages/AllergenOverview";
-import BuffetCards from "@/pages/BuffetCards";
-import QRGenerator from "@/pages/QRGenerator";
-import PaxTrends from "@/pages/analytics/PaxTrends";
-import HaccpCompliance from "@/pages/analytics/HaccpCompliance";
-import HaccpAnomalies from "@/pages/analytics/HaccpAnomalies";
-import PopularDishes from "@/pages/analytics/PopularDishes";
-import FoodCost from "@/pages/analytics/FoodCost";
+// Lazy-loaded pages — each becomes its own chunk
+const Recipes = lazy(() => import("@/pages/Recipes"));
+const HACCP = lazy(() => import("@/pages/HACCP"));
+const Reports = lazy(() => import("@/pages/Reports"));
+const Settings = lazy(() => import("@/pages/Settings"));
+const Guests = lazy(() => import("@/pages/Guests"));
+const Schedule = lazy(() => import("@/pages/Schedule"));
+const Rotation = lazy(() => import("@/pages/Rotation"));
+const RotationPrint = lazy(() => import("@/pages/RotationPrint"));
+const ProductionList = lazy(() => import("@/pages/ProductionList"));
+const ShoppingList = lazy(() => import("@/pages/ShoppingList"));
+const Print = lazy(() => import("@/pages/Print"));
+const Catering = lazy(() => import("@/pages/Catering"));
+const MasterIngredients = lazy(() => import("@/pages/MasterIngredients"));
+const Suppliers = lazy(() => import("@/pages/Suppliers"));
+const GuestProfiles = lazy(() => import("@/pages/GuestProfiles"));
+const AllergenOverview = lazy(() => import("@/pages/AllergenOverview"));
+const BuffetCards = lazy(() => import("@/pages/BuffetCards"));
+const QRGenerator = lazy(() => import("@/pages/QRGenerator"));
+const PaxTrends = lazy(() => import("@/pages/analytics/PaxTrends"));
+const HaccpCompliance = lazy(() => import("@/pages/analytics/HaccpCompliance"));
+const HaccpAnomalies = lazy(() => import("@/pages/analytics/HaccpAnomalies"));
+const PopularDishes = lazy(() => import("@/pages/analytics/PopularDishes"));
+const FoodCost = lazy(() => import("@/pages/analytics/FoodCost"));
+const PaxForecast = lazy(() => import("@/pages/analytics/PaxForecast"));
+const WastePrediction = lazy(() => import("@/pages/analytics/WastePrediction"));
+const SmartRotation = lazy(() => import("@/pages/SmartRotation"));
+const RecipeAIImport = lazy(() => import("@/pages/RecipeAIImport"));
+const RecipeSuggestions = lazy(() => import("@/pages/RecipeSuggestions"));
+const ServerStatus = lazy(() => import("@/pages/ServerStatus"));
+const EmailSettings = lazy(() => import("@/pages/EmailSettings"));
+const BackupRestore = lazy(() => import("@/pages/BackupRestore"));
+const GDPRExport = lazy(() => import("@/pages/GDPRExport"));
+const AgentTeam = lazy(() => import("@/pages/AgentTeam"));
+const QuizFeedback = lazy(() => import("@/pages/QuizFeedback"));
+const LearningDashboard = lazy(() => import("@/pages/analytics/LearningDashboard"));
+const MenuQuiz = lazy(() => import("@/pages/MenuQuiz"));
+const GuestMenu = lazy(() => import("@/pages/public/GuestMenu"));
+const DigitalSignage = lazy(() => import("@/pages/public/DigitalSignage"));
 
-// Phase 3: AI-Powered pages
-import PaxForecast from "@/pages/analytics/PaxForecast";
-import WastePrediction from "@/pages/analytics/WastePrediction";
-import SmartRotation from "@/pages/SmartRotation";
-import RecipeAIImport from "@/pages/RecipeAIImport";
-import RecipeSuggestions from "@/pages/RecipeSuggestions";
-
-// Phase 4: Monitoring + Email + GDPR + Backup
-import ServerStatus from "@/pages/ServerStatus";
-import EmailSettings from "@/pages/EmailSettings";
-import BackupRestore from "@/pages/BackupRestore";
-import GDPRExport from "@/pages/GDPRExport";
-
-// Phase 6: Agent Team
-import AgentTeam from "@/pages/AgentTeam";
-
-// Phase 5: Quiz Feedback + Learning Dashboard
-import QuizFeedback from "@/pages/QuizFeedback";
-import LearningDashboard from "@/pages/analytics/LearningDashboard";
-import MenuQuiz from "@/pages/MenuQuiz";
-
-// Phase 2: Public pages (no auth)
-import GuestMenu from "@/pages/public/GuestMenu";
-import DigitalSignage from "@/pages/public/DigitalSignage";
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center h-[60vh]">
+      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+    </div>
+  );
+}
 
 function AuthenticatedRoutes() {
   return (
+    <Suspense fallback={<Layout><PageLoader /></Layout>}>
     <Switch>
       <Route path="/">
         <Redirect to="/today" />
@@ -192,6 +192,7 @@ function AuthenticatedRoutes() {
         <NotFound />
       </Route>
     </Switch>
+    </Suspense>
   );
 }
 
@@ -211,6 +212,7 @@ function Router() {
 
   // Public routes (no auth required)
   return (
+    <Suspense fallback={<PageLoader />}>
     <Switch>
       <Route path="/speisekarte/:locationSlug/:date?">
         <GuestMenu />
@@ -233,6 +235,7 @@ function Router() {
         </>
       )}
     </Switch>
+    </Suspense>
   );
 }
 

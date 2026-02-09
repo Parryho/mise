@@ -235,62 +235,27 @@
     max-width: 100% !important;
   }
 
-  /* Each rotation week on its own page */
+  /* Wochenplan print page */
   .rotation-print-page {
-    break-after: page;
     break-inside: avoid;
     padding: 0 !important;
-    margin-bottom: 0 !important;
-  }
-  .rotation-print-page:last-child {
-    break-after: auto;
+    margin: 0 !important;
   }
 
-  /* Compact table styling — fit 1 week per A4 */
+  /* Compact table styling — fit on A4 */
   .rotation-print-page table {
     width: 100% !important;
-    font-size: 7.5px;
-    line-height: 1.1;
+    font-size: 7pt;
+    line-height: 1.15;
     border-collapse: collapse;
   }
   .rotation-print-page th {
     padding: 1px 3px !important;
-    font-size: 7px;
+    font-size: 6.5pt;
   }
   .rotation-print-page td {
     padding: 0.5px 2px !important;
-    font-size: 7.5px;
-  }
-  .rotation-print-page td div {
-    gap: 0 !important;
-  }
-  .rotation-print-page td div > div {
-    min-height: 10px !important;
-  }
-
-  /* Compact week heading */
-  .rotation-print-page h2 {
-    font-size: 11px;
-    padding: 1px 0 !important;
-    margin: 0;
-  }
-
-  /* Tighter allergen legend */
-  .rotation-print-page .bg-muted\/30 {
-    font-size: 6.5px !important;
-    padding: 1px 3px !important;
-    margin: 1px 0 0 0 !important;
-    background: transparent !important;
-  }
-
-  /* Remove rounded borders in print */
-  .rotation-print-page .rounded-lg {
-    border-radius: 0 !important;
-  }
-
-  /* Course label width compact */
-  .rotation-print-page span[class*="w-10"] {
-    width: 1.2rem !important;
+    font-size: 7pt;
   }
 }
 

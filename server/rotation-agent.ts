@@ -731,8 +731,6 @@ export async function autoFillRotation(
       const dayUsedIds = new Set<number>();
 
       for (const locSlug of locationSlugs) {
-        // SÜD lunch = City lunch, skip auto-fill for SÜD lunch
-        if (locSlug === "sued") continue;
 
         const pools = poolsByLocation.get(locSlug)!;
         const idx = poolIdx.get(locSlug)!;

@@ -55,6 +55,7 @@ interface MenuPlanItem {
   recipeId: number | null;
   portions: number;
   notes: string | null;
+  locationId: number | null;
   recipe?: {
     id: number;
     name: string;
@@ -88,10 +89,6 @@ const COURSE_LABELS: Record<string, string> = {
   dessert: "Dessert",
 };
 
-const MEAL_LABELS: Record<string, string> = {
-  lunch: "Mittagessen",
-  dinner: "Abendessen",
-};
 
 export default function Today() {
   const { toast } = useToast();
@@ -240,18 +237,23 @@ export default function Today() {
     return { totalFridges, measured, alerts };
   }, [haccpLogs, fridges]);
 
-  // Group menu items by meal
-  const menuByMeal = useMemo(() => {
-    const grouped: Record<string, MenuPlanItem[]> = {};
-    for (const item of menuItems) {
-      if (!item.recipe) continue;
-      if (!grouped[item.meal]) grouped[item.meal] = [];
-      grouped[item.meal].push(item);
-    }
-    return grouped;
-  }, [menuItems]);
+  // City location ID
+  const cityLocId = useMemo(() => {
+    const city = locations.find(l => l.slug === "city");
+    return city?.id ?? null;
+  }, [locations]);
 
-  const hasMenu = Object.keys(menuByMeal).length > 0;
+  // Only show City Mittag menu
+  const cityLunchItems = useMemo(() => {
+    return menuItems
+      .filter(item => item.recipe && item.meal === "lunch" && (cityLocId === null || item.locationId === cityLocId))
+      .sort((a, b) => {
+        const order = ["soup", "main1", "side1a", "side1b", "main2", "side2a", "side2b", "dessert"];
+        return order.indexOf(a.course) - order.indexOf(b.course);
+      });
+  }, [menuItems, cityLocId]);
+
+  const hasMenu = cityLunchItems.length > 0;
 
   // PAX per location
   const paxByLocation = useMemo(() => {
@@ -352,7 +354,7 @@ export default function Today() {
           <div className="flex items-center justify-between">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <UtensilsCrossed className="h-4 w-4" />
-              Tagesmenü
+              Mittagsmenü City
             </CardTitle>
             <Link href="/rotation">
               <Button variant="ghost" size="sm" className="text-xs h-7 px-2 text-primary">
@@ -363,34 +365,16 @@ export default function Today() {
         </CardHeader>
         <CardContent className="px-4 pb-4">
           {hasMenu ? (
-            <div className="space-y-4">
-              {(["lunch", "dinner"] as const).map(meal => {
-                const items = menuByMeal[meal];
-                if (!items || items.length === 0) return null;
-                return (
-                  <div key={meal}>
-                    <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-                      {MEAL_LABELS[meal] || meal}
-                    </h4>
-                    <div className="grid gap-1.5">
-                      {items
-                        .sort((a, b) => {
-                          const order = ["soup", "main1", "side1a", "side1b", "main2", "side2a", "side2b", "dessert"];
-                          return order.indexOf(a.course) - order.indexOf(b.course);
-                        })
-                        .map(item => (
-                          <div key={item.id} className="flex items-center gap-2 text-sm py-1">
-                            {COURSE_ICONS[item.course] || <span className="w-4" />}
-                            <span className="text-muted-foreground text-xs min-w-[60px]">
-                              {COURSE_LABELS[item.course] || item.course}
-                            </span>
-                            <span className="font-medium truncate">{item.recipe?.name}</span>
-                          </div>
-                        ))}
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="grid gap-1.5">
+              {cityLunchItems.map(item => (
+                <div key={item.id} className="flex items-center gap-2 text-sm py-1">
+                  {COURSE_ICONS[item.course] || <span className="w-4" />}
+                  <span className="text-muted-foreground text-xs min-w-[60px]">
+                    {COURSE_LABELS[item.course] || item.course}
+                  </span>
+                  <span className="font-medium truncate">{item.recipe?.name}</span>
+                </div>
+              ))}
             </div>
           ) : (
             <div className="text-center py-4">

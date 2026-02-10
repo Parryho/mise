@@ -222,7 +222,7 @@ export default function RecipeDetailDialog({ recipe, open, onOpenChange, readOnl
               </div>
 
               <div className="space-y-2">
-                <Label>{t("allergens")} (A-N)</Label>
+                <Label>{t("allergens")} (A-R)</Label>
                 <div className="flex flex-wrap gap-1.5">
                   {Object.values(ALLERGENS).map(alg => (
                     <Badge

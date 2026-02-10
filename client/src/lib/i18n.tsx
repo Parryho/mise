@@ -3,7 +3,7 @@ import { createContext, useContext, useState, useEffect } from "react";
 // Translations
 export type Language = "de" | "en" | "tr" | "uk";
 
-// EU-14 Allergen codes (A-N) per regulation 1169/2011
+// EU-14 Allergen codes per AT regulation (A-R, skipping I/J/K/Q)
 export const ALLERGENS: Record<string, { code: string; [lang: string]: string }> = {
   A: { code: "A", de: "Glutenhaltiges Getreide", en: "Gluten", tr: "Gluten", uk: "Глютен" },
   B: { code: "B", de: "Krebstiere", en: "Crustaceans", tr: "Kabuklular", uk: "Ракоподібні" },
@@ -11,17 +11,17 @@ export const ALLERGENS: Record<string, { code: string; [lang: string]: string }>
   D: { code: "D", de: "Fisch", en: "Fish", tr: "Balik", uk: "Риба" },
   E: { code: "E", de: "Erdnüsse", en: "Peanuts", tr: "Yer fistigi", uk: "Арахіс" },
   F: { code: "F", de: "Soja", en: "Soy", tr: "Soya", uk: "Соя" },
-  G: { code: "G", de: "Milch", en: "Milk", tr: "Süt", uk: "Молоко" },
+  G: { code: "G", de: "Milch/Laktose", en: "Milk/Lactose", tr: "Süt", uk: "Молоко" },
   H: { code: "H", de: "Schalenfrüchte", en: "Nuts", tr: "Kabuklu yemisler", uk: "Горіхи" },
-  I: { code: "I", de: "Sellerie", en: "Celery", tr: "Kereviz", uk: "Селера" },
-  J: { code: "J", de: "Senf", en: "Mustard", tr: "Hardal", uk: "Гірчиця" },
-  K: { code: "K", de: "Sesam", en: "Sesame", tr: "Susam", uk: "Кунжут" },
-  L: { code: "L", de: "Sulfite", en: "Sulphites", tr: "Sülfitler", uk: "Сульфіти" },
-  M: { code: "M", de: "Lupinen", en: "Lupin", tr: "Acibakla", uk: "Люпин" },
-  N: { code: "N", de: "Weichtiere", en: "Molluscs", tr: "Yumusakçalar", uk: "Молюски" },
+  L: { code: "L", de: "Sellerie", en: "Celery", tr: "Kereviz", uk: "Селера" },
+  M: { code: "M", de: "Senf", en: "Mustard", tr: "Hardal", uk: "Гірчиця" },
+  N: { code: "N", de: "Sesam", en: "Sesame", tr: "Susam", uk: "Кунжут" },
+  O: { code: "O", de: "Sulfite/Schwefeldioxid", en: "Sulphites", tr: "Sülfitler", uk: "Сульфіти" },
+  P: { code: "P", de: "Lupinen", en: "Lupin", tr: "Acibakla", uk: "Люпин" },
+  R: { code: "R", de: "Weichtiere", en: "Molluscs", tr: "Yumusakçalar", uk: "Молюски" },
 };
 
-export type AllergenCode = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N";
+export type AllergenCode = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "L" | "M" | "N" | "O" | "P" | "R";
 
 const TRANSLATIONS = {
   de: {

@@ -769,14 +769,14 @@
     "D": "Fisch",
     "E": "Erdn\u00fcsse",
     "F": "Soja",
-    "G": "Milch",
-    "H": "Schalenf\u00fcchte",
-    "I": "Sellerie",
-    "J": "Senf",
-    "K": "Sesam",
-    "L": "Sulfite",
-    "M": "Lupinen",
-    "N": "Weichtiere"
+    "G": "Milch/Laktose",
+    "H": "Schalenf\u00fcrchte",
+    "L": "Sellerie",
+    "M": "Senf",
+    "N": "Sesam",
+    "O": "Sulfite/Schwefeldioxid",
+    "P": "Lupinen",
+    "R": "Weichtiere"
   },
   "weekdays": {
     "mo": "Mo",

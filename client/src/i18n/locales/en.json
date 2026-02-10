@@ -769,14 +769,14 @@
     "D": "Fish",
     "E": "Peanuts",
     "F": "Soy",
-    "G": "Milk",
+    "G": "Milk/Lactose",
     "H": "Nuts",
-    "I": "Celery",
-    "J": "Mustard",
-    "K": "Sesame",
-    "L": "Sulphites",
-    "M": "Lupin",
-    "N": "Molluscs"
+    "L": "Celery",
+    "M": "Mustard",
+    "N": "Sesame",
+    "O": "Sulphites",
+    "P": "Lupin",
+    "R": "Molluscs"
   },
   "weekdays": {
     "mo": "Mo",

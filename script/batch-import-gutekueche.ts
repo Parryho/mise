@@ -49,71 +49,169 @@ function log(msg: string) {
   console.log(`[batch-import] ${msg}`);
 }
 
-// ── Search via DuckDuckGo HTML (bot-friendly, no JS needed) ─
+// ── Search: gutekueche.at listing page → DDG fallback ──────
 
-async function searchRecipeUrl(recipeName: string, category?: string): Promise<{ url: string; source: string } | null> {
-  // Try direct gutekueche.at URL first (slug-based, very fast, no DDG needed)
-  const slug = recipeName.toLowerCase()
+function slugify(name: string): string {
+  return name.toLowerCase()
     .replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss")
     .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-  const directUrl = `https://www.gutekueche.at/${slug}-rezept`;
-  try {
-    const probe = await fetch(directUrl, { method: "HEAD", headers: { "User-Agent": USER_AGENT }, redirect: "follow" });
-    if (probe.ok) {
-      return { url: directUrl, source: "gutekueche.at" };
-    }
-  } catch { /* ignore */ }
+}
 
-  // Fallback: DDG search with quoted name
-  for (const site of ["gutekueche.at", "chefkoch.de"]) {
-    const name = `"${recipeName}"`;
-    const query = encodeURIComponent(`${name} rezept site:${site}`);
-    const searchUrl = `https://html.duckduckgo.com/html/?q=${query}`;
+// Stop words and cooking adjectives to strip from recipe names
+const STOP_WORDS = new Set(["mit", "und", "auf", "in", "nach", "vom", "aus", "zum", "zur", "im", "am", "fuer", "von", "an", "ueber"]);
+const COOKING_ADJ = new Set(["gebratener", "gebratene", "gebratenes", "gebackener", "gebackene", "gebackenes",
+  "panierter", "panierte", "paniertes", "gratinierter", "gratinierte", "gratiniertes",
+  "gemischter", "gemischte", "gemischtes", "frischer", "frische", "frisches",
+  "einfacher", "einfache", "einfaches", "klassischer", "klassische", "klassisches",
+  "warmer", "warme", "warmes", "kalter", "kalte", "kaltes"]);
+
+/**
+ * Generate slug variants for gutekueche.at listing pages.
+ * Returns up to 4 variants to try: full → significant words → individual nouns → root word
+ */
+function getSlugVariants(recipeName: string): string[] {
+  const slug = slugify(recipeName);
+  const variants: string[] = [slug];
+
+  const words = slug.split("-").filter(w => !STOP_WORDS.has(w));
+  // Without cooking adjectives
+  const nouns = words.filter(w => !COOKING_ADJ.has(w));
+
+  if (nouns.length > 0 && nouns.join("-") !== slug) {
+    variants.push(nouns.join("-"));
+  }
+
+  // Individual words from right (last word is usually the main dish type)
+  for (let i = nouns.length - 1; i >= 0; i--) {
+    if (nouns[i].length >= 4 && !variants.includes(nouns[i])) {
+      variants.push(nouns[i]);
+    }
+  }
+
+  // For compound German words, try both prefix (root) and suffix
+  // e.g. zanderfilet → zander + filet, gemuesecurry → gemuese + curry, blattsalat → blatt + salat
+  const compoundSuffixes = ["filet", "suppe", "salat", "curry", "gulasch", "braten", "steak",
+    "stueck", "scheiben", "pueree", "creme", "sauce", "sosse", "auflauf", "eintopf", "kuchen"];
+  for (const word of nouns) {
+    for (const suffix of compoundSuffixes) {
+      if (word.endsWith(suffix) && word.length > suffix.length + 2) {
+        const root = word.slice(0, -suffix.length);
+        if (root.length >= 4 && !variants.includes(root)) variants.push(root);
+        if (suffix.length >= 4 && !variants.includes(suffix)) variants.push(suffix);
+      }
+    }
+  }
+
+  return variants.slice(0, 6); // max 6 variants
+}
+
+/**
+ * Strategy 1: gutekueche.at listing page "{slug}-rezepte"
+ * Tries multiple slug variants for better coverage.
+ */
+async function searchViaGutekuecheListing(recipeName: string): Promise<string | null> {
+  const variants = getSlugVariants(recipeName);
+  const nameSlug = slugify(recipeName);
+
+  for (const variant of variants) {
+    const listingUrl = `https://www.gutekueche.at/${variant}-rezepte`;
 
     try {
-      const res = await fetch(searchUrl, {
-        headers: {
-          "User-Agent": USER_AGENT,
-          "Accept": "text/html",
-          "Accept-Language": "de-DE,de;q=0.9",
-        },
+      const res = await fetch(listingUrl, {
+        headers: { "User-Agent": USER_AGENT, "Accept": "text/html", "Accept-Language": "de-DE,de;q=0.9" },
       });
       if (!res.ok) continue;
 
       const html = await res.text();
       const $ = cheerio.load(html);
 
-      // DuckDuckGo HTML results: <a class="result__a" href="...">
-      let foundUrl: string | null = null;
+      // Score recipe links by how well they match our recipe name
+      let bestUrl: string | null = null;
+      let bestScore = 0;
+      const nameWords = nameSlug.split("-");
 
-      $("a.result__a, a.result__url, a[href]").each((_, el) => {
-        if (foundUrl) return;
+      $("a[href*='-rezept-']").each((_, el) => {
         const href = $(el).attr("href") || "";
-
-        // DuckDuckGo sometimes wraps: //duckduckgo.com/l/?uddg=ENCODED_URL
-        if (href.includes("uddg=")) {
-          const match = href.match(/uddg=([^&]+)/);
-          if (match) {
-            const decoded = decodeURIComponent(match[1]);
-            // Accept any URL from the target site (not just those with "rezept" in path)
-            if (decoded.includes(site) && decoded.startsWith("http")) {
-              foundUrl = decoded;
-            }
-          }
-        }
-        // Direct URL from target site
-        else if (href.includes(site)) {
-          foundUrl = href.startsWith("http") ? href : `https:${href}`;
+        const hrefSlug = href.replace(/^\//, "").replace(/-rezept-\d+$/, "");
+        const hrefWords = hrefSlug.split("-");
+        const matchCount = nameWords.filter(w => hrefWords.some(hw => hw.includes(w) || w.includes(hw))).length;
+        const score = matchCount / nameWords.length;
+        if (score > bestScore) {
+          bestScore = score;
+          bestUrl = href.startsWith("http") ? href : `https://www.gutekueche.at${href}`;
         }
       });
 
-      if (foundUrl) {
-        return { url: foundUrl, source: site };
+      // Accept if at least 40% of name words match, or take first link from the full-name listing
+      if (bestUrl && (bestScore >= 0.4 || variant === nameSlug)) {
+        return bestUrl;
       }
     } catch {
       continue;
     }
+  }
 
+  return null;
+}
+
+/**
+ * Strategy 2: DuckDuckGo HTML search (fallback)
+ */
+async function searchViaDDG(recipeName: string, site: string): Promise<string | null> {
+  const query = encodeURIComponent(`"${recipeName}" rezept site:${site}`);
+  const searchUrl = `https://html.duckduckgo.com/html/?q=${query}`;
+
+  try {
+    const res = await fetch(searchUrl, {
+      headers: {
+        "User-Agent": USER_AGENT,
+        "Accept": "text/html",
+        "Accept-Language": "de-DE,de;q=0.9",
+      },
+    });
+    if (!res.ok) return null;
+
+    const html = await res.text();
+    const $ = cheerio.load(html);
+
+    let foundUrl: string | null = null;
+
+    $("a.result__a, a.result__url, a[href]").each((_, el) => {
+      if (foundUrl) return;
+      const href = $(el).attr("href") || "";
+
+      if (href.includes("uddg=")) {
+        const match = href.match(/uddg=([^&]+)/);
+        if (match) {
+          const decoded = decodeURIComponent(match[1]);
+          if (decoded.includes(site) && decoded.startsWith("http")) {
+            foundUrl = decoded;
+          }
+        }
+      } else if (href.includes(site)) {
+        foundUrl = href.startsWith("http") ? href : `https:${href}`;
+      }
+    });
+
+    return foundUrl;
+  } catch {
+    return null;
+  }
+}
+
+async function searchRecipeUrl(recipeName: string, category?: string): Promise<{ url: string; source: string } | null> {
+  // 1) gutekueche.at listing page (fast, no rate-limiting)
+  const listingResult = await searchViaGutekuecheListing(recipeName);
+  if (listingResult) {
+    return { url: listingResult, source: "gutekueche.at" };
+  }
+
+  // 2) DDG search: gutekueche.at then chefkoch.de
+  for (const site of ["gutekueche.at", "chefkoch.de"]) {
+    const ddgResult = await searchViaDDG(recipeName, site);
+    if (ddgResult) {
+      return { url: ddgResult, source: site };
+    }
     await sleep(jitter(1000));
   }
 
@@ -280,7 +378,7 @@ async function main() {
   let notFound = 0;
   let errors = 0;
   let storedUrlHits = 0;
-  let ddgSearches = 0;
+  let webSearches = 0;
 
   for (const recipe of recipesNeedingData) {
     const needsIngredients = parseInt(recipe.ingredient_count) === 0;
@@ -300,8 +398,8 @@ async function main() {
       storedUrlHits++;
     } else {
       found = await searchRecipeUrl(recipe.name, recipe.category);
-      ddgSearches++;
-      // Jittered delay after DDG search
+      webSearches++;
+      // Jittered delay after search
       await sleep(jitter(SEARCH_DELAY_MS));
     }
 
@@ -314,7 +412,7 @@ async function main() {
 
     const { url, source } = found;
     if (!recipe.source_url || !recipe.source_url.startsWith("http")) {
-      log(`   → ddg ${source}: ${url}`);
+      log(`   → found ${source}: ${url}`);
     }
 
     // B) Persist discovered URL so subsequent runs skip DDG
@@ -396,7 +494,7 @@ async function main() {
   log(`Aktualisiert: ${updated}`);
   log(`Nicht gefunden: ${notFound}`);
   log(`Fehler: ${errors}`);
-  log(`URL aus DB: ${storedUrlHits} | DDG-Suchen: ${ddgSearches}`);
+  log(`URL aus DB: ${storedUrlHits} | Web-Suchen: ${webSearches}`);
   log("=== Fertig ===");
 
   await pool.end();

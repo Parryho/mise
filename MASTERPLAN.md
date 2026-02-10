@@ -608,7 +608,10 @@ Phase 2 (Tag-System) bringt bereits 80% Verbesserung. Pairing-Scores sind option
 | 13.9 | JUFA Rezeptdatenbank.xlsb Import-Script | ✅ Done | 10.02. |
 | 13.10 | Multi-Source Batch-Import (6 Seiten + URL-Validierung) | ✅ Done | 10.02. |
 
-**Ergebnis:** Alle 421 Rezepte haben Zutaten + Allergene. Batch-Import: 343 Rezepte (chefkoch.de: 215, gutekueche.at: 115, lecker.de: 13). Backfill: 20 Rezepte nachträglich Allergene erkannt. Multi-Source: gutekueche.at + chefkoch.de + ichkoche.at + eatsmarter.de + lecker.de + kochbar.de + kuechengoetter.de.
+| 13.11 | Allergen-Detection Rewrite (exactTokens + substrings) | ✅ Done | 10.02. |
+| 13.12 | Recompute: 218/421 Rezepte korrigiert (false C/H/O entfernt) | ✅ Done | 10.02. |
+
+**Ergebnis:** Alle 421 Rezepte haben Zutaten + Allergene. Batch-Import: 343 Rezepte (chefkoch.de: 215, gutekueche.at: 115, lecker.de: 13). Backfill: 20 Rezepte nachträglich Allergene erkannt. Multi-Source: gutekueche.at + chefkoch.de + ichkoche.at + eatsmarter.de + lecker.de + kochbar.de + kuechengoetter.de. Allergen-Detection v2: Hybrid-Matching (exactTokens für kurze Begriffe wie "ei"/"nuss"/"wein", substrings für lange spezifische Begriffe). 218 Rezepte korrigiert — massive Reduktion von False Positives (C aus "Weizenmehl", H aus "Kalbsnuss", O aus "Schweinefleisch").
 
 ---
 

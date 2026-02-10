@@ -1,11 +1,12 @@
 import { useState, useMemo, useEffect } from "react";
 import { useApp, Recipe } from "@/lib/store";
+import { apiFetch } from "@/lib/api";
 import { ALLERGENS, AllergenCode, useTranslation } from "@/lib/i18n";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, Clock, Users, PlusCircle, Link2, Loader2, ArrowLeft, Camera, FileUp, X } from "lucide-react";
+import { Search, Clock, Users, PlusCircle, Link2, Loader2, ArrowLeft, Camera, FileUp, X, UtensilsCrossed } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -35,14 +36,33 @@ export default function Recipes() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [globalSearch, setGlobalSearch] = useState("");
+  const [searchIngredients, setSearchIngredients] = useState(false);
+  const [ingredientResults, setIngredientResults] = useState<Recipe[]>([]);
+  const [ingredientLoading, setIngredientLoading] = useState(false);
   const debouncedGlobalSearch = useDebounce(globalSearch, 300);
+
+  // Ingredient search: fetch from server
+  useEffect(() => {
+    if (!searchIngredients || debouncedGlobalSearch.length < 2) {
+      setIngredientResults([]);
+      return;
+    }
+    let cancelled = false;
+    setIngredientLoading(true);
+    apiFetch<Recipe[]>(`/api/recipes?q=${encodeURIComponent(debouncedGlobalSearch)}&searchIngredients=true`)
+      .then(data => { if (!cancelled) setIngredientResults(data); })
+      .catch(() => { if (!cancelled) setIngredientResults([]); })
+      .finally(() => { if (!cancelled) setIngredientLoading(false); });
+    return () => { cancelled = true; };
+  }, [debouncedGlobalSearch, searchIngredients]);
 
   // Global search results (min 2 characters, searches across all categories)
   const globalSearchResults = useMemo(() => {
+    if (searchIngredients) return ingredientResults;
     if (debouncedGlobalSearch.length < 2) return [];
     const term = debouncedGlobalSearch.toLowerCase();
     return recipes.filter(r => r.name.toLowerCase().includes(term));
-  }, [recipes, debouncedGlobalSearch]);
+  }, [recipes, debouncedGlobalSearch, searchIngredients, ingredientResults]);
 
   const isGlobalSearchActive = debouncedGlobalSearch.length >= 2;
 
@@ -82,30 +102,45 @@ export default function Recipes() {
             </Button>
             <h1 className="text-2xl font-heading font-bold">Suchergebnisse</h1>
           </div>
-          <div className="relative">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder={t("searchRecipes")}
-              className="pl-9 bg-secondary/50 border-0"
-              value={globalSearch}
-              onChange={(e) => setGlobalSearch(e.target.value)}
-              autoFocus
-              data-testid="input-global-search"
-            />
-            {globalSearch && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute right-1 top-1 h-7 w-7"
-                onClick={() => setGlobalSearch("")}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            )}
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder={searchIngredients ? "Zutat suchen..." : t("searchRecipes")}
+                className="pl-9 bg-secondary/50 border-0"
+                value={globalSearch}
+                onChange={(e) => setGlobalSearch(e.target.value)}
+                autoFocus
+                data-testid="input-global-search"
+              />
+              {globalSearch && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-1 top-1 h-7 w-7"
+                  onClick={() => setGlobalSearch("")}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+            <Button
+              variant={searchIngredients ? "default" : "outline"}
+              size="icon"
+              className="shrink-0 h-10 w-10"
+              onClick={() => setSearchIngredients(!searchIngredients)}
+              title="Zutat-Suche"
+            >
+              <UtensilsCrossed className="h-4 w-4" />
+            </Button>
           </div>
         </div>
 
-        {globalSearchResults.length === 0 ? (
+        {ingredientLoading && searchIngredients ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : globalSearchResults.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             <Search className="h-12 w-12 mx-auto mb-4 opacity-30" />
             <p className="font-medium">Keine Rezepte gefunden</p>
@@ -188,15 +223,26 @@ export default function Recipes() {
       </div>
 
       {/* Global Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-        <Input
-          placeholder="Rezept suchen..."
-          className="pl-10 h-12 text-base bg-secondary/50 border-border"
-          value={globalSearch}
-          onChange={(e) => setGlobalSearch(e.target.value)}
-          data-testid="input-global-search-main"
-        />
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+          <Input
+            placeholder={searchIngredients ? "Zutat suchen..." : "Rezept suchen..."}
+            className="pl-10 h-12 text-base bg-secondary/50 border-border"
+            value={globalSearch}
+            onChange={(e) => setGlobalSearch(e.target.value)}
+            data-testid="input-global-search-main"
+          />
+        </div>
+        <Button
+          variant={searchIngredients ? "default" : "outline"}
+          size="icon"
+          className="shrink-0 h-12 w-12"
+          onClick={() => setSearchIngredients(!searchIngredients)}
+          title="Zutat-Suche"
+        >
+          <UtensilsCrossed className="h-5 w-5" />
+        </Button>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -613,7 +659,13 @@ function RecipeCard({ recipe }: { recipe: Recipe }) {
               <span key={code} className="w-5 h-5 rounded-full bg-destructive/10 text-destructive text-[10px] flex items-center justify-center font-bold border border-destructive/20 font-mono" title={ALLERGENS[code as AllergenCode]?.[lang]}>
                 {code}
               </span>
-            )) : <span className="text-[10px] text-green-600 bg-green-50 px-1.5 py-0.5 rounded">{t("noAllergens")}</span>}
+            )) : (
+              <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                recipe.allergenStatus === 'verified'
+                  ? 'text-green-600 bg-green-50'
+                  : 'text-muted-foreground bg-muted'
+              }`}>{recipe.allergenStatus === 'verified' ? t("noAllergens") : '?'}</span>
+            )}
             {recipe.allergens.length > 5 && (
               <span className="w-5 h-5 rounded-full bg-muted text-muted-foreground text-[10px] flex items-center justify-center font-bold font-mono">
                 +{recipe.allergens.length - 5}

@@ -104,7 +104,20 @@ export class DatabaseStorage {
   }
 
   // === Recipes ===
-  async getRecipes(filters?: { q?: string; category?: string }): Promise<Recipe[]> {
+  async getRecipes(filters?: { q?: string; category?: string; searchIngredients?: boolean }): Promise<Recipe[]> {
+    if (filters?.searchIngredients && filters?.q && filters.q.length >= 2) {
+      // Server-side ingredient search using EXISTS subquery
+      const term = `%${filters.q.toLowerCase()}%`;
+      const results = await db.execute(sql`
+        SELECT r.* FROM recipes r
+        WHERE EXISTS (
+          SELECT 1 FROM ingredients i
+          WHERE i.recipe_id = r.id AND LOWER(i.name) LIKE ${term}
+        )
+        ORDER BY r.name
+      `);
+      return results.rows as Recipe[];
+    }
     let query = db.select().from(recipes);
     if (filters?.category) {
       query = query.where(eq(recipes.category, filters.category)) as typeof query;

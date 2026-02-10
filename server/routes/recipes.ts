@@ -4,7 +4,7 @@ import { insertRecipeSchema, updateRecipeSchema, insertIngredientSchema, insertS
 import { autoCategorize } from "@shared/categorizer";
 import { db } from "../db";
 import { eq } from "drizzle-orm";
-import { scrapeRecipe, resolveRecipeIngredients, wouldCreateCycle, handleAIRecipeImport, handleGetSuggestions, scaleRecipeHandler, recipeMediaUpload, handleUploadMedia, handleGetMedia, handleUpdateMedia, handleDeleteMedia } from "../modules/recipe";
+import { scrapeRecipe, resolveRecipeIngredients, wouldCreateCycle, handleAIRecipeImport, handleGetSuggestions, scaleRecipeHandler, recipeMediaUpload, handleUploadMedia, handleGetMedia, handleUpdateMedia, handleDeleteMedia, detectAllergens, getAllergensFromIngredients } from "../modules/recipe";
 import multer from "multer";
 import { createRequire } from "module";
 const _require = createRequire(typeof __filename !== "undefined" ? __filename : import.meta.url);
@@ -14,10 +14,11 @@ export function registerRecipeRoutes(app: Express) {
 
   // === RECIPES CRUD ===
   app.get("/api/recipes", requireAuth, async (req, res) => {
-    const { q, category } = req.query;
+    const { q, category, searchIngredients } = req.query;
     const filters = {
       q: typeof q === 'string' ? q : undefined,
       category: typeof category === 'string' ? category : undefined,
+      searchIngredients: searchIngredients === 'true',
     };
     const recipes = await storage.getRecipes(filters);
     res.json(recipes);
@@ -61,6 +62,10 @@ export function registerRecipeRoutes(app: Express) {
     try {
       const id = parseInt(getParam(req.params.id), 10);
       const parsed = updateRecipeSchema.parse(req.body);
+      // Manual save with allergens = verified
+      if (parsed.allergens) {
+        (parsed as any).allergenStatus = 'verified';
+      }
       const before = await storage.getRecipe(id);
       const recipe = await db.transaction(async (tx) => {
         const [updated] = await tx.update(recipes).set({ ...parsed, updatedAt: new Date() }).where(eq(recipes.id, id)).returning();
@@ -114,6 +119,9 @@ export function registerRecipeRoutes(app: Express) {
         scraped.steps
       );
 
+      // Detect allergens from ingredients
+      const recipeAllergens = getAllergensFromIngredients(scraped.ingredients);
+
       const result = await db.transaction(async (tx) => {
         const [recipe] = await tx.insert(recipes).values({
           name: scraped.name,
@@ -123,7 +131,8 @@ export function registerRecipeRoutes(app: Express) {
           image: scraped.image,
           sourceUrl: url,
           steps: scraped.steps,
-          allergens: [],
+          allergens: recipeAllergens,
+          allergenStatus: scraped.ingredients.length > 0 ? 'auto' : null,
         }).returning();
 
         if (scraped.ingredients.length > 0) {
@@ -133,7 +142,7 @@ export function registerRecipeRoutes(app: Express) {
               name: ing.name,
               amount: ing.amount,
               unit: ing.unit,
-              allergens: [],
+              allergens: detectAllergens(ing.name),
             }))
           );
         }

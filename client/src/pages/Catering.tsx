@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "@/hooks/useTranslation";
 import {
   Loader2, PlusCircle, Pencil, Trash2, Sun, Sparkles, LayoutGrid,
   Crown, Wine, BookOpen, Circle, RefreshCw, Users, CalendarDays,
@@ -85,6 +86,7 @@ export default function Catering() {
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<{ synced: number; created: number; updated: number; errors: string[] } | null>(null);
   const { toast } = useToast();
+  const { t } = useTranslation();
   const { selectedLocationId } = useLocationFilter();
 
   const fetchEvents = async () => {
@@ -110,13 +112,13 @@ export default function Catering() {
   }, [selectedLocationId]);
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Event wirklich löschen?")) return;
+    if (!confirm(t("catering.deleteEventConfirm"))) return;
     try {
       await fetch(`/api/catering/${id}`, { method: "DELETE" });
-      toast({ title: "Gelöscht" });
+      toast({ title: t("common.deleted") });
       fetchEvents();
     } catch (error: any) {
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: error.message, variant: "destructive" });
     }
   };
 
@@ -175,20 +177,20 @@ export default function Catering() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
         });
-        toast({ title: "Event aktualisiert" });
+        toast({ title: t("catering.eventUpdated") });
       } else {
         await fetch("/api/catering", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
         });
-        toast({ title: "Event erstellt" });
+        toast({ title: t("catering.eventCreated") });
       }
       setDialogOpen(false);
       setEditEvent(null);
       fetchEvents();
     } catch (error: any) {
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: error.message, variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -201,13 +203,13 @@ export default function Catering() {
       const res = await fetch("/api/airtable/sync", { method: "POST" });
       const data = await res.json();
       if (!res.ok) {
-        setSyncResult({ synced: 0, created: 0, updated: 0, errors: [data.error || "Sync fehlgeschlagen"] });
+        setSyncResult({ synced: 0, created: 0, updated: 0, errors: [data.error || t("catering.airtable.syncFailed")] });
       } else {
         setSyncResult(data);
         fetchEvents();
       }
     } catch (err) {
-      setSyncResult({ synced: 0, created: 0, updated: 0, errors: [err instanceof Error ? err.message : "Verbindungsfehler"] });
+      setSyncResult({ synced: 0, created: 0, updated: 0, errors: [err instanceof Error ? err.message : t("catering.airtable.connectionError")] });
     }
     setSyncing(false);
   };
@@ -237,11 +239,11 @@ export default function Catering() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-heading font-bold">Events</h1>
-          <p className="text-xs text-muted-foreground">Catering & Veranstaltungen</p>
+          <h1 className="text-2xl font-heading font-bold">{t("catering.title")}</h1>
+          <p className="text-xs text-muted-foreground">{t("catering.subtitle")}</p>
         </div>
         <Button size="sm" className="gap-1" onClick={startNew}>
-          <PlusCircle className="h-4 w-4" /> Neues Event
+          <PlusCircle className="h-4 w-4" /> {t("catering.newEvent")}
         </Button>
       </div>
       {/* Stats */}
@@ -250,7 +252,7 @@ export default function Catering() {
           <CardContent className="p-3 flex items-center gap-3">
             <CalendarDays className="h-5 w-5 text-muted-foreground" />
             <div>
-              <div className="text-xs text-muted-foreground">Gesamt</div>
+              <div className="text-xs text-muted-foreground">{t("common.total")}</div>
               <div className="text-xl font-bold">{events.length}</div>
             </div>
           </CardContent>
@@ -259,7 +261,7 @@ export default function Catering() {
           <CardContent className="p-3 flex items-center gap-3">
             <TrendingUp className="h-5 w-5 text-muted-foreground" />
             <div>
-              <div className="text-xs text-muted-foreground">Anstehend</div>
+              <div className="text-xs text-muted-foreground">{t("catering.upcoming")}</div>
               <div className="text-xl font-bold">{upcoming}</div>
             </div>
           </CardContent>
@@ -268,7 +270,7 @@ export default function Catering() {
           <CardContent className="p-3 flex items-center gap-3">
             <Users className="h-5 w-5 text-muted-foreground" />
             <div>
-              <div className="text-xs text-muted-foreground">Gesamt PAX</div>
+              <div className="text-xs text-muted-foreground">{t("guests.totalPax")}</div>
               <div className="text-xl font-bold">{totalPax}</div>
             </div>
           </CardContent>
@@ -277,7 +279,7 @@ export default function Catering() {
           <CardContent className="p-3 flex items-center gap-3">
             <Users className="h-5 w-5 text-muted-foreground" />
             <div>
-              <div className="text-xs text-muted-foreground">Ø PAX/Event</div>
+              <div className="text-xs text-muted-foreground">{t("guests.avgPaxPerEvent")}</div>
               <div className="text-xl font-bold">{avgPax}</div>
             </div>
           </CardContent>
@@ -292,16 +294,16 @@ export default function Catering() {
               <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
               <div>
                 <div className="text-sm font-medium">
-                  {airtableStatus.configured ? "Airtable verbunden" : "Airtable nicht konfiguriert"}
+                  {airtableStatus.configured ? t("catering.airtable.connected") : t("catering.airtable.notConfigured")}
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  {airtableStatus.configured ? "Events synchronisieren" : "AIRTABLE_API_KEY in .env setzen"}
+                  {airtableStatus.configured ? t("catering.airtable.syncEvents") : t("catering.airtable.setApiKey")}
                 </div>
               </div>
             </div>
             {airtableStatus.configured && (
               <Button size="sm" variant="outline" onClick={handleSync} disabled={syncing}>
-                {syncing ? "Sync..." : "Jetzt synchronisieren"}
+                {syncing ? t("catering.airtable.syncing") : t("catering.airtable.syncNow")}
               </Button>
             )}
           </CardContent>
@@ -315,7 +317,7 @@ export default function Catering() {
               <div className="text-status-danger">{syncResult.errors.join(", ")}</div>
             ) : (
               <div className="text-status-success">
-                Sync abgeschlossen: {syncResult.created} neu, {syncResult.updated} aktualisiert ({syncResult.synced} Datensätze)
+                {t("catering.airtable.syncComplete", { created: syncResult.created, updated: syncResult.updated, synced: syncResult.synced })}
               </div>
             )}
           </CardContent>
@@ -331,20 +333,20 @@ export default function Catering() {
               !filterType ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
             }`}
           >
-            Alle
+            {t("common.all")}
           </button>
-          {EVENT_TYPES.map((t) => {
-            const Icon = t.icon;
+          {EVENT_TYPES.map((et) => {
+            const Icon = et.icon;
             return (
               <button
-                key={t.value}
-                onClick={() => setFilterType(filterType === t.value ? "" : t.value)}
+                key={et.value}
+                onClick={() => setFilterType(filterType === et.value ? "" : et.value)}
                 className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors flex items-center gap-1 ${
-                  filterType === t.value ? "bg-primary text-primary-foreground" : `${t.color} border`
+                  filterType === et.value ? "bg-primary text-primary-foreground" : `${et.color} border`
                 }`}
               >
                 <Icon className="h-3 w-3" />
-                {t.label}
+                {t(`catering.eventTypes.${et.value}`)}
               </button>
             );
           })}
@@ -358,7 +360,7 @@ export default function Catering() {
                 filterStatus === s.value ? "bg-primary text-primary-foreground" : s.color
               }`}
             >
-              {s.label}
+              {t(`catering.statusOptions.${s.value}`)}
             </button>
           ))}
         </div>
@@ -372,15 +374,15 @@ export default function Catering() {
       ) : filtered.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
           <CalendarDays className="h-10 w-10 mx-auto mb-3 opacity-30" />
-          <p className="font-medium text-sm">{events.length === 0 ? "Noch keine Events vorhanden" : "Keine Events für diesen Filter"}</p>
+          <p className="font-medium text-sm">{events.length === 0 ? t("catering.noEvents") : t("catering.noEventsFilter")}</p>
           {events.length === 0 && (
-            <Button variant="link" className="mt-1 text-sm h-auto p-0" onClick={startNew}>Erstes Event erstellen</Button>
+            <Button variant="link" className="mt-1 text-sm h-auto p-0" onClick={startNew}>{t("catering.noEventsHint")}</Button>
           )}
         </div>
       ) : (
         <div className="space-y-3">
           {filtered.map((event) => {
-            const typeInfo = EVENT_TYPES.find((t) => t.value === event.eventType) || EVENT_TYPES[6];
+            const typeInfo = EVENT_TYPES.find((et) => et.value === event.eventType) || EVENT_TYPES[6];
             const statusInfo = STATUS_OPTIONS.find((s) => s.value === event.status) || STATUS_OPTIONS[0];
             const TypeIcon = typeInfo.icon;
             const eventDate = new Date(event.date + "T00:00:00");
@@ -420,10 +422,10 @@ export default function Catering() {
                           <div className="flex flex-wrap items-center gap-1 mb-1">
                             <Badge variant="outline" className={`${typeInfo.color} gap-1 text-[10px] px-1.5 py-0`}>
                               <TypeIcon className="h-3 w-3" />
-                              {typeInfo.label}
+                              {t(`catering.eventTypes.${typeInfo.value}`)}
                             </Badge>
                             <Badge variant="secondary" className={`${statusInfo.color} text-[10px] px-1.5 py-0 border-0`}>
-                              {statusInfo.label}
+                              {t(`catering.statusOptions.${statusInfo.value}`)}
                             </Badge>
                             <Badge variant="secondary" className="bg-amber-100 text-amber-800 text-[10px] px-1.5 py-0 border-0 font-bold">
                               {event.personCount} PAX
@@ -494,28 +496,28 @@ export default function Catering() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-sm max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editEvent ? "Event bearbeiten" : "Neues Event"}</DialogTitle>
+            <DialogTitle>{editEvent ? t("catering.editEvent") : t("catering.newEvent")}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-3">
             {/* Event Type */}
             <div className="space-y-2">
-              <Label>Event-Typ</Label>
+              <Label>{t("catering.eventType")}</Label>
               <div className="flex flex-wrap gap-1.5">
-                {EVENT_TYPES.map((t) => {
-                  const Icon = t.icon;
+                {EVENT_TYPES.map((et) => {
+                  const Icon = et.icon;
                   return (
                     <button
-                      key={t.value}
+                      key={et.value}
                       type="button"
-                      onClick={() => setForm({ ...form, eventType: t.value })}
+                      onClick={() => setForm({ ...form, eventType: et.value })}
                       className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border-2 text-xs font-medium transition-all ${
-                        form.eventType === t.value
+                        form.eventType === et.value
                           ? "border-primary bg-primary/10 text-primary"
                           : "border-border text-muted-foreground hover:border-primary/30"
                       }`}
                     >
                       <Icon className="h-3.5 w-3.5" />
-                      {t.label}
+                      {t(`catering.eventTypes.${et.value}`)}
                     </button>
                   );
                 })}
@@ -523,36 +525,36 @@ export default function Catering() {
             </div>
 
             <div className="space-y-2">
-              <Label>Kunde</Label>
+              <Label>{t("catering.client")}</Label>
               <Input
                 value={form.clientName}
                 onChange={(e) => setForm({ ...form, clientName: e.target.value })}
-                placeholder="z.B. Arbeiterkammer"
+                placeholder={t("catering.clientPlaceholder")}
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label>Event-Name</Label>
+              <Label>{t("catering.eventName")}</Label>
               <Input
                 value={form.eventName}
                 onChange={(e) => setForm({ ...form, eventName: e.target.value })}
-                placeholder="z.B. Firmenjubiläum"
+                placeholder={t("catering.eventNamePlaceholder")}
                 required
               />
             </div>
 
             <div className="grid grid-cols-3 gap-2">
               <div className="space-y-2">
-                <Label>Datum</Label>
+                <Label>{t("common.date")}</Label>
                 <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} required />
               </div>
               <div className="space-y-2">
-                <Label>Von</Label>
+                <Label>{t("common.from")}</Label>
                 <Input type="time" value={form.timeStart} onChange={(e) => setForm({ ...form, timeStart: e.target.value })} />
               </div>
               <div className="space-y-2">
-                <Label>Bis</Label>
+                <Label>{t("common.to")}</Label>
                 <Input type="time" value={form.timeEnd} onChange={(e) => setForm({ ...form, timeEnd: e.target.value })} />
               </div>
             </div>
@@ -568,7 +570,7 @@ export default function Catering() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Status</Label>
+                <Label>{t("common.status")}</Label>
                 <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
                   <SelectTrigger>
                     <SelectValue />
@@ -576,7 +578,7 @@ export default function Catering() {
                   <SelectContent>
                     {STATUS_OPTIONS.map((s) => (
                       <SelectItem key={s.value} value={s.value}>
-                        {s.label}
+                        {t(`catering.statusOptions.${s.value}`)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -585,45 +587,45 @@ export default function Catering() {
             </div>
 
             <div className="space-y-2">
-              <Label>Ansprechperson</Label>
+              <Label>{t("catering.contactPerson")}</Label>
               <Input
                 value={form.contactPerson}
                 onChange={(e) => setForm({ ...form, contactPerson: e.target.value })}
-                placeholder="Name der Kontaktperson"
+                placeholder={t("catering.contactPersonPlaceholder")}
               />
             </div>
 
             <div className="space-y-2">
-              <Label>Raum</Label>
+              <Label>{t("catering.room")}</Label>
               <Input
                 value={form.room}
                 onChange={(e) => setForm({ ...form, room: e.target.value })}
-                placeholder="z.B. Großer Saal"
+                placeholder={t("catering.roomPlaceholder")}
               />
             </div>
 
             <div className="space-y-2">
-              <Label>Speisen (kommagetrennt)</Label>
+              <Label>{t("catering.dishes")}</Label>
               <Input
                 value={form.dishes}
                 onChange={(e) => setForm({ ...form, dishes: e.target.value })}
-                placeholder="Vorspeise, Hauptgang, Dessert"
+                placeholder={t("catering.dishesPlaceholder")}
               />
             </div>
 
             <div className="space-y-2">
-              <Label>Notizen</Label>
+              <Label>{t("common.notes")}</Label>
               <Textarea
                 value={form.notes}
                 onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                placeholder="Besondere Wünsche, Allergien..."
+                placeholder={t("catering.notesPlaceholder")}
                 rows={2}
               />
             </div>
 
             <Button type="submit" className="w-full" disabled={saving}>
               {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              {editEvent ? "Aktualisieren" : "Erstellen"}
+              {editEvent ? t("common.update") : t("common.create")}
             </Button>
           </form>
         </DialogContent>

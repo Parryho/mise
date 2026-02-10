@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Download, Printer } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { format } from "date-fns";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface Location {
   id: number;
@@ -13,6 +14,7 @@ interface Location {
 }
 
 export default function QRGenerator() {
+  const { t } = useTranslation();
   const [selectedDate, setSelectedDate] = useState<string>("");
   const qrRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
 
@@ -70,7 +72,7 @@ export default function QRGenerator() {
       if (selectedDate) {
         ctx.font = "14px Arial";
         ctx.fillText(
-          `Gültig für: ${format(new Date(selectedDate), "dd.MM.yyyy")}`,
+          `${t("qrGenerator.validFor")} ${format(new Date(selectedDate), "dd.MM.yyyy")}`,
           canvas.width / 2,
           img.height + padding + 95
         );
@@ -132,16 +134,16 @@ export default function QRGenerator() {
 
       <div className="p-4 space-y-6">
         <div className="flex items-center justify-between print:hidden">
-          <h1 className="text-2xl font-heading font-bold">QR-Code Generator</h1>
+          <h1 className="text-2xl font-heading font-bold">{t("qrGenerator.title")}</h1>
           <Button onClick={handlePrintAll} variant="secondary">
             <Printer className="mr-2 h-4 w-4" />
-            Alle drucken
+            {t("qrGenerator.printAll")}
           </Button>
         </div>
 
         <div className="print:hidden">
           <label className="block text-sm font-medium mb-1">
-            Datum (optional)
+            {t("qrGenerator.dateOptional")}
           </label>
           <div className="flex gap-2 items-center">
             <input
@@ -157,12 +159,12 @@ export default function QRGenerator() {
                 onClick={() => setSelectedDate("")}
                 className="min-h-[44px]"
               >
-                Zuruecksetzen
+                {t("qrGenerator.reset")}
               </Button>
             )}
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            Ohne Datum zeigt der QR-Code immer die aktuelle Tageskarte.
+            {t("qrGenerator.noDateHint")}
           </p>
         </div>
 
@@ -194,7 +196,7 @@ export default function QRGenerator() {
                     <p className="text-sm font-medium break-all">{url}</p>
                     {selectedDate && (
                       <p className="text-xs text-muted-foreground">
-                        Gültig für: {format(new Date(selectedDate), "dd.MM.yyyy")}
+                        {t("qrGenerator.validFor")} {format(new Date(selectedDate), "dd.MM.yyyy")}
                       </p>
                     )}
                   </div>
@@ -206,7 +208,7 @@ export default function QRGenerator() {
                     size="sm"
                   >
                     <Download className="mr-2 h-4 w-4" />
-                    Download als PNG
+                    {t("qrGenerator.downloadPng")}
                   </Button>
                 </CardContent>
               </Card>
@@ -216,15 +218,15 @@ export default function QRGenerator() {
           {(!locations || locations.length === 0) && (
             <div className="col-span-full text-center py-12 space-y-2">
               <Download className="h-10 w-10 mx-auto text-muted-foreground/40" />
-              <p className="text-muted-foreground font-medium">Keine Standorte vorhanden</p>
-              <p className="text-sm text-muted-foreground">Standorte muessen zuerst in den Einstellungen angelegt werden.</p>
+              <p className="text-muted-foreground font-medium">{t("qrGenerator.noLocations")}</p>
+              <p className="text-sm text-muted-foreground">{t("qrGenerator.noLocationsHint")}</p>
             </div>
           )}
         </div>
 
         {/* Info hint - compact */}
         <p className="print:hidden text-xs text-muted-foreground text-center">
-          QR-Codes ausdrucken und an Rezeption oder Restaurant-Eingang anbringen.
+          {t("qrGenerator.printHint")}
         </p>
       </div>
     </>

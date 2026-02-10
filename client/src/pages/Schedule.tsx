@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useLocationFilter } from "@/lib/location-context";
+import { useTranslation } from "@/hooks/useTranslation";
 import StaffView from "./ScheduleStaff";
 import ShiftTypesView from "./ScheduleShifts";
 
@@ -44,11 +45,11 @@ interface ShiftType {
 }
 
 const ENTRY_TYPES = [
-  { key: "shift", de: "Dienst", color: "bg-primary" },
-  { key: "vacation", de: "Urlaub", color: "bg-green-500" },
-  { key: "sick", de: "Krank", color: "bg-orange-500" },
-  { key: "off", de: "Frei", color: "bg-gray-400" },
-  { key: "wor", de: "WOR", color: "bg-yellow-500" },
+  { key: "shift", color: "bg-primary" },
+  { key: "vacation", color: "bg-green-500" },
+  { key: "sick", color: "bg-orange-500" },
+  { key: "off", color: "bg-gray-400" },
+  { key: "wor", color: "bg-yellow-500" },
 ];
 
 function formatDate(date: Date): string {
@@ -82,20 +83,21 @@ function getMonthDates(baseDate: Date): Date[] {
   return dates;
 }
 
-const WEEKDAYS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+const WEEKDAY_KEYS = ["mo", "di", "mi", "do", "fr", "sa", "so"] as const;
 const COLORS = ["#3b82f6", "#ef4444", "#22c55e", "#f59e0b", "#8b5cf6", "#ec4899", "#06b6d4", "#84cc16"];
 
 export default function Schedule() {
+  const { t } = useTranslation();
   return (
     <div className="p-4 space-y-4 pb-24">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-heading font-bold">Dienstplan</h1>
+        <h1 className="text-2xl font-heading font-bold">{t("schedule.title")}</h1>
       </div>
       <Tabs defaultValue="schedule" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="schedule">Kalender</TabsTrigger>
-          <TabsTrigger value="staff">Mitarbeiter</TabsTrigger>
-          <TabsTrigger value="dienste">Dienste</TabsTrigger>
+          <TabsTrigger value="schedule">{t("schedule.calendar")}</TabsTrigger>
+          <TabsTrigger value="staff">{t("schedule.staff")}</TabsTrigger>
+          <TabsTrigger value="dienste">{t("schedule.shifts")}</TabsTrigger>
         </TabsList>
         
         <TabsContent value="schedule" className="mt-4">
@@ -122,6 +124,7 @@ function ScheduleView() {
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"day" | "week" | "month">("week");
   const { toast } = useToast();
+  const { t } = useTranslation();
   const { selectedLocationId } = useLocationFilter();
 
   const getDates = () => {
@@ -152,7 +155,7 @@ function ScheduleView() {
       setShiftTypes(shiftTypesData);
     } catch (error) {
       console.error('Failed to fetch schedule:', error);
-      toast({ title: "Fehler beim Laden", variant: "destructive" });
+      toast({ title: t("schedule.loadingError"), variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -192,15 +195,15 @@ function ScheduleView() {
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2">
         <ToggleGroup type="single" value={viewMode} onValueChange={(v) => v && setViewMode(v as any)} size="sm" data-testid="schedule-view-toggle">
-          <ToggleGroupItem value="day" data-testid="toggle-view-day">Tag</ToggleGroupItem>
-          <ToggleGroupItem value="week" data-testid="toggle-view-week">Woche</ToggleGroupItem>
-          <ToggleGroupItem value="month" data-testid="toggle-view-month">Monat</ToggleGroupItem>
+          <ToggleGroupItem value="day" data-testid="toggle-view-day">{t("schedule.day")}</ToggleGroupItem>
+          <ToggleGroupItem value="week" data-testid="toggle-view-week">{t("schedule.week")}</ToggleGroupItem>
+          <ToggleGroupItem value="month" data-testid="toggle-view-month">{t("schedule.month")}</ToggleGroupItem>
         </ToggleGroup>
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" className="gap-1" data-testid="button-export">
-              <Download className="h-4 w-4" /> Export
+              <Download className="h-4 w-4" /> {t("common.export")}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
@@ -222,7 +225,7 @@ function ScheduleView() {
           className="font-medium text-sm text-center px-2 py-1 rounded hover:bg-secondary/50 transition-colors"
           onClick={() => setBaseDate(new Date())}
           data-testid="text-date-label"
-          title="Zurück zu heute"
+          title={t("schedule.backToToday")}
         >
           {getDateLabel()}
         </button>
@@ -238,8 +241,8 @@ function ScheduleView() {
       ) : staffList.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
           <Users className="h-10 w-10 mx-auto mb-3 opacity-30" />
-          <p className="font-medium text-sm">Keine Mitarbeiter vorhanden</p>
-          <p className="text-xs mt-1">Wechseln Sie zum Tab "Mitarbeiter", um Personal anzulegen.</p>
+          <p className="font-medium text-sm">{t("schedule.noStaffTitle")}</p>
+          <p className="text-xs mt-1">{t("schedule.noStaffHint")}</p>
         </div>
       ) : viewMode === "month" ? (
         <MonthScheduleView dates={dates} staffList={staffList} entries={entries} getEntry={getEntry} shiftTypes={shiftTypes} onSave={fetchData} />
@@ -248,15 +251,15 @@ function ScheduleView() {
           <table className="w-full text-xs border-collapse">
             <thead>
               <tr className="bg-secondary">
-                <th className="text-left p-2 border font-medium">Nr.</th>
-                <th className="text-left p-2 border font-medium min-w-[120px]">Mitarbeitername</th>
+                <th className="text-left p-2 border font-medium">{t("schedule.staffNumber")}</th>
+                <th className="text-left p-2 border font-medium min-w-[120px]">{t("schedule.staffName")}</th>
                 {dates.map((date, idx) => {
                   const isToday = formatDate(new Date()) === formatDate(date);
                   const dayIdx = date.getDay() === 0 ? 6 : date.getDay() - 1;
                   const isWeekend = dayIdx >= 5;
                   return (
                     <th key={idx} className={`p-1 text-center min-w-[70px] border ${isToday ? 'bg-primary/20' : isWeekend ? 'bg-secondary/80' : 'bg-secondary'}`}>
-                      <div className="text-muted-foreground text-[10px]">{WEEKDAYS[dayIdx]}</div>
+                      <div className="text-muted-foreground text-[10px]">{t(`weekdays.${WEEKDAY_KEYS[dayIdx]}`)}</div>
                       <div className="font-bold">{date.getDate()}.{(date.getMonth()+1).toString().padStart(2,'0')}.</div>
                     </th>
                   );
@@ -300,12 +303,12 @@ function ScheduleView() {
 
       <Card className="bg-secondary/20">
         <CardContent className="p-3">
-          <div className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide mb-2">Legende</div>
+          <div className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide mb-2">{t("schedule.legend")}</div>
           <div className="flex gap-2 flex-wrap text-[10px]">
             {ENTRY_TYPES.map(type => (
               <Badge key={type.key} variant="outline" className="gap-1">
                 <div className={`w-2 h-2 rounded-full ${type.color}`} />
-                {type.de}
+                {t(`schedule.entryTypes.${type.key}`)}
               </Badge>
             ))}
             {shiftTypes.length > 0 && <div className="border-l mx-1" />}
@@ -330,6 +333,7 @@ function MonthScheduleView({ dates, staffList, entries, getEntry, shiftTypes, on
   shiftTypes: ShiftType[];
   onSave: () => void;
 }) {
+  const { t } = useTranslation();
   const firstDayOffset = dates[0].getDay() === 0 ? 6 : dates[0].getDay() - 1;
 
   const getStaffForDay = (dateStr: string) => {
@@ -339,7 +343,7 @@ function MonthScheduleView({ dates, staffList, entries, getEntry, shiftTypes, on
   return (
     <div className="space-y-2">
       <div className="grid grid-cols-7 gap-1 text-center text-xs text-muted-foreground">
-        {WEEKDAYS.map(day => <div key={day}>{day}</div>)}
+        {WEEKDAY_KEYS.map(k => <div key={k}>{t(`weekdays.${k}`)}</div>)}
       </div>
       <div className="grid grid-cols-7 gap-1">
         {Array(firstDayOffset).fill(null).map((_, i) => (
@@ -378,6 +382,7 @@ function MonthDayScheduleCell({ date, dayNum, isToday, entries, staffList, shift
   onSave: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const { t } = useTranslation();
 
   const getStaffColor = (staffId: number) => {
     return staffList.find(s => s.id === staffId)?.color || '#888';
@@ -418,7 +423,7 @@ function MonthDayScheduleCell({ date, dayNum, isToday, entries, staffList, shift
               </div>
             ))}
             {entries.length > 3 && (
-              <span className="text-[7px] text-muted-foreground">+{entries.length - 3} mehr</span>
+              <span className="text-[7px] text-muted-foreground">{t("schedule.more", { count: entries.length - 3 })}</span>
             )}
           </div>
         </button>
@@ -458,6 +463,7 @@ function DayStaffRow({ staff, date, entry, shiftTypes, onSave }: {
   const [shiftTypeId, setShiftTypeId] = useState<string>(entry?.shiftTypeId?.toString() || (shiftTypes[0]?.id?.toString() || ""));
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const handleSave = async () => {
     setSaving(true);
@@ -479,10 +485,10 @@ function DayStaffRow({ staff, date, entry, shiftTypes, onSave }: {
           body: JSON.stringify({ staffId: staff.id, date, ...payload })
         });
       }
-      toast({ title: "Gespeichert" });
+      toast({ title: t("common.saved") });
       onSave();
     } catch (error: any) {
-      toast({ title: "Fehler", variant: "destructive" });
+      toast({ title: t("common.error"), variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -495,7 +501,7 @@ function DayStaffRow({ staff, date, entry, shiftTypes, onSave }: {
       <Select value={type} onValueChange={setType}>
         <SelectTrigger className="w-20 h-7 text-xs"><SelectValue /></SelectTrigger>
         <SelectContent>
-          {ENTRY_TYPES.map(t => <SelectItem key={t.key} value={t.key}>{t.de}</SelectItem>)}
+          {ENTRY_TYPES.map(et => <SelectItem key={et.key} value={et.key}>{t(`schedule.entryTypes.${et.key}`)}</SelectItem>)}
         </SelectContent>
       </Select>
       {type === 'shift' && shiftTypes.length > 0 && (
@@ -529,6 +535,7 @@ function ScheduleCell({ staffId, date, entry, staffColor, isToday, isWeekend, sh
   const [notes, setNotes] = useState(entry?.notes || "");
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   useEffect(() => {
     setType(entry?.type || "shift");
@@ -558,11 +565,11 @@ function ScheduleCell({ staffId, date, entry, staffColor, isToday, isWeekend, sh
           body: JSON.stringify({ staffId, date, ...payload })
         });
       }
-      toast({ title: "Gespeichert" });
+      toast({ title: t("common.saved") });
       setOpen(false);
       onSave();
     } catch (error: any) {
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: error.message, variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -573,11 +580,11 @@ function ScheduleCell({ staffId, date, entry, staffColor, isToday, isWeekend, sh
     setSaving(true);
     try {
       await fetch(`/api/schedule/${entry.id}`, { method: 'DELETE' });
-      toast({ title: "Gelöscht" });
+      toast({ title: t("common.deleted") });
       setOpen(false);
       onSave();
     } catch (error: any) {
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: error.message, variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -599,12 +606,12 @@ function ScheduleCell({ staffId, date, entry, staffColor, isToday, isWeekend, sh
           </div>
         );
       }
-      return <span className="text-[10px]">Dienst</span>;
+      return <span className="text-[10px]">{t("schedule.entryTypes.shift")}</span>;
     }
-    if (entry.type === 'vacation') return <span className="text-[9px] text-green-600 font-medium">Urlaub</span>;
-    if (entry.type === 'sick') return <span className="text-[9px] text-orange-600 font-medium">Krank</span>;
-    if (entry.type === 'wor') return <span className="text-[9px] text-yellow-600 font-medium">WOR</span>;
-    if (entry.type === 'off') return <span className="text-[9px] text-gray-500 font-medium">Frei</span>;
+    if (entry.type === 'vacation') return <span className="text-[9px] text-green-600 font-medium">{t("schedule.entryTypes.vacation")}</span>;
+    if (entry.type === 'sick') return <span className="text-[9px] text-orange-600 font-medium">{t("schedule.entryTypes.sick")}</span>;
+    if (entry.type === 'wor') return <span className="text-[9px] text-yellow-600 font-medium">{t("schedule.entryTypes.wor")}</span>;
+    if (entry.type === 'off') return <span className="text-[9px] text-gray-500 font-medium">{t("schedule.entryTypes.off")}</span>;
     return <X className="h-3 w-3 text-gray-400" />;
   };
 
@@ -633,12 +640,12 @@ function ScheduleCell({ staffId, date, entry, staffColor, isToday, isWeekend, sh
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-2">
-            <Label>Typ</Label>
+            <Label>{t("schedule.type")}</Label>
             <Select value={type} onValueChange={setType}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {ENTRY_TYPES.map(t => (
-                  <SelectItem key={t.key} value={t.key}>{t.de}</SelectItem>
+                {ENTRY_TYPES.map(et => (
+                  <SelectItem key={et.key} value={et.key}>{t(`schedule.entryTypes.${et.key}`)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -646,7 +653,7 @@ function ScheduleCell({ staffId, date, entry, staffColor, isToday, isWeekend, sh
           
           {type === 'shift' && shiftTypes.length > 0 && (
             <div className="space-y-2">
-              <Label>Dienst</Label>
+              <Label>{t("schedule.shift")}</Label>
               <Select value={shiftTypeId} onValueChange={setShiftTypeId}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -661,14 +668,14 @@ function ScheduleCell({ staffId, date, entry, staffColor, isToday, isWeekend, sh
           )}
 
           <div className="space-y-2">
-            <Label>Notizen</Label>
-            <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional" />
+            <Label>{t("schedule.notesLabel")}</Label>
+            <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("common.optional")} />
           </div>
 
           <div className="flex gap-2">
             <Button onClick={handleSave} className="flex-1" disabled={saving}>
               {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Speichern
+              {t("common.save")}
             </Button>
             {entry && (
               <Button variant="destructive" size="icon" onClick={handleDelete} disabled={saving}>

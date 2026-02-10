@@ -13,6 +13,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { ALLERGENS } from "@shared/allergens";
 import AllergenBadge from "@/components/AllergenBadge";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface Location {
   id: number;
@@ -37,6 +38,7 @@ export default function GuestProfiles() {
   const [locationFilter, setLocationFilter] = useState("all");
   const [showAdd, setShowAdd] = useState(false);
   const { toast } = useToast();
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
 
   const { data: profiles, isLoading } = useQuery<GuestProfile[]>({
@@ -53,15 +55,15 @@ export default function GuestProfiles() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/guest-profiles"] });
-      toast({ title: "Profil gelöscht" });
+      toast({ title: t("guestProfiles.deleted") });
     },
     onError: () => {
-      toast({ title: "Fehler beim Löschen", variant: "destructive" });
+      toast({ title: t("guestProfiles.deleteFailed"), variant: "destructive" });
     },
   });
 
   const handleDelete = (id: number) => {
-    if (!confirm("Gast-Profil wirklich löschen?")) return;
+    if (!confirm(t("guestProfiles.deleteConfirm"))) return;
     deleteMutation.mutate(id);
   };
 
@@ -110,13 +112,13 @@ export default function GuestProfiles() {
     <div className="p-4 space-y-4 pb-24">
       <div className="flex items-center gap-3">
         <div className="flex-1">
-          <h1 className="text-xl font-heading font-bold">Gast-Allergenprofile</h1>
+          <h1 className="text-xl font-heading font-bold">{t("guestProfiles.title")}</h1>
           <p className="text-xs text-muted-foreground">
-            {profiles?.length || 0} Gastgruppen mit Allergien/Diät
+            {t("guestProfiles.subtitle", { count: profiles?.length || 0 })}
           </p>
         </div>
         <Button size="sm" className="gap-1 min-h-[44px]" onClick={() => setShowAdd(true)}>
-          <PlusCircle className="h-4 w-4" /> Neues Profil
+          <PlusCircle className="h-4 w-4" /> {t("guestProfiles.newProfile")}
         </Button>
       </div>
 
@@ -128,7 +130,7 @@ export default function GuestProfiles() {
           className="h-7 text-xs shrink-0"
           onClick={() => setLocationFilter("all")}
         >
-          Alle ({profiles?.length || 0})
+          {t("common.all")} ({profiles?.length || 0})
         </Button>
         {locations?.map((loc) => {
           const count = profiles?.filter((p) => p.locationId === loc.id).length || 0;
@@ -152,7 +154,7 @@ export default function GuestProfiles() {
             className="h-7 text-xs shrink-0"
             onClick={() => setLocationFilter("none")}
           >
-            Ohne Standort ({profiles.filter((p) => !p.locationId).length})
+            {t("guestProfiles.withoutLocation")} ({profiles.filter((p) => !p.locationId).length})
           </Button>
         )}
       </div>
@@ -163,14 +165,14 @@ export default function GuestProfiles() {
           <Users className="h-10 w-10 mx-auto text-muted-foreground/40" />
           <p className="text-muted-foreground font-medium">
             {profiles?.length === 0
-              ? "Noch keine Gastprofile"
-              : "Keine Ergebnisse fuer diesen Filter"}
+              ? t("guestProfiles.noProfiles")
+              : t("guestProfiles.noProfilesFilter")}
           </p>
           {profiles?.length === 0 && (
             <>
-              <p className="text-sm text-muted-foreground">Erfassen Sie Gastgruppen mit Allergien oder Diaethinweisen.</p>
+              <p className="text-sm text-muted-foreground">{t("guestProfiles.noProfilesHint")}</p>
               <Button variant="outline" size="sm" className="gap-1 min-h-[44px]" onClick={() => setShowAdd(true)}>
-                <PlusCircle className="h-4 w-4" /> Erstes Profil anlegen
+                <PlusCircle className="h-4 w-4" /> {t("guestProfiles.firstProfile")}
               </Button>
             </>
           )}
@@ -194,7 +196,7 @@ export default function GuestProfiles() {
                         <h3 className="font-semibold truncate">{profile.groupName}</h3>
                         {isActive && (
                           <Badge variant="default" className="text-[10px] py-0 bg-orange-600">
-                            AKTIV
+                            {t("guestProfiles.active")}
                           </Badge>
                         )}
                       </div>
@@ -205,7 +207,7 @@ export default function GuestProfiles() {
                         </span>
                         <span className="flex items-center gap-1">
                           <Users className="h-3 w-3" />
-                          {profile.personCount} {profile.personCount === 1 ? "Person" : "Personen"}
+                          {profile.personCount} {profile.personCount === 1 ? t("guestProfiles.person") : t("guestProfiles.persons")}
                         </span>
                         {profile.location && (
                           <span className="flex items-center gap-1">
@@ -230,7 +232,7 @@ export default function GuestProfiles() {
 
                   {allergenCodes.length > 0 && (
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xs font-medium text-muted-foreground">Allergene:</span>
+                      <span className="text-xs font-medium text-muted-foreground">{t("guestProfiles.allergensLabel")}:</span>
                       <div className="flex flex-wrap gap-1">
                         {allergenCodes.map((code) => (
                           <Badge key={code} variant="outline" className="text-[10px] py-0 border-orange-500">
@@ -243,14 +245,14 @@ export default function GuestProfiles() {
 
                   {profile.dietaryNotes && (
                     <div className="text-xs bg-muted px-2 py-1.5 rounded">
-                      <span className="font-medium">Hinweise: </span>
+                      <span className="font-medium">{t("guestProfiles.notesLabel")}: </span>
                       {profile.dietaryNotes}
                     </div>
                   )}
 
                   {profile.contactPerson && (
                     <div className="text-xs text-muted-foreground mt-1">
-                      Kontakt: {profile.contactPerson}
+                      {t("guestProfiles.contactLabel")}: {profile.contactPerson}
                     </div>
                   )}
                 </CardContent>
@@ -287,6 +289,7 @@ function AddProfileDialog({
   const [locationId, setLocationId] = useState<string>("none");
   const [contactPerson, setContactPerson] = useState("");
   const { toast } = useToast();
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
 
   const createMutation = useMutation({
@@ -295,12 +298,12 @@ function AddProfileDialog({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/guest-profiles"] });
-      toast({ title: "Profil erstellt" });
+      toast({ title: t("guestProfiles.created") });
       resetForm();
       onOpenChange(false);
     },
     onError: (error: any) => {
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: error.message, variant: "destructive" });
     },
   });
 
@@ -318,7 +321,7 @@ function AddProfileDialog({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!groupName.trim() || !date) {
-      toast({ title: "Gruppenname und Datum erforderlich", variant: "destructive" });
+      toast({ title: t("guestProfiles.nameAndDateRequired"), variant: "destructive" });
       return;
     }
     createMutation.mutate({
@@ -347,7 +350,7 @@ function AddProfileDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Neues Gast-Profil</DialogTitle>
+          <DialogTitle>{t("guestProfiles.newProfile")}</DialogTitle>
         </DialogHeader>
         <ProfileForm
           groupName={groupName}
@@ -369,7 +372,7 @@ function AddProfileDialog({
           locations={locations}
           saving={createMutation.isPending}
           onSubmit={handleSubmit}
-          submitLabel="Erstellen"
+          submitLabel={t("common.create")}
         />
       </DialogContent>
     </Dialog>
@@ -403,6 +406,7 @@ function EditProfileDialog({
   );
   const [contactPerson, setContactPerson] = useState(profile.contactPerson || "");
   const { toast } = useToast();
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
 
   const updateMutation = useMutation({
@@ -411,18 +415,18 @@ function EditProfileDialog({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/guest-profiles"] });
-      toast({ title: "Gespeichert" });
+      toast({ title: t("common.saved") });
       setOpen(false);
     },
     onError: (error: any) => {
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: error.message, variant: "destructive" });
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!groupName.trim() || !date) {
-      toast({ title: "Gruppenname und Datum erforderlich", variant: "destructive" });
+      toast({ title: t("guestProfiles.nameAndDateRequired"), variant: "destructive" });
       return;
     }
     updateMutation.mutate({
@@ -456,7 +460,7 @@ function EditProfileDialog({
       </DialogTrigger>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Profil bearbeiten</DialogTitle>
+          <DialogTitle>{t("guestProfiles.editProfile")}</DialogTitle>
         </DialogHeader>
         <ProfileForm
           groupName={groupName}
@@ -478,7 +482,7 @@ function EditProfileDialog({
           locations={locations}
           saving={updateMutation.isPending}
           onSubmit={handleSubmit}
-          submitLabel="Speichern"
+          submitLabel={t("common.save")}
         />
       </DialogContent>
     </Dialog>
@@ -528,31 +532,32 @@ function ProfileForm({
   onSubmit: (e: React.FormEvent) => void;
   submitLabel: string;
 }) {
+  const { t } = useTranslation();
   return (
     <form onSubmit={onSubmit} className="space-y-3">
       <div className="space-y-1.5">
-        <Label>Gruppenname</Label>
+        <Label>{t("guestProfiles.groupName")}</Label>
         <Input
           value={groupName}
           onChange={(e) => setGroupName(e.target.value)}
-          placeholder="z.B. Schulklasse 3B"
+          placeholder={t("guestProfiles.groupNamePlaceholder")}
           required
         />
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
-          <Label>Ankunft</Label>
+          <Label>{t("guestProfiles.arrival")}</Label>
           <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
         </div>
         <div className="space-y-1.5">
-          <Label>Abreise (optional)</Label>
+          <Label>{t("guestProfiles.departure")}</Label>
           <Input type="date" value={dateEnd} onChange={(e) => setDateEnd(e.target.value)} />
         </div>
       </div>
 
       <div className="space-y-1.5">
-        <Label>Personenanzahl</Label>
+        <Label>{t("guestProfiles.personCount")}</Label>
         <Input
           type="number"
           min="1"
@@ -563,13 +568,13 @@ function ProfileForm({
       </div>
 
       <div className="space-y-1.5">
-        <Label>Standort</Label>
+        <Label>{t("guestProfiles.location")}</Label>
         <Select value={locationId} onValueChange={setLocationId}>
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="none">Kein Standort</SelectItem>
+            <SelectItem value="none">{t("guestProfiles.noLocation")}</SelectItem>
             {locations.map((loc) => (
               <SelectItem key={loc.id} value={String(loc.id)}>
                 {loc.name}
@@ -580,16 +585,16 @@ function ProfileForm({
       </div>
 
       <div className="space-y-1.5">
-        <Label>Kontaktperson (optional)</Label>
+        <Label>{t("guestProfiles.contactPerson")}</Label>
         <Input
           value={contactPerson}
           onChange={(e) => setContactPerson(e.target.value)}
-          placeholder="z.B. Hr. Müller"
+          placeholder={t("guestProfiles.contactPersonPlaceholder")}
         />
       </div>
 
       <div className="space-y-2">
-        <Label>Allergene</Label>
+        <Label>{t("guestProfiles.allergensLabel")}</Label>
         <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto border rounded-md p-2">
           {Object.values(ALLERGENS).map((allergen) => (
             <label
@@ -610,17 +615,17 @@ function ProfileForm({
         </div>
         {allergens.size > 0 && (
           <div className="text-xs text-muted-foreground">
-            Gewählt: {Array.from(allergens).sort().join(", ")}
+            {t("guestProfiles.selected")}: {Array.from(allergens).sort().join(", ")}
           </div>
         )}
       </div>
 
       <div className="space-y-1.5">
-        <Label>Diäthinweise (optional)</Label>
+        <Label>{t("guestProfiles.dietaryNotes")}</Label>
         <Textarea
           value={dietaryNotes}
           onChange={(e) => setDietaryNotes(e.target.value)}
-          placeholder="z.B. halal, kein Schweinefleisch, vegetarisch"
+          placeholder={t("guestProfiles.dietaryNotesPlaceholder")}
           rows={3}
         />
       </div>

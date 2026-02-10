@@ -6,6 +6,7 @@ import { Loader2, ArrowLeft, Check, AlertTriangle } from "lucide-react";
 import { Link } from "wouter";
 import { ALLERGENS, ALLERGEN_CODES } from "@shared/allergens";
 import { format } from "date-fns";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface DailyAllergenData {
   dishes: Array<{
@@ -29,6 +30,7 @@ interface Location {
 }
 
 export default function AllergenOverview() {
+  const { t } = useTranslation();
   const today = format(new Date(), "yyyy-MM-dd");
   const [selectedDate, setSelectedDate] = useState(today);
   const [selectedLocationId, setSelectedLocationId] = useState<number | null>(null);
@@ -70,12 +72,12 @@ export default function AllergenOverview() {
             Reports
           </Button>
         </Link>
-        <h1 className="text-xl font-heading font-bold">Allergen-Uebersicht</h1>
+        <h1 className="text-xl font-heading font-bold">{t("allergenOverview.title")}</h1>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4 print:hidden">
         <div>
-          <label className="block text-sm font-medium mb-1">Datum</label>
+          <label className="block text-sm font-medium mb-1">{t("allergenOverview.date")}</label>
           <input
             type="date"
             value={selectedDate}
@@ -85,14 +87,14 @@ export default function AllergenOverview() {
         </div>
 
         <div className="flex-1">
-          <label className="block text-sm font-medium mb-1">Standort</label>
+          <label className="block text-sm font-medium mb-1">{t("allergenOverview.location")}</label>
           <div className="flex gap-2 flex-wrap">
             <Button
               variant={selectedLocationId === null ? "default" : "outline"}
               onClick={() => setSelectedLocationId(null)}
               size="sm"
             >
-              Alle
+              {t("allergenOverview.all")}
             </Button>
             {locations?.map((loc) => (
               <Button
@@ -109,7 +111,7 @@ export default function AllergenOverview() {
 
         <div className="flex items-end">
           <Button onClick={handlePrint} variant="secondary">
-            Drucken
+            {t("common.print")}
           </Button>
         </div>
       </div>
@@ -122,12 +124,12 @@ export default function AllergenOverview() {
         <>
           <Card>
             <CardHeader>
-              <CardTitle>Allergen-Matrix</CardTitle>
+              <CardTitle>{t("allergenOverview.matrix")}</CardTitle>
               <p className="text-sm text-muted-foreground">
                 {format(new Date(selectedDate), "dd.MM.yyyy")}
                 {selectedLocationId && locations
                   ? ` - ${locations.find((l) => l.id === selectedLocationId)?.name}`
-                  : " - Alle Standorte"}
+                  : ` - ${t("allergenOverview.allLocations")}`}
               </p>
             </CardHeader>
             <CardContent>
@@ -135,8 +137,8 @@ export default function AllergenOverview() {
                 <table className="w-full text-sm border-collapse">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left p-2 font-semibold">Gericht</th>
-                      <th className="text-left p-2 font-semibold text-xs">Mahlzeit</th>
+                      <th className="text-left p-2 font-semibold">{t("allergenOverview.dish")}</th>
+                      <th className="text-left p-2 font-semibold text-xs">{t("allergenOverview.meal")}</th>
                       {ALLERGEN_CODES.map((code) => (
                         <th
                           key={code}
@@ -166,8 +168,8 @@ export default function AllergenOverview() {
                       <tr>
                         <td colSpan={ALLERGEN_CODES.length + 2} className="p-8 text-center text-muted-foreground">
                           <AlertTriangle className="h-8 w-8 mx-auto mb-2 opacity-40" />
-                          <p className="font-medium">Keine Gerichte fuer dieses Datum</p>
-                          <p className="text-sm mt-1">Erstellen Sie zuerst einen Menuplan fuer diesen Tag.</p>
+                          <p className="font-medium">{t("allergenOverview.noDishes")}</p>
+                          <p className="text-sm mt-1">{t("allergenOverview.noDishesHint")}</p>
                         </td>
                       </tr>
                     )}
@@ -182,7 +184,7 @@ export default function AllergenOverview() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-red-700">
                   <AlertTriangle className="h-5 w-5" />
-                  Gäste-Warnungen
+                  {t("allergenOverview.guestWarnings")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -192,13 +194,13 @@ export default function AllergenOverview() {
                       <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
                       <div className="flex-1">
                         <div className="font-semibold text-red-900">
-                          {warning.groupName} ({warning.personCount} Personen)
+                          {warning.groupName} ({warning.personCount} {t("allergenOverview.persons")})
                         </div>
                         <div className="text-sm text-red-700 mt-1">
-                          Allergene: {warning.allergens.map((c) => `${c} (${ALLERGENS[c]?.nameDE})`).join(", ")}
+                          {t("allergenOverview.allergensLabel")}: {warning.allergens.map((c) => `${c} (${ALLERGENS[c]?.nameDE})`).join(", ")}
                         </div>
                         <div className="text-sm text-red-600 mt-2">
-                          <span className="font-medium">Betroffene Gerichte:</span>{" "}
+                          <span className="font-medium">{t("allergenOverview.affectedDishes")}</span>{" "}
                           {warning.conflictingDishes.join(", ")}
                         </div>
                       </div>

@@ -9,6 +9,7 @@ import { Loader2, Mail, Send, CheckCircle, XCircle, ArrowLeft, Shield } from "lu
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
 import { useLocation } from "wouter";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface EmailSettings {
   smtp_host: string;
@@ -40,6 +41,7 @@ export default function EmailSettingsPage() {
   const { isAdmin } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [settings, setSettings] = useState<EmailSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -79,15 +81,15 @@ export default function EmailSettingsPage() {
         body: JSON.stringify(settings),
       });
       if (res.ok) {
-        toast({ title: "Einstellungen gespeichert" });
+        toast({ title: t("emailSettings.settingsSaved") });
         // Refresh to get updated smtp_configured status
         await fetchSettings();
       } else {
         const data = await res.json();
-        toast({ title: "Fehler", description: data.error, variant: "destructive" });
+        toast({ title: t("common.error"), description: data.error, variant: "destructive" });
       }
     } catch (error: any) {
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: error.message, variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -104,12 +106,12 @@ export default function EmailSettingsPage() {
       });
       const data = await res.json();
       if (data.success) {
-        toast({ title: "Test-E-Mail gesendet", description: data.messageId === "console-fallback" ? "E-Mail wurde in der Konsole protokolliert (SMTP nicht konfiguriert)" : `Nachricht-ID: ${data.messageId}` });
+        toast({ title: t("emailSettings.testEmailSent"), description: data.messageId === "console-fallback" ? t("emailSettings.testEmailConsole") : `${t("emailSettings.messageId")}: ${data.messageId}` });
       } else {
-        toast({ title: "Fehler beim Senden", description: data.error, variant: "destructive" });
+        toast({ title: t("emailSettings.sendError"), description: data.error, variant: "destructive" });
       }
     } catch (error: any) {
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: error.message, variant: "destructive" });
     } finally {
       setTesting(false);
     }
@@ -136,8 +138,8 @@ export default function EmailSettingsPage() {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
-          <h1 className="text-2xl font-heading font-bold">E-Mail Einstellungen</h1>
-          <p className="text-sm text-muted-foreground">SMTP-Konfiguration und Benachrichtigungen</p>
+          <h1 className="text-2xl font-heading font-bold">{t("emailSettings.title")}</h1>
+          <p className="text-sm text-muted-foreground">{t("emailSettings.subtitle")}</p>
         </div>
       </div>
 
@@ -145,11 +147,11 @@ export default function EmailSettingsPage() {
       <div className="flex items-center gap-2">
         {isConfigured ? (
           <Badge variant="default" className="gap-1 bg-green-600">
-            <CheckCircle className="h-3 w-3" /> SMTP verbunden
+            <CheckCircle className="h-3 w-3" /> {t("emailSettings.smtpConnected")}
           </Badge>
         ) : (
           <Badge variant="secondary" className="gap-1">
-            <XCircle className="h-3 w-3" /> SMTP nicht konfiguriert
+            <XCircle className="h-3 w-3" /> {t("emailSettings.smtpNotConfigured")}
           </Badge>
         )}
       </div>
@@ -159,16 +161,16 @@ export default function EmailSettingsPage() {
         <CardHeader className="py-3">
           <CardTitle className="text-sm flex items-center gap-2">
             <Shield className="h-4 w-4" />
-            SMTP-Server
+            {t("emailSettings.smtpServer")}
           </CardTitle>
           <CardDescription className="text-xs">
-            Konfigurieren Sie den SMTP-Server fuer den E-Mail-Versand
+            {t("emailSettings.smtpDescription")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label>Host</Label>
+              <Label>{t("emailSettings.host")}</Label>
               <Input
                 value={settings.smtp_host}
                 onChange={(e) => updateSetting("smtp_host", e.target.value)}
@@ -176,7 +178,7 @@ export default function EmailSettingsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Port</Label>
+              <Label>{t("emailSettings.port")}</Label>
               <Input
                 type="number"
                 value={settings.smtp_port}
@@ -186,7 +188,7 @@ export default function EmailSettingsPage() {
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Benutzername</Label>
+            <Label>{t("emailSettings.username")}</Label>
             <Input
               value={settings.smtp_user}
               onChange={(e) => updateSetting("smtp_user", e.target.value)}
@@ -194,16 +196,16 @@ export default function EmailSettingsPage() {
             />
           </div>
           <div className="space-y-2">
-            <Label>Passwort</Label>
+            <Label>{t("emailSettings.password")}</Label>
             <Input
               type="password"
               value={settings.smtp_pass}
               onChange={(e) => updateSetting("smtp_pass", e.target.value)}
-              placeholder="App-Passwort"
+              placeholder={t("emailSettings.passwordPlaceholder")}
             />
           </div>
           <div className="space-y-2">
-            <Label>Absender-Adresse</Label>
+            <Label>{t("emailSettings.senderAddress")}</Label>
             <Input
               value={settings.smtp_from}
               onChange={(e) => updateSetting("smtp_from", e.target.value)}
@@ -212,7 +214,7 @@ export default function EmailSettingsPage() {
           </div>
           <Button onClick={handleSave} disabled={saving} className="w-full gap-2">
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
-            Einstellungen speichern
+            {t("emailSettings.saveSettings")}
           </Button>
         </CardContent>
       </Card>
@@ -222,22 +224,22 @@ export default function EmailSettingsPage() {
         <CardHeader className="py-3">
           <CardTitle className="text-sm flex items-center gap-2">
             <Send className="h-4 w-4" />
-            Test-E-Mail senden
+            {t("emailSettings.sendTestEmail")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="space-y-2">
-            <Label>Empfaenger (optional)</Label>
+            <Label>{t("emailSettings.recipient")}</Label>
             <Input
               type="email"
               value={testEmail}
               onChange={(e) => setTestEmail(e.target.value)}
-              placeholder="test@example.com (leer = eigene E-Mail)"
+              placeholder={t("emailSettings.recipientPlaceholder")}
             />
           </div>
           <Button onClick={handleTest} disabled={testing} variant="outline" className="w-full gap-2">
             {testing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            Test-E-Mail senden
+            {t("emailSettings.sendTestEmail")}
           </Button>
         </CardContent>
       </Card>
@@ -247,17 +249,17 @@ export default function EmailSettingsPage() {
         <CardHeader className="py-3">
           <CardTitle className="text-sm flex items-center gap-2">
             <Mail className="h-4 w-4" />
-            Benachrichtigungen
+            {t("emailSettings.notifications")}
           </CardTitle>
           <CardDescription className="text-xs">
-            Waehlen Sie, welche E-Mail-Benachrichtigungen aktiv sein sollen
+            {t("emailSettings.notificationsDescription")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <div className="font-medium text-sm">HACCP-Warnungen</div>
-              <div className="text-xs text-muted-foreground">E-Mail bei kritischen Temperaturabweichungen</div>
+              <div className="font-medium text-sm">{t("emailSettings.haccpAlerts")}</div>
+              <div className="text-xs text-muted-foreground">{t("emailSettings.haccpAlertsDesc")}</div>
             </div>
             <Switch
               checked={settings.email_haccp_alerts === "true"}
@@ -266,8 +268,8 @@ export default function EmailSettingsPage() {
           </div>
           <div className="flex items-center justify-between">
             <div>
-              <div className="font-medium text-sm">Dienstplan-Aenderungen</div>
-              <div className="text-xs text-muted-foreground">E-Mail bei Aenderungen im Dienstplan</div>
+              <div className="font-medium text-sm">{t("emailSettings.scheduleChanges")}</div>
+              <div className="text-xs text-muted-foreground">{t("emailSettings.scheduleChangesDesc")}</div>
             </div>
             <Switch
               checked={settings.email_schedule_changes === "true"}
@@ -276,8 +278,8 @@ export default function EmailSettingsPage() {
           </div>
           <div className="flex items-center justify-between">
             <div>
-              <div className="font-medium text-sm">Catering-Bestaetigungen</div>
-              <div className="text-xs text-muted-foreground">E-Mail bei neuem oder bestaetigtem Catering-Event</div>
+              <div className="font-medium text-sm">{t("emailSettings.cateringConfirmations")}</div>
+              <div className="text-xs text-muted-foreground">{t("emailSettings.cateringConfirmationsDesc")}</div>
             </div>
             <Switch
               checked={settings.email_catering_confirmations === "true"}
@@ -286,8 +288,8 @@ export default function EmailSettingsPage() {
           </div>
           <div className="flex items-center justify-between">
             <div>
-              <div className="font-medium text-sm">Wochenbericht</div>
-              <div className="text-xs text-muted-foreground">Woechentliche Zusammenfassung (PAX, Kosten, HACCP)</div>
+              <div className="font-medium text-sm">{t("emailSettings.weeklyReport")}</div>
+              <div className="text-xs text-muted-foreground">{t("emailSettings.weeklyReportDesc")}</div>
             </div>
             <Switch
               checked={settings.email_weekly_report === "true"}
@@ -296,7 +298,7 @@ export default function EmailSettingsPage() {
           </div>
           <Button onClick={handleSave} disabled={saving} className="w-full gap-2" variant="outline">
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            Benachrichtigungen speichern
+            {t("emailSettings.saveNotifications")}
           </Button>
         </CardContent>
       </Card>

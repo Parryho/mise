@@ -6,6 +6,7 @@ import { Loader2, ArrowLeft, Printer } from "lucide-react";
 import { Link } from "wouter";
 import { ALLERGENS } from "@shared/allergens";
 import { format } from "date-fns";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface BuffetCardData {
   id: number;
@@ -20,6 +21,7 @@ interface Location {
 }
 
 export default function BuffetCards() {
+  const { t } = useTranslation();
   const today = format(new Date(), "yyyy-MM-dd");
   const [selectedDate, setSelectedDate] = useState(today);
   const [selectedLocationId, setSelectedLocationId] = useState<number | null>(null);
@@ -88,15 +90,15 @@ export default function BuffetCards() {
           <Link href="/reports">
             <Button variant="ghost" size="sm" className="gap-1 min-h-[44px]">
               <ArrowLeft className="h-4 w-4" />
-              Reports
+              {t("common.reports")}
             </Button>
           </Link>
-          <h1 className="text-xl font-heading font-bold flex-1">Buffet-Allergenkarten</h1>
+          <h1 className="text-xl font-heading font-bold flex-1">{t("buffetCards.title")}</h1>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 print:hidden">
           <div>
-            <label className="block text-sm font-medium mb-1">Datum</label>
+            <label className="block text-sm font-medium mb-1">{t("buffetCards.date")}</label>
             <input
               type="date"
               value={selectedDate}
@@ -106,14 +108,14 @@ export default function BuffetCards() {
           </div>
 
           <div className="flex-1">
-            <label className="block text-sm font-medium mb-1">Standort</label>
+            <label className="block text-sm font-medium mb-1">{t("buffetCards.location")}</label>
             <div className="flex gap-2 flex-wrap">
               <Button
                 variant={selectedLocationId === null ? "default" : "outline"}
                 onClick={() => setSelectedLocationId(null)}
                 size="sm"
               >
-                Alle
+                {t("buffetCards.all")}
               </Button>
               {locations?.map((loc) => (
                 <Button
@@ -131,7 +133,7 @@ export default function BuffetCards() {
           <div className="flex items-end">
             <Button onClick={handlePrint} variant="secondary">
               <Printer className="mr-2 h-4 w-4" />
-              Drucken
+              {t("print.print")}
             </Button>
           </div>
         </div>
@@ -168,7 +170,7 @@ export default function BuffetCards() {
 
                       <div className="border-t pt-4">
                         <p className="text-sm font-semibold text-center mb-2">
-                          Enthält:
+                          {t("buffetCards.contains")}
                         </p>
                         <ul className="text-sm space-y-1 text-center">
                           {card.allergens.map((code) => (
@@ -181,7 +183,7 @@ export default function BuffetCards() {
                     </>
                   ) : (
                     <p className="text-center text-muted-foreground py-8">
-                      Keine deklarierbaren Allergene
+                      {t("buffetCards.noAllergens")}
                     </p>
                   )}
                 </CardContent>
@@ -191,8 +193,8 @@ export default function BuffetCards() {
             {(!cards || cards.length === 0) && (
               <div className="col-span-full text-center py-12 space-y-2">
                 <Printer className="h-10 w-10 mx-auto text-muted-foreground/40" />
-                <p className="text-muted-foreground font-medium">Keine Gerichte fuer dieses Datum</p>
-                <p className="text-sm text-muted-foreground">Erstellen Sie zuerst einen Menuplan.</p>
+                <p className="text-muted-foreground font-medium">{t("buffetCards.noDishes")}</p>
+                <p className="text-sm text-muted-foreground">{t("buffetCards.noDishesHint")}</p>
               </div>
             )}
           </div>

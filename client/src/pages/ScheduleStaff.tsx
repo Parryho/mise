@@ -7,6 +7,7 @@ import { Loader2, Pencil, Trash2, UserPlus } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "@/hooks/useTranslation";
 import { useLocationFilter } from "@/lib/location-context";
 
 interface Staff {
@@ -24,6 +25,7 @@ export default function StaffView() {
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { t } = useTranslation();
   const { selectedLocationId } = useLocationFilter();
 
   const fetchStaff = async () => {
@@ -45,13 +47,13 @@ export default function StaffView() {
   }, [selectedLocationId]);
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Mitarbeiter wirklich löschen? Alle zugehörigen Dienstplan-Einträge werden ebenfalls gelöscht.")) return;
+    if (!confirm(t("scheduleStaff.deleteConfirm"))) return;
     try {
       await fetch(`/api/staff/${id}`, { method: 'DELETE' });
-      toast({ title: "Gelöscht" });
+      toast({ title: t("common.deleted") });
       fetchStaff();
     } catch (error: any) {
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: error.message, variant: "destructive" });
     }
   };
 
@@ -68,8 +70,8 @@ export default function StaffView() {
       ) : staffList.length === 0 ? (
         <div className="text-center py-12 space-y-3">
           <UserPlus className="h-10 w-10 mx-auto text-muted-foreground/40" />
-          <p className="text-muted-foreground font-medium">Noch keine Mitarbeiter</p>
-          <p className="text-sm text-muted-foreground">Fuegen Sie Ihr Kuechenteam hinzu.</p>
+          <p className="text-muted-foreground font-medium">{t("scheduleStaff.noStaff")}</p>
+          <p className="text-sm text-muted-foreground">{t("scheduleStaff.noStaffHint")}</p>
           <AddStaffDialog onSave={fetchStaff} />
         </div>
       ) : (
@@ -108,6 +110,7 @@ function AddStaffDialog({ onSave }: { onSave: () => void }) {
   const [color, setColor] = useState(COLORS[0]);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,12 +121,12 @@ function AddStaffDialog({ onSave }: { onSave: () => void }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, role, color })
       });
-      toast({ title: "Mitarbeiter hinzugefügt" });
+      toast({ title: t("scheduleStaff.added") });
       setOpen(false);
       setName("");
       onSave();
     } catch (error: any) {
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: error.message, variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -133,34 +136,34 @@ function AddStaffDialog({ onSave }: { onSave: () => void }) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button size="sm" className="gap-1">
-          <UserPlus className="h-4 w-4" /> Neuer Mitarbeiter
+          <UserPlus className="h-4 w-4" /> {t("scheduleStaff.newStaff")}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-sm">
         <DialogHeader>
-          <DialogTitle>Mitarbeiter hinzufügen</DialogTitle>
+          <DialogTitle>{t("scheduleStaff.addStaff")}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label>Name</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Max Mustermann" required />
+            <Label>{t("common.name")}</Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("scheduleStaff.namePlaceholder")} required />
           </div>
           <div className="space-y-2">
-            <Label>Rolle</Label>
+            <Label>{t("scheduleStaff.role")}</Label>
             <Select value={role} onValueChange={setRole}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="Koch">Koch</SelectItem>
-                <SelectItem value="Sous-Chef">Sous-Chef</SelectItem>
-                <SelectItem value="Küchenchef">Küchenchef</SelectItem>
-                <SelectItem value="Beikoch">Beikoch</SelectItem>
-                <SelectItem value="Auszubildender">Auszubildender</SelectItem>
-                <SelectItem value="Küchenhilfe">Küchenhilfe</SelectItem>
+                <SelectItem value="Koch">{t("scheduleStaff.roles.Koch")}</SelectItem>
+                <SelectItem value="Sous-Chef">{t("scheduleStaff.roles.Sous-Chef")}</SelectItem>
+                <SelectItem value="Küchenchef">{t("scheduleStaff.roles.Küchenchef")}</SelectItem>
+                <SelectItem value="Beikoch">{t("scheduleStaff.roles.Beikoch")}</SelectItem>
+                <SelectItem value="Auszubildender">{t("scheduleStaff.roles.Auszubildender")}</SelectItem>
+                <SelectItem value="Küchenhilfe">{t("scheduleStaff.roles.Küchenhilfe")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>Farbe</Label>
+            <Label>{t("scheduleStaff.color")}</Label>
             <div className="flex gap-2 flex-wrap">
               {COLORS.map(c => (
                 <button
@@ -175,7 +178,7 @@ function AddStaffDialog({ onSave }: { onSave: () => void }) {
           </div>
           <Button type="submit" className="w-full" disabled={saving}>
             {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-            Speichern
+            {t("common.save")}
           </Button>
         </form>
       </DialogContent>
@@ -190,6 +193,7 @@ function EditStaffDialog({ member, onSave }: { member: Staff; onSave: () => void
   const [color, setColor] = useState(member.color);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -200,11 +204,11 @@ function EditStaffDialog({ member, onSave }: { member: Staff; onSave: () => void
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, role, color })
       });
-      toast({ title: "Gespeichert" });
+      toast({ title: t("common.saved") });
       setOpen(false);
       onSave();
     } catch (error: any) {
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: error.message, variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -219,29 +223,29 @@ function EditStaffDialog({ member, onSave }: { member: Staff; onSave: () => void
       </DialogTrigger>
       <DialogContent className="max-w-sm">
         <DialogHeader>
-          <DialogTitle>Mitarbeiter bearbeiten</DialogTitle>
+          <DialogTitle>{t("scheduleStaff.editStaff")}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label>Name</Label>
+            <Label>{t("common.name")}</Label>
             <Input value={name} onChange={(e) => setName(e.target.value)} required />
           </div>
           <div className="space-y-2">
-            <Label>Rolle</Label>
+            <Label>{t("scheduleStaff.role")}</Label>
             <Select value={role} onValueChange={setRole}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="Koch">Koch</SelectItem>
-                <SelectItem value="Sous-Chef">Sous-Chef</SelectItem>
-                <SelectItem value="Küchenchef">Küchenchef</SelectItem>
-                <SelectItem value="Beikoch">Beikoch</SelectItem>
-                <SelectItem value="Auszubildender">Auszubildender</SelectItem>
-                <SelectItem value="Küchenhilfe">Küchenhilfe</SelectItem>
+                <SelectItem value="Koch">{t("scheduleStaff.roles.Koch")}</SelectItem>
+                <SelectItem value="Sous-Chef">{t("scheduleStaff.roles.Sous-Chef")}</SelectItem>
+                <SelectItem value="Küchenchef">{t("scheduleStaff.roles.Küchenchef")}</SelectItem>
+                <SelectItem value="Beikoch">{t("scheduleStaff.roles.Beikoch")}</SelectItem>
+                <SelectItem value="Auszubildender">{t("scheduleStaff.roles.Auszubildender")}</SelectItem>
+                <SelectItem value="Küchenhilfe">{t("scheduleStaff.roles.Küchenhilfe")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>Farbe</Label>
+            <Label>{t("scheduleStaff.color")}</Label>
             <div className="flex gap-2 flex-wrap">
               {COLORS.map(c => (
                 <button
@@ -256,7 +260,7 @@ function EditStaffDialog({ member, onSave }: { member: Staff; onSave: () => void
           </div>
           <Button type="submit" className="w-full" disabled={saving}>
             {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-            Speichern
+            {t("common.save")}
           </Button>
         </form>
       </DialogContent>

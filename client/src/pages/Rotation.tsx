@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { getISOWeek, MEAL_SLOT_LABELS, MEAL_SLOTS } from "@shared/constants";
 import { apiFetch, apiPost, apiPut } from "@/lib/api";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface RotationSlot {
   id: number;
@@ -36,7 +37,7 @@ interface RotationTemplate {
   weekCount: number;
 }
 
-const DAY_LABELS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+const DAY_KEYS = ["mo", "di", "mi", "do", "fr", "sa", "so"] as const;
 
 function uiIndexToDbDow(uiIdx: number): number {
   return uiIdx === 6 ? 0 : uiIdx + 1;
@@ -53,16 +54,7 @@ const COURSE_CATEGORIES: Record<string, string[]> = {
   dessert: ["HotDesserts", "ColdDesserts"],
 };
 
-const COURSE_SHORT: Record<string, string> = {
-  soup: "Suppe",
-  main1: "H1",
-  side1a: "B1a",
-  side1b: "B1b",
-  main2: "H2",
-  side2a: "B2a",
-  side2b: "B2b",
-  dessert: "Dessert",
-};
+const COURSE_SHORT_KEYS = ["soup", "main1", "side1a", "side1b", "main2", "side2a", "side2b", "dessert"] as const;
 
 interface ColDef {
   key: string;
@@ -71,12 +63,12 @@ interface ColDef {
   label: string;
 }
 
-const ALL_COLUMNS: ColDef[] = [
-  { key: "city-lunch", locationSlug: "city", meal: "lunch", label: "City Mittag" },
-  { key: "city-dinner", locationSlug: "city", meal: "dinner", label: "City Abend" },
-  { key: "sued-lunch", locationSlug: "sued", meal: "lunch", label: "SÜD Mittag" },
-  { key: "sued-dinner", locationSlug: "sued", meal: "dinner", label: "SÜD Abend" },
-];
+const COLUMN_DEFS = [
+  { key: "city-lunch", locationSlug: "city", meal: "lunch", i18nKey: "cityLunch" },
+  { key: "city-dinner", locationSlug: "city", meal: "dinner", i18nKey: "cityDinner" },
+  { key: "sued-lunch", locationSlug: "sued", meal: "lunch", i18nKey: "suedLunch" },
+  { key: "sued-dinner", locationSlug: "sued", meal: "dinner", i18nKey: "suedDinner" },
+] as const;
 
 export default function Rotation() {
   const [templates, setTemplates] = useState<RotationTemplate[]>([]);
@@ -96,6 +88,9 @@ export default function Rotation() {
   const [newTemplateWeeks, setNewTemplateWeeks] = useState("6");
   const [creatingTemplate, setCreatingTemplate] = useState(false);
   const { toast } = useToast();
+  const { t } = useTranslation();
+
+  const allColumns = COLUMN_DEFS.map(c => ({ ...c, label: t(`rotation.${c.i18nKey}`) }));
 
   const [showBlocks, setShowBlocks] = useState<Record<string, boolean>>(() => {
     try {
@@ -107,7 +102,7 @@ export default function Rotation() {
   useEffect(() => {
     localStorage.setItem("mise-blocks-rotation", JSON.stringify(showBlocks));
   }, [showBlocks]);
-  const visibleColumns = ALL_COLUMNS.filter(c => showBlocks[c.key]);
+  const visibleColumns = allColumns.filter(c => showBlocks[c.key]);
 
   const currentRotationWeek = ((getISOWeek(new Date()) - 1) % 6) + 1;
 
@@ -144,7 +139,7 @@ export default function Rotation() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: newTemplateName.trim(), weekCount: parseInt(newTemplateWeeks) }),
       });
-      if (!res.ok) throw new Error("Fehler beim Erstellen");
+      if (!res.ok) throw new Error(t("errors.savingError"));
       const created = await res.json();
       await loadTemplates();
       setTemplateId(created.id);
@@ -153,9 +148,9 @@ export default function Rotation() {
       setNewTemplateOpen(false);
       setNewTemplateName("");
       setNewTemplateWeeks("6");
-      toast({ title: "Template erstellt", description: `"${created.name}" mit ${created.weekCount} Wochen` });
+      toast({ title: t("rotation.templateCreated"), description: t("rotation.templateCreatedDesc", { name: created.name, weeks: created.weekCount }) });
     } catch {
-      toast({ title: "Fehler", variant: "destructive" });
+      toast({ title: t("common.error"), variant: "destructive" });
     } finally {
       setCreatingTemplate(false);
     }
@@ -248,7 +243,7 @@ export default function Rotation() {
 
   const handleClear = async (scope: "all" | "week" | "day", dayOfWeek?: number) => {
     if (!templateId) return;
-    if (scope === "all" && !confirm("Alle Wochen wirklich leeren? Diese Aktion kann nicht rückgängig gemacht werden.")) return;
+    if (scope === "all" && !confirm(t("rotation.clearConfirm"))) return;
     setClearing(true);
     try {
       const body: any = { templateId, scope };
@@ -261,12 +256,12 @@ export default function Rotation() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      toast({ title: "Geleert", description: `${data.cleared} Slots geleert.` });
+      toast({ title: t("rotation.cleared"), description: t("rotation.slotsCleared", { count: data.cleared }) });
       setSlots(await apiFetch(`/api/rotation-slots/${templateId}?weekNr=${weekNr}`));
       setAllSlots(await apiFetch(`/api/rotation-slots/${templateId}`));
       setClearDayOpen(false);
     } catch (err: any) {
-      toast({ title: "Fehler", description: err.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
     } finally {
       setClearing(false);
     }
@@ -284,13 +279,13 @@ export default function Rotation() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       toast({
-        title: "Küchenchef-Agent fertig",
-        description: `${data.filled} Gerichte zugewiesen, ${data.skipped} übersprungen.`,
+        title: t("rotation.chefAgentDone"),
+        description: t("rotation.chefAgentDesc", { filled: data.filled, skipped: data.skipped }),
       });
       setSlots(await apiFetch(`/api/rotation-slots/${templateId}?weekNr=${weekNr}`));
       setAllSlots(await apiFetch(`/api/rotation-slots/${templateId}`));
     } catch (err: any) {
-      toast({ title: "Fehler", description: err.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
     } finally {
       setAutoFilling(false);
       setAutoFillOpen(false);
@@ -302,7 +297,7 @@ export default function Rotation() {
       await apiPut(`/api/rotation-slots/${slotId}`, { recipeId });
       setSlots(prev => prev.map(s => s.id === slotId ? { ...s, recipeId } : s));
     } catch {
-      toast({ title: "Fehler beim Speichern", variant: "destructive" });
+      toast({ title: t("rotation.errorSaving"), variant: "destructive" });
     }
   };
 
@@ -345,13 +340,13 @@ export default function Rotation() {
       <div className="bg-primary text-primary-foreground px-4 pt-4 pb-3">
         <div className="flex items-center justify-between mb-2">
           <div>
-            <h1 className="font-heading text-xl font-bold uppercase tracking-wide">Planung</h1>
+            <h1 className="font-heading text-xl font-bold uppercase tracking-wide">{t("rotation.planning")}</h1>
             <p className="text-[10px] text-primary-foreground/60">
-              KW {getISOWeek(new Date())} = Rotationswoche W{currentRotationWeek}
+              {t("rotation.currentRotationWeek", { kw: getISOWeek(new Date()), rotWeek: currentRotationWeek })}
             </p>
           </div>
           <div className="flex items-center gap-1">
-            <Button size="icon" variant="ghost" className="text-primary-foreground hover:bg-white/20 h-8 w-8" onClick={() => setNewTemplateOpen(true)} title={templates.length > 1 ? "Template" : "Neues Template"}>
+            <Button size="icon" variant="ghost" className="text-primary-foreground hover:bg-white/20 h-8 w-8" onClick={() => setNewTemplateOpen(true)} title={t("rotation.newTemplate")}>
               {templates.length > 1 ? <Settings2 className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
             </Button>
           </div>
@@ -384,18 +379,18 @@ export default function Rotation() {
             disabled={autoFilling}
           >
             {autoFilling ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ChefHat className="h-3.5 w-3.5" />}
-            Menü generieren
+            {t("rotation.generateMenu")}
           </Button>
           <Link href="/rotation/print" className="flex-1">
             <Button size="sm" variant="secondary" className="w-full gap-1.5 text-xs font-semibold">
-              <Printer className="h-3.5 w-3.5" /> Druckansicht
+              <Printer className="h-3.5 w-3.5" /> {t("rotation.printView")}
             </Button>
           </Link>
         </div>
 
         {/* Block toggles as buttons */}
         <div className="flex gap-1.5">
-          {ALL_COLUMNS.map(col => (
+          {allColumns.map(col => (
             <button
               key={col.key}
               onClick={() => setShowBlocks(prev => ({ ...prev, [col.key]: !prev[col.key] }))}
@@ -448,7 +443,7 @@ export default function Rotation() {
       {/* ── Week stats bar ── */}
       <div className="flex items-center justify-between px-4 py-1.5 bg-muted/30 border-b border-border/30">
         <span className="text-[11px] text-muted-foreground">
-          Woche {weekNr}
+          {t("rotation.week")} {weekNr}
         </span>
         <Badge variant="outline" className="text-[10px] py-0 h-5">
           {weekStats.filled}/{weekStats.total} ({weekStats.pct}%)
@@ -461,7 +456,7 @@ export default function Rotation() {
           <table className="w-full border-collapse text-[11px] leading-tight">
             <thead>
               <tr className="bg-primary text-primary-foreground">
-                <th className="border-r border-white/20 px-2 py-1.5 text-left w-8 font-bold text-[10px] uppercase tracking-wider">Tag</th>
+                <th className="border-r border-white/20 px-2 py-1.5 text-left w-8 font-bold text-[10px] uppercase tracking-wider">{t("rotation.day")}</th>
                 {visibleColumns.map(col => (
                   <th key={col.key} className="border-r border-white/20 last:border-r-0 px-2 py-1.5 text-left font-bold text-[10px] uppercase tracking-wider">
                     {col.label}
@@ -470,10 +465,10 @@ export default function Rotation() {
               </tr>
             </thead>
             <tbody>
-              {DAY_LABELS.map((dayLabel, dayIdx) => (
-                <tr key={dayLabel} className={cn("border-b border-border/40 last:border-b-0", dayIdx % 2 === 0 ? "bg-background" : "bg-muted/20")}>
+              {DAY_KEYS.map((dayKey, dayIdx) => (
+                <tr key={dayKey} className={cn("border-b border-border/40 last:border-b-0", dayIdx % 2 === 0 ? "bg-background" : "bg-muted/20")}>
                   <td className="border-r border-border/40 px-2 py-1 font-bold align-top bg-muted/40 text-xs">
-                    {dayLabel}
+                    {t(`weekdays.${dayKey}`)}
                   </td>
                   {visibleColumns.map(col => (
                     <td key={col.key} className="border-r border-border/40 last:border-r-0 px-1.5 py-1 align-top">
@@ -491,22 +486,22 @@ export default function Rotation() {
                               isSlotEmpty && "bg-status-warning-subtle/50"
                             )}>
                               <span className="text-[9px] text-muted-foreground/70 font-medium w-10 shrink-0">
-                                {COURSE_SHORT[course]}:
+                                {t(`rotation.${course}`)}:
                               </span>
                               {isDessert && !recipe ? (
                                 <button
                                   onClick={() => slot && openEditDialog(slot)}
                                   className="text-left truncate cursor-pointer hover:text-primary min-w-0 flex-1"
-                                  title="Dessertvariation (klicken zum Ändern)"
+                                  title={`${t("rotation.dessertVariation")} (${t("rotation.clickToChange")})`}
                                 >
-                                  <span className="italic">Dessertvariation</span>
+                                  <span className="italic">{t("rotation.dessertVariation")}</span>
                                   <span className="ml-1 text-[9px] text-orange-600 font-medium">A,C,G</span>
                                 </button>
                               ) : recipe ? (
                                 <button
                                   onClick={() => slot && openEditDialog(slot)}
                                   className={`text-left hover:text-primary truncate cursor-pointer min-w-0 flex-1 ${isDuplicate ? "text-red-600" : ""}`}
-                                  title={isDuplicate ? `Doppelt: ${recipe.name}` : `${recipe.name} (klicken zum Ändern)`}
+                                  title={isDuplicate ? t("rotation.duplicateTitle", { name: recipe.name }) : `${recipe.name} (${t("rotation.clickToChange")})`}
                                 >
                                   {isDuplicate && <AlertTriangle className="inline h-2.5 w-2.5 mr-0.5 text-red-500" />}
                                   <span className="truncate">{recipe.name}</span>
@@ -541,13 +536,13 @@ export default function Rotation() {
       {/* Hints */}
       {!showBlocks["sued-lunch"] && (
         <div className="mx-4 mt-3 px-3 py-2 bg-status-info-subtle border border-status-info/20 rounded-lg text-xs text-status-info">
-          SÜD Mittag übernimmt automatisch das City Mittag-Menü.
+          {t("rotation.suedAutoInfo")}
         </div>
       )}
       {duplicates.size > 0 && (
         <div className="mx-4 mt-3 px-3 py-2.5 bg-status-danger-subtle border border-status-danger/20 rounded-lg flex items-center gap-2 text-xs text-status-danger">
           <AlertTriangle className="h-4 w-4 shrink-0" />
-          <span className="font-medium">{duplicates.size / 2} doppelte Gerichte am selben Tag gefunden</span>
+          <span className="font-medium">{t("rotation.duplicateWarning", { count: Math.floor(duplicates.size / 2) })}</span>
         </div>
       )}
 
@@ -561,7 +556,7 @@ export default function Rotation() {
           </DialogHeader>
           <div className="space-y-3 py-2">
             <Input
-              placeholder="Rezept suchen..."
+              placeholder={t("rotation.searchRecipePlaceholder")}
               value={recipeSearch}
               onChange={e => setRecipeSearch(e.target.value)}
               autoFocus
@@ -575,7 +570,7 @@ export default function Rotation() {
                 )}
                 onClick={() => setEditRecipeId("none")}
               >
-                — leer —
+                {t("rotation.empty")}
               </button>
               {filteredRecipes.map(r => (
                 <button
@@ -594,11 +589,11 @@ export default function Rotation() {
                 </button>
               ))}
               {filteredRecipes.length === 0 && recipeSearch && (
-                <p className="px-3 py-4 text-sm text-muted-foreground text-center">Kein Rezept gefunden</p>
+                <p className="px-3 py-4 text-sm text-muted-foreground text-center">{t("rotation.noRecipeFound")}</p>
               )}
             </div>
             <Button onClick={handleEditSave} className="w-full">
-              Speichern
+              {t("common.save")}
             </Button>
           </div>
         </DialogContent>
@@ -608,34 +603,34 @@ export default function Rotation() {
       <Dialog open={newTemplateOpen} onOpenChange={setNewTemplateOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Neues Rotations-Template</DialogTitle>
+            <DialogTitle>{t("rotation.newTemplate")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label>Name</Label>
+              <Label>{t("common.name")}</Label>
               <Input
                 value={newTemplateName}
                 onChange={(e) => setNewTemplateName(e.target.value)}
-                placeholder="z.B. Winterrotation 2026"
+                placeholder={t("rotation.templateNamePlaceholder")}
               />
             </div>
             <div className="space-y-2">
-              <Label>Anzahl Wochen</Label>
+              <Label>{t("rotation.weekCountLabel")}</Label>
               <Select value={newTemplateWeeks} onValueChange={setNewTemplateWeeks}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="4">4 Wochen</SelectItem>
-                  <SelectItem value="5">5 Wochen</SelectItem>
-                  <SelectItem value="6">6 Wochen</SelectItem>
-                  <SelectItem value="8">8 Wochen</SelectItem>
+                  <SelectItem value="4">{t("rotation.nWeeks", { n: 4 })}</SelectItem>
+                  <SelectItem value="5">{t("rotation.nWeeks", { n: 5 })}</SelectItem>
+                  <SelectItem value="6">{t("rotation.nWeeks", { n: 6 })}</SelectItem>
+                  <SelectItem value="8">{t("rotation.nWeeks", { n: 8 })}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <Button onClick={handleCreateTemplate} disabled={creatingTemplate || !newTemplateName.trim()} className="w-full">
               {creatingTemplate ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
-              Template erstellen
+              {t("rotation.createTemplate")}
             </Button>
           </div>
         </DialogContent>
@@ -646,28 +641,27 @@ export default function Rotation() {
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <ChefHat className="h-5 w-5" /> Küchenchef-Agent
+              <ChefHat className="h-5 w-5" /> {t("rotation.chefAgent")}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3 py-2">
             <p className="text-sm text-muted-foreground">
-              Leere Slots automatisch mit passenden Rezepten befüllen?
-              Dessert wird immer als "Dessertvariation" angezeigt.
+              {t("rotation.autoFillQuestion")}
             </p>
             <div className="flex flex-col gap-2">
               <Button onClick={() => handleAutoFill(false)} disabled={autoFilling || clearing} className="w-full">
                 {autoFilling ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                Leere Slots befüllen
+                {t("rotation.autoFillEmpty")}
               </Button>
               <Button variant="outline" onClick={() => handleAutoFill(true)} disabled={autoFilling || clearing} className="w-full">
                 {autoFilling ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                Alles neu befüllen
+                {t("rotation.autoFillAll")}
               </Button>
             </div>
 
             <div className="border-t border-border pt-3 mt-3">
               <p className="text-sm font-medium text-destructive mb-2 flex items-center gap-1.5">
-                <Trash2 className="h-4 w-4" /> Löschen
+                <Trash2 className="h-4 w-4" /> {t("rotation.deleteSection")}
               </p>
               <div className="flex flex-col gap-2">
                 <Button
@@ -678,7 +672,7 @@ export default function Rotation() {
                   disabled={clearing || autoFilling}
                 >
                   {clearing ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Trash2 className="h-3 w-3 mr-1" />}
-                  Woche {weekNr} leeren
+                  {t("rotation.clearWeek", { nr: weekNr })}
                 </Button>
                 <Button
                   variant="outline"
@@ -687,20 +681,20 @@ export default function Rotation() {
                   onClick={() => setClearDayOpen(!clearDayOpen)}
                   disabled={clearing || autoFilling}
                 >
-                  <Trash2 className="h-3 w-3 mr-1" /> Tag leeren...
+                  <Trash2 className="h-3 w-3 mr-1" /> {t("rotation.clearDay")}
                 </Button>
                 {clearDayOpen && (
                   <div className="grid grid-cols-4 gap-1.5 px-1">
-                    {DAY_LABELS.map((day, idx) => (
+                    {DAY_KEYS.map((dayKey, idx) => (
                       <Button
-                        key={day}
+                        key={dayKey}
                         variant="outline"
                         size="sm"
                         className="text-destructive border-destructive/30 hover:bg-destructive/10 text-xs px-2"
                         onClick={() => handleClear("day", uiIndexToDbDow(idx))}
                         disabled={clearing}
                       >
-                        {day}
+                        {t(`weekdays.${dayKey}`)}
                       </Button>
                     ))}
                   </div>
@@ -713,7 +707,7 @@ export default function Rotation() {
                   disabled={clearing || autoFilling}
                 >
                   {clearing ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Trash2 className="h-3 w-3 mr-1" />}
-                  Alle Wochen leeren
+                  {t("rotation.clearAll")}
                 </Button>
               </div>
             </div>

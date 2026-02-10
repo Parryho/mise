@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "@/hooks/useTranslation";
 import { apiRequest } from "@/lib/queryClient";
 import {
   BarChart,
@@ -75,32 +76,6 @@ interface OptimizeResult {
 
 // ── Constants ───────────────────────────────────────────────────────────
 
-const DAY_LABELS: Record<number, string> = {
-  0: "So",
-  1: "Mo",
-  2: "Di",
-  3: "Mi",
-  4: "Do",
-  5: "Fr",
-  6: "Sa",
-};
-
-const MEAL_LABELS: Record<string, string> = {
-  lunch: "Mittag",
-  dinner: "Abend",
-};
-
-const COURSE_LABELS: Record<string, string> = {
-  soup: "Suppe",
-  main1: "Fleisch/Fisch",
-  side1a: "Beilage 1a",
-  side1b: "Beilage 1b",
-  main2: "Vegetarisch",
-  side2a: "Beilage 2a",
-  side2b: "Beilage 2b",
-  dessert: "Dessert",
-};
-
 const CATEGORY_COLORS: Record<string, string> = {
   "Klare Suppen": "#eab308",
   "Cremesuppen": "#f59e0b",
@@ -123,6 +98,7 @@ const PIE_COLORS = [
 // ── Component ───────────────────────────────────────────────────────────
 
 export default function SmartRotation() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [templateId, setTemplateId] = useState<number | null>(null);
   const [focusVariety, setFocusVariety] = useState(true);
@@ -167,13 +143,13 @@ export default function SmartRotation() {
       setOptimizeResult(data);
       setAppliedSwaps(new Set());
       toast({
-        title: "KI-Analyse abgeschlossen",
-        description: `${data.swaps.length} Verbesserungsvorschlag${data.swaps.length !== 1 ? "e" : ""} gefunden.`,
+        title: t("smartRotation.toastAnalyzed"),
+        description: t("smartRotation.toastSuggestionsFound", { count: data.swaps.length }),
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Fehler bei KI-Optimierung",
+        title: t("smartRotation.toastOptimizeError"),
         description: error.message,
         variant: "destructive",
       });
@@ -211,14 +187,14 @@ export default function SmartRotation() {
         setAppliedSwaps((prev) => new Set(Array.from(prev).concat([idx])));
       }
       toast({
-        title: "Tausch übernommen",
-        description: `${swap.suggestedRecipeName} eingesetzt.`,
+        title: t("smartRotation.toastSwapApplied"),
+        description: t("smartRotation.toastSwapDesc", { name: swap.suggestedRecipeName }),
       });
       refetchAnalysis();
     },
     onError: (error: Error) => {
       toast({
-        title: "Fehler",
+        title: t("common.error"),
         description: error.message,
         variant: "destructive",
       });
@@ -265,10 +241,10 @@ export default function SmartRotation() {
     );
     const dupeScore = Math.max(0, 100 - totalDupes * 10);
     return [
-      { metric: "Abwechslung", value: analysis.varietyScore },
-      { metric: "Befüllung", value: analysis.fillPercentage },
-      { metric: "Saison", value: analysis.seasonalFit },
-      { metric: "Keine Duplikate", value: dupeScore },
+      { metric: t("smartRotation.radarVariety"), value: analysis.varietyScore },
+      { metric: t("smartRotation.radarFill"), value: analysis.fillPercentage },
+      { metric: t("smartRotation.radarSeason"), value: analysis.seasonalFit },
+      { metric: t("smartRotation.radarNoDuplicates"), value: dupeScore },
     ];
   }, [analysis]);
 
@@ -295,10 +271,10 @@ export default function SmartRotation() {
           <div className="flex-1">
             <h1 className="font-heading text-xl font-bold uppercase tracking-wide flex items-center gap-2">
               <Brain className="h-5 w-5" />
-              Smart Rotation
+              {t("smartRotation.title")}
             </h1>
             <p className="text-xs text-primary-foreground/70 mt-0.5">
-              KI-gestützte Analyse und Optimierung
+              {t("smartRotation.subtitle")}
             </p>
           </div>
         </div>
@@ -314,7 +290,7 @@ export default function SmartRotation() {
               <div className="text-3xl font-bold text-primary leading-tight">
                 {analysis.varietyScore}%
               </div>
-              <div className="text-[11px] text-muted-foreground mt-1 font-medium uppercase tracking-wide">Abwechslung</div>
+              <div className="text-[11px] text-muted-foreground mt-1 font-medium uppercase tracking-wide">{t("smartRotation.variety")}</div>
               <Progress value={analysis.varietyScore} className="mt-2.5 h-1.5" />
             </CardContent>
           </Card>
@@ -323,7 +299,7 @@ export default function SmartRotation() {
               <div className="text-3xl font-bold text-primary leading-tight">
                 {analysis.fillPercentage}%
               </div>
-              <div className="text-[11px] text-muted-foreground mt-1 font-medium uppercase tracking-wide">Befüllt</div>
+              <div className="text-[11px] text-muted-foreground mt-1 font-medium uppercase tracking-wide">{t("smartRotation.filled")}</div>
               <Progress value={analysis.fillPercentage} className="mt-2.5 h-1.5" />
             </CardContent>
           </Card>
@@ -332,7 +308,7 @@ export default function SmartRotation() {
               <div className="text-3xl font-bold text-primary leading-tight">
                 {analysis.seasonalFit}%
               </div>
-              <div className="text-[11px] text-muted-foreground mt-1 font-medium uppercase tracking-wide">Saison-Fit</div>
+              <div className="text-[11px] text-muted-foreground mt-1 font-medium uppercase tracking-wide">{t("smartRotation.seasonFit")}</div>
               <Progress value={analysis.seasonalFit} className="mt-2.5 h-1.5" />
             </CardContent>
           </Card>
@@ -341,7 +317,7 @@ export default function SmartRotation() {
               <div className="text-3xl font-bold text-primary leading-tight">
                 {analysis.recipesUsedMultipleTimes.length}
               </div>
-              <div className="text-[11px] text-muted-foreground mt-1 font-medium uppercase tracking-wide">Wiederholungen</div>
+              <div className="text-[11px] text-muted-foreground mt-1 font-medium uppercase tracking-wide">{t("smartRotation.repetitions")}</div>
               <Progress
                 value={Math.max(
                   0,
@@ -360,7 +336,7 @@ export default function SmartRotation() {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2 text-muted-foreground">
               <BarChart3 className="h-4 w-4 text-primary" />
-              Gesamtbewertung
+              {t("smartRotation.overallScore")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -386,7 +362,7 @@ export default function SmartRotation() {
       {analysis && weeklyChartData.length > 0 && (
         <Card className="border-border/60">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Befüllung pro Woche</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">{t("smartRotation.fillPerWeek")}</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>
@@ -397,7 +373,7 @@ export default function SmartRotation() {
                 <Tooltip
                   formatter={(value: number, name: string) => [
                     value,
-                    name === "belegt" ? "Belegt" : "Leer",
+                    name === "belegt" ? t("smartRotation.filledLabel") : t("smartRotation.emptyLabel"),
                   ]}
                 />
                 <Bar dataKey="belegt" stackId="a" fill="#F37021" name="belegt" />
@@ -412,7 +388,7 @@ export default function SmartRotation() {
       {analysis && categoryChartData.length > 0 && (
         <Card className="border-border/60">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Kategorieverteilung</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">{t("smartRotation.categoryDist")}</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={280}>
@@ -448,7 +424,7 @@ export default function SmartRotation() {
       {analysis && allergenChartData.length > 0 && (
         <Card className="border-border/60">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Allergen-Verteilung (Top 10)</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">{t("smartRotation.allergenDist")}</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={250}>
@@ -457,9 +433,9 @@ export default function SmartRotation() {
                 <XAxis type="number" fontSize={12} />
                 <YAxis dataKey="allergen" type="category" width={40} fontSize={12} />
                 <Tooltip
-                  formatter={(value: number) => [value, "Vorkommen"]}
+                  formatter={(value: number) => [value, t("smartRotation.occurrences")]}
                 />
-                <Bar dataKey="anzahl" fill="#f59e0b" name="Vorkommen" />
+                <Bar dataKey="anzahl" fill="#f59e0b" name={t("smartRotation.occurrences")} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -472,7 +448,7 @@ export default function SmartRotation() {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2 text-muted-foreground">
               <AlertTriangle className="h-4 w-4 text-status-warning" />
-              Mehrfach verwendete Gerichte
+              {t("smartRotation.repeatedDishes")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -480,8 +456,8 @@ export default function SmartRotation() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left p-2 font-medium">Gericht</th>
-                    <th className="text-right p-2 font-medium">Verwendungen</th>
+                    <th className="text-left p-2 font-medium">{t("smartRotation.dish")}</th>
+                    <th className="text-right p-2 font-medium">{t("smartRotation.uses")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -512,13 +488,12 @@ export default function SmartRotation() {
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
-            KI-Optimierung
+            {t("smartRotation.aiOptimization")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Claude analysiert die aktuelle Rotation und schlägt konkrete Verbesserungen vor.
-            Schwerpunkte wählen:
+            {t("smartRotation.aiDescription")}
           </p>
 
           <div className="space-y-3">
@@ -529,7 +504,7 @@ export default function SmartRotation() {
                 onCheckedChange={(checked) => setFocusVariety(!!checked)}
               />
               <Label htmlFor="focus-variety" className="text-sm font-normal">
-                Abwechslung (keine Wiederholungen innerhalb 2 Wochen)
+                {t("smartRotation.focusVariety")}
               </Label>
             </div>
             <div className="flex items-center space-x-2">
@@ -539,7 +514,7 @@ export default function SmartRotation() {
                 onCheckedChange={(checked) => setFocusSeason(!!checked)}
               />
               <Label htmlFor="focus-season" className="text-sm font-normal">
-                Saisonalität (Rezepte passend zur aktuellen Saison)
+                {t("smartRotation.focusSeason")}
               </Label>
             </div>
             <div className="flex items-center space-x-2">
@@ -549,7 +524,7 @@ export default function SmartRotation() {
                 onCheckedChange={(checked) => setFocusCost(!!checked)}
               />
               <Label htmlFor="focus-cost" className="text-sm font-normal">
-                Kostenoptimierung (kürzere Zubereitungszeit, einfachere Zutaten)
+                {t("smartRotation.focusCost")}
               </Label>
             </div>
           </div>
@@ -563,12 +538,12 @@ export default function SmartRotation() {
             {optimizeMutation.isPending ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                KI analysiert...
+                {t("smartRotation.analyzing")}
               </>
             ) : (
               <>
                 <Brain className="h-4 w-4 mr-2" />
-                KI-Optimierung starten
+                {t("smartRotation.startOptimize")}
               </>
             )}
           </Button>
@@ -581,7 +556,7 @@ export default function SmartRotation() {
           <CardHeader className="pb-3">
             <CardTitle className="text-sm flex items-center gap-2 text-muted-foreground">
               <ArrowRightLeft className="h-4 w-4 text-primary" />
-              Vorgeschlagene Änderungen ({optimizeResult.swaps.length})
+              {t("smartRotation.suggestedChanges")} ({optimizeResult.swaps.length})
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -593,8 +568,8 @@ export default function SmartRotation() {
             {optimizeResult.swaps.length === 0 && (
               <div className="text-center py-6 text-muted-foreground">
                 <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-green-500" />
-                <p className="font-medium">Die Rotation ist bereits gut optimiert!</p>
-                <p className="text-xs mt-1">Keine Änderungen vorgeschlagen.</p>
+                <p className="font-medium">{t("smartRotation.alreadyOptimized")}</p>
+                <p className="text-xs mt-1">{t("smartRotation.noChanges")}</p>
               </div>
             )}
 
@@ -617,13 +592,13 @@ export default function SmartRotation() {
                         <Badge variant="outline" className="text-[10px] py-0 h-5">
                           W{swap.weekNr}
                         </Badge>
-                        <span>{DAY_LABELS[swap.dayOfWeek]}</span>
-                        <span>{MEAL_LABELS[swap.meal] || swap.meal}</span>
-                        <span>{COURSE_LABELS[swap.course] || swap.course}</span>
+                        <span>{t(`smartRotation.dayShort.${swap.dayOfWeek}`)}</span>
+                        <span>{t(`smartRotation.meals.${swap.meal}`) || swap.meal}</span>
+                        <span>{t(`smartRotation.courses.${swap.course}`) || swap.course}</span>
                       </div>
                       {isApplied && (
                         <Badge className="bg-status-success text-status-success-foreground text-[10px] py-0 h-5">
-                          Übernommen
+                          {t("smartRotation.applied")}
                         </Badge>
                       )}
                     </div>
@@ -631,7 +606,7 @@ export default function SmartRotation() {
                     {/* Swap details */}
                     <div className="flex items-center gap-2 text-sm">
                       <span className="text-muted-foreground line-through flex-1 truncate">
-                        {swap.currentRecipeName || "(leer)"}
+                        {swap.currentRecipeName || t("smartRotation.emptySlot")}
                       </span>
                       <ArrowRightLeft className="h-3.5 w-3.5 text-primary shrink-0" />
                       <span className="font-medium flex-1 truncate">
@@ -658,7 +633,7 @@ export default function SmartRotation() {
                         ) : (
                           <CheckCircle2 className="h-3 w-3 mr-1" />
                         )}
-                        Übernehmen
+                        {t("smartRotation.apply")}
                       </Button>
                     )}
                   </div>
@@ -674,13 +649,13 @@ export default function SmartRotation() {
                 onClick={() => {
                   refetchAnalysis();
                   toast({
-                    title: "Analyse aktualisiert",
-                    description: "Die Statistiken wurden neu berechnet.",
+                    title: t("smartRotation.toastRefreshed"),
+                    description: t("smartRotation.toastRefreshedDesc"),
                   });
                 }}
               >
                 <RefreshCw className="h-4 w-4 mr-2" />
-                Analyse aktualisieren
+                {t("smartRotation.refreshAnalysis")}
               </Button>
             )}
           </CardContent>

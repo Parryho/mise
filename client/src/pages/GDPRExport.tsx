@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
+import { useTranslation } from "@/hooks/useTranslation";
 import { Link } from "wouter";
 import { formatLocalDate } from "@shared/constants";
 
@@ -35,19 +36,20 @@ interface UserInfo {
 }
 
 const DATA_CATEGORIES = [
-  { key: "profile", label: "Profildaten", icon: User, description: "Name, E-Mail, Position, Rolle" },
-  { key: "haccpLogs", label: "HACCP-Protokolle", icon: Thermometer, description: "Temperaturmessungen" },
-  { key: "scheduleEntries", label: "Dienstplan-Eintraege", icon: ClipboardList, description: "Schichtzuweisungen" },
-  { key: "tasks", label: "Aufgaben", icon: FileText, description: "Zugewiesene Aufgaben" },
-  { key: "menuPlanTemperatures", label: "Menuplan-Temperaturen", icon: Thermometer, description: "Ausgabetemperaturen" },
-  { key: "auditLogs", label: "Aktivitaetsprotokoll", icon: History, description: "Aenderungshistorie" },
-  { key: "pushSubscriptions", label: "Push-Benachrichtigungen", icon: Bell, description: "Geraeteregistrierungen" },
-  { key: "staffProfiles", label: "Mitarbeiterprofile", icon: Users, description: "Verknuepfte Mitarbeiterdaten" },
+  { key: "profile", icon: User },
+  { key: "haccpLogs", icon: Thermometer },
+  { key: "scheduleEntries", icon: ClipboardList },
+  { key: "tasks", icon: FileText },
+  { key: "menuPlanTemperatures", icon: Thermometer },
+  { key: "auditLogs", icon: History },
+  { key: "pushSubscriptions", icon: Bell },
+  { key: "staffProfiles", icon: Users },
 ] as const;
 
 export default function GDPRExport() {
   const { user, isAdmin } = useAuth();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [counts, setCounts] = useState<DataCounts | null>(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
@@ -126,7 +128,7 @@ export default function GDPRExport() {
     setExporting(true);
     try {
       const res = await fetch("/api/gdpr/export");
-      if (!res.ok) throw new Error("Export fehlgeschlagen");
+      if (!res.ok) throw new Error(t("gdpr.exportFailed"));
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -136,9 +138,9 @@ export default function GDPRExport() {
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
-      toast({ title: "Datenexport heruntergeladen" });
+      toast({ title: t("gdpr.dataExported") });
     } catch (err: any) {
-      toast({ title: "Fehler", description: err.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
     } finally {
       setExporting(false);
     }
@@ -150,7 +152,7 @@ export default function GDPRExport() {
     setAdminExporting(true);
     try {
       const res = await fetch(`/api/gdpr/export/${selectedUserId}`);
-      if (!res.ok) throw new Error("Export fehlgeschlagen");
+      if (!res.ok) throw new Error(t("gdpr.exportFailed"));
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -160,9 +162,9 @@ export default function GDPRExport() {
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
-      toast({ title: "Datenexport heruntergeladen" });
+      toast({ title: t("gdpr.dataExported") });
     } catch (err: any) {
-      toast({ title: "Fehler", description: err.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
     } finally {
       setAdminExporting(false);
     }
@@ -180,11 +182,11 @@ export default function GDPRExport() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      toast({ title: "Konto geloescht", description: data.message });
+      toast({ title: t("gdpr.accountDeleted"), description: data.message });
       // Redirect to login after deletion
       setTimeout(() => { window.location.href = "/login"; }, 2000);
     } catch (err: any) {
-      toast({ title: "Fehler", description: err.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
       setDeleting(false);
     }
   };
@@ -201,13 +203,13 @@ export default function GDPRExport() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      toast({ title: "Benutzer geloescht", description: data.message });
+      toast({ title: t("gdpr.userDeleted"), description: data.message });
       setSelectedUserId("");
       setAdminDeleteStep(0);
       setAdminDeleteConfirmText("");
       fetchAllUsers();
     } catch (err: any) {
-      toast({ title: "Fehler", description: err.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
     } finally {
       setAdminDeleting(false);
     }
@@ -225,7 +227,7 @@ export default function GDPRExport() {
             <Icon className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
             <div className="min-w-0">
               <div className="text-sm font-medium">{count}</div>
-              <div className="text-xs text-muted-foreground truncate">{cat.label}</div>
+              <div className="text-xs text-muted-foreground truncate">{t(`gdpr.dataCategories.${cat.key}`)}</div>
             </div>
           </div>
         );
@@ -244,10 +246,10 @@ export default function GDPRExport() {
         <div>
           <h1 className="text-2xl font-heading font-bold flex items-center gap-2">
             <Shield className="h-6 w-6" />
-            Datenschutz (DSGVO)
+            {t("gdpr.title")}
           </h1>
           <p className="text-sm text-muted-foreground">
-            Daten exportieren, einsehen und Konto loeschen
+            {t("gdpr.subtitle")}
           </p>
         </div>
       </div>
@@ -255,9 +257,9 @@ export default function GDPRExport() {
       {/* ====== OWN DATA SECTION ====== */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Meine Daten</CardTitle>
+          <CardTitle className="text-lg">{t("gdpr.myData")}</CardTitle>
           <CardDescription>
-            Uebersicht aller gespeicherten Daten zu Ihrem Konto
+            {t("gdpr.myDataDesc")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -269,13 +271,13 @@ export default function GDPRExport() {
             <>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">
-                  Insgesamt {totalOwnRecords} Datensaetze in {Object.values(counts).filter(v => v > 0).length} Kategorien
+                  {t("gdpr.totalRecords", { total: totalOwnRecords, categories: Object.values(counts).filter(v => v > 0).length })}
                 </span>
               </div>
               {renderDataCounts(counts)}
             </>
           ) : (
-            <p className="text-sm text-muted-foreground">Daten konnten nicht geladen werden.</p>
+            <p className="text-sm text-muted-foreground">{t("gdpr.dataLoadFailed")}</p>
           )}
 
           <Separator />
@@ -287,7 +289,7 @@ export default function GDPRExport() {
               className="flex-1"
             >
               {exporting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Download className="h-4 w-4 mr-2" />}
-              Meine Daten exportieren (JSON)
+              {t("gdpr.exportMyData")}
             </Button>
           </div>
         </CardContent>
@@ -298,10 +300,10 @@ export default function GDPRExport() {
         <CardHeader>
           <CardTitle className="text-lg text-destructive flex items-center gap-2">
             <Trash2 className="h-5 w-5" />
-            Konto loeschen
+            {t("gdpr.deleteAccount")}
           </CardTitle>
           <CardDescription>
-            Loescht Ihr Konto und alle zugehoerigen Daten. HACCP-relevante Daten werden anonymisiert (gesetzliche Aufbewahrungspflicht).
+            {t("gdpr.deleteAccountDesc")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -311,7 +313,7 @@ export default function GDPRExport() {
               onClick={() => setDeleteStep(1)}
             >
               <Trash2 className="h-4 w-4 mr-2" />
-              Konto loeschen
+              {t("gdpr.deleteAccount")}
             </Button>
           )}
 
@@ -320,20 +322,20 @@ export default function GDPRExport() {
               <div className="flex items-start gap-3">
                 <AlertTriangle className="h-5 w-5 text-destructive mt-0.5 flex-shrink-0" />
                 <div className="space-y-2">
-                  <p className="font-medium text-destructive">Sind Sie sicher?</p>
+                  <p className="font-medium text-destructive">{t("gdpr.areYouSure")}</p>
                   <p className="text-sm text-muted-foreground">
-                    Diese Aktion kann nicht rueckgaengig gemacht werden. Folgendes wird passieren:
+                    {t("gdpr.cannotBeUndone")}
                   </p>
                   <ul className="text-sm space-y-1 list-disc list-inside text-muted-foreground">
-                    <li><strong>Geloescht:</strong> Konto, Push-Benachrichtigungen, Sitzungen</li>
-                    <li><strong>Anonymisiert:</strong> HACCP-Protokolle, Temperaturmessungen, Audit-Logs (gesetzliche Aufbewahrungspflicht)</li>
-                    <li><strong>Entfernt:</strong> Aufgaben-Zuweisungen, Mitarbeiterprofil-Verknuepfung</li>
+                    <li>{t("gdpr.deletedItems")}</li>
+                    <li>{t("gdpr.anonymizedItems")}</li>
+                    <li>{t("gdpr.removedItems")}</li>
                   </ul>
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setDeleteStep(0)}>Abbrechen</Button>
-                <Button variant="destructive" onClick={() => setDeleteStep(2)}>Ja, fortfahren</Button>
+                <Button variant="outline" onClick={() => setDeleteStep(0)}>{t("common.cancel")}</Button>
+                <Button variant="destructive" onClick={() => setDeleteStep(2)}>{t("gdpr.yesContinue")}</Button>
               </div>
             </div>
           )}
@@ -344,11 +346,11 @@ export default function GDPRExport() {
                 <AlertTriangle className="h-5 w-5 text-destructive mt-0.5 flex-shrink-0" />
                 <div className="space-y-3 flex-1">
                   <p className="font-medium text-destructive">
-                    Letzte Bestaetigung: Geben Sie LOESCHEN ein
+                    {t("gdpr.lastConfirmation")}
                   </p>
                   <div className="space-y-2">
                     <Label htmlFor="delete-confirm" className="text-sm">
-                      Bitte tippen Sie <strong>LOESCHEN</strong> zur Bestaetigung:
+                      {t("gdpr.typeDelete")}
                     </Label>
                     <Input
                       id="delete-confirm"
@@ -360,7 +362,7 @@ export default function GDPRExport() {
                   </div>
                   <div className="flex gap-2">
                     <Button variant="outline" onClick={() => { setDeleteStep(0); setDeleteConfirmText(""); }}>
-                      Abbrechen
+                      {t("common.cancel")}
                     </Button>
                     <Button
                       variant="destructive"
@@ -368,7 +370,7 @@ export default function GDPRExport() {
                       onClick={handleDeleteOwn}
                     >
                       {deleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
-                      Endgueltig loeschen
+                      {t("gdpr.permanentlyDelete")}
                     </Button>
                   </div>
                 </div>
@@ -384,24 +386,24 @@ export default function GDPRExport() {
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <Shield className="h-5 w-5" />
-              Admin: Benutzerdaten verwalten
+              {t("gdpr.adminManageUsers")}
             </CardTitle>
             <CardDescription>
-              Daten anderer Benutzer exportieren oder Konten loeschen
+              {t("gdpr.adminManageUsersDesc")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label>Benutzer auswaehlen</Label>
+              <Label>{t("gdpr.selectUser")}</Label>
               <Select value={selectedUserId} onValueChange={setSelectedUserId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Benutzer waehlen..." />
+                  <SelectValue placeholder={t("gdpr.selectUserPlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
                   {allUsers.map(u => (
                     <SelectItem key={u.id} value={u.id}>
                       {u.name} ({u.email}) — {u.role}
-                      {!u.isApproved && " [nicht freigegeben]"}
+                      {!u.isApproved && ` [${t("gdpr.notApproved")}]`}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -427,7 +429,7 @@ export default function GDPRExport() {
                         className="flex-1"
                       >
                         {adminExporting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Download className="h-4 w-4 mr-2" />}
-                        Daten exportieren
+                        {t("gdpr.exportData")}
                       </Button>
                     </div>
 
@@ -440,18 +442,18 @@ export default function GDPRExport() {
                           onClick={() => setAdminDeleteStep(1)}
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
-                          Benutzer loeschen
+                          {t("gdpr.deleteUser")}
                         </Button>
                       )}
 
                       {adminDeleteStep === 1 && (
                         <div className="space-y-3 p-4 bg-destructive/5 rounded-lg border border-destructive/20">
                           <p className="text-sm text-muted-foreground">
-                            Benutzer wird geloescht. HACCP-Daten werden anonymisiert.
+                            {t("gdpr.userDeletedInfo")}
                           </p>
                           <div className="flex gap-2">
-                            <Button variant="outline" onClick={() => setAdminDeleteStep(0)}>Abbrechen</Button>
-                            <Button variant="destructive" onClick={() => setAdminDeleteStep(2)}>Fortfahren</Button>
+                            <Button variant="outline" onClick={() => setAdminDeleteStep(0)}>{t("common.cancel")}</Button>
+                            <Button variant="destructive" onClick={() => setAdminDeleteStep(2)}>{t("gdpr.continue")}</Button>
                           </div>
                         </div>
                       )}
@@ -459,7 +461,7 @@ export default function GDPRExport() {
                       {adminDeleteStep === 2 && (
                         <div className="space-y-3 p-4 bg-destructive/10 rounded-lg border border-destructive/30">
                           <Label className="text-sm">
-                            Bitte tippen Sie <strong>LOESCHEN</strong> zur Bestaetigung:
+                            {t("gdpr.typeDelete")}
                           </Label>
                           <Input
                             value={adminDeleteConfirmText}
@@ -469,7 +471,7 @@ export default function GDPRExport() {
                           />
                           <div className="flex gap-2">
                             <Button variant="outline" onClick={() => { setAdminDeleteStep(0); setAdminDeleteConfirmText(""); }}>
-                              Abbrechen
+                              {t("common.cancel")}
                             </Button>
                             <Button
                               variant="destructive"
@@ -477,7 +479,7 @@ export default function GDPRExport() {
                               onClick={handleDeleteAdmin}
                             >
                               {adminDeleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
-                              Endgueltig loeschen
+                              {t("gdpr.permanentlyDelete")}
                             </Button>
                           </div>
                         </div>
@@ -497,11 +499,11 @@ export default function GDPRExport() {
           <div className="flex items-start gap-3">
             <Shield className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
             <div className="text-sm text-muted-foreground space-y-1">
-              <p className="font-medium text-foreground">Ihre Rechte nach DSGVO</p>
+              <p className="font-medium text-foreground">{t("gdpr.gdprRights")}</p>
               <ul className="list-disc list-inside space-y-0.5">
-                <li><strong>Auskunftsrecht (Art. 15):</strong> Sie koennen jederzeit Ihre gespeicherten Daten exportieren.</li>
-                <li><strong>Recht auf Loeschung (Art. 17):</strong> Sie koennen die Loeschung Ihrer Daten beantragen.</li>
-                <li><strong>Einschraenkung (Art. 18):</strong> HACCP-Daten unterliegen gesetzlicher Aufbewahrungspflicht und werden anonymisiert statt geloescht.</li>
+                <li>{t("gdpr.rightAccess")}</li>
+                <li>{t("gdpr.rightDeletion")}</li>
+                <li>{t("gdpr.rightRestriction")}</li>
               </ul>
             </div>
           </div>

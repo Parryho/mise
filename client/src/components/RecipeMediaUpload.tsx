@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Upload, X, Trash2, GripVertical, ImageIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface MediaItem {
   id: number;
@@ -27,6 +28,7 @@ interface RecipeMediaUploadProps {
 
 export default function RecipeMediaUpload({ recipeId, steps, onMediaChange }: RecipeMediaUploadProps) {
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -68,15 +70,15 @@ export default function RecipeMediaUpload({ recipeId, steps, onMediaChange }: Re
       });
 
       if (res.ok) {
-        toast({ title: `${files.length} Bild${files.length > 1 ? "er" : ""} hochgeladen` });
+        toast({ title: t("recipeMedia.uploaded") });
         await fetchMedia();
         onMediaChange?.();
       } else {
         const data = await res.json();
-        toast({ title: "Fehler", description: data.error, variant: "destructive" });
+        toast({ title: t("common.error"), description: data.error, variant: "destructive" });
       }
     } catch (error: any) {
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: error.message, variant: "destructive" });
     } finally {
       setUploading(false);
     }
@@ -106,22 +108,22 @@ export default function RecipeMediaUpload({ recipeId, steps, onMediaChange }: Re
   };
 
   const handleDelete = async (mediaId: number) => {
-    if (!confirm("Bild wirklich loeschen?")) return;
+    if (!confirm(t("recipeMedia.deleteConfirm"))) return;
     try {
       const res = await fetch(`/api/recipes/${recipeId}/media/${mediaId}`, {
         method: "DELETE",
         credentials: "include",
       });
       if (res.ok) {
-        toast({ title: "Bild geloescht" });
+        toast({ title: t("recipeMedia.deleted") });
         await fetchMedia();
         onMediaChange?.();
       } else {
         const data = await res.json();
-        toast({ title: "Fehler", description: data.error, variant: "destructive" });
+        toast({ title: t("common.error"), description: data.error, variant: "destructive" });
       }
     } catch (error: any) {
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: error.message, variant: "destructive" });
     }
   };
 
@@ -138,7 +140,7 @@ export default function RecipeMediaUpload({ recipeId, steps, onMediaChange }: Re
         await fetchMedia();
       }
     } catch (error: any) {
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: error.message, variant: "destructive" });
     }
   };
 
@@ -154,7 +156,7 @@ export default function RecipeMediaUpload({ recipeId, steps, onMediaChange }: Re
         await fetchMedia();
       }
     } catch (error: any) {
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: error.message, variant: "destructive" });
     }
   };
 
@@ -185,7 +187,7 @@ export default function RecipeMediaUpload({ recipeId, steps, onMediaChange }: Re
       ]);
       await fetchMedia();
     } catch (error: any) {
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: error.message, variant: "destructive" });
     }
   };
 
@@ -199,7 +201,7 @@ export default function RecipeMediaUpload({ recipeId, steps, onMediaChange }: Re
 
   return (
     <div className="space-y-4">
-      <Label className="text-sm font-semibold">Fotos</Label>
+      <Label className="text-sm font-semibold">{t("recipeMedia.photos")}</Label>
 
       {/* Drop zone */}
       <div
@@ -222,16 +224,16 @@ export default function RecipeMediaUpload({ recipeId, steps, onMediaChange }: Re
         {uploading ? (
           <div className="flex flex-col items-center gap-2">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">Hochladen...</p>
+            <p className="text-sm text-muted-foreground">{t("recipeMedia.uploading")}</p>
           </div>
         ) : (
           <div className="flex flex-col items-center gap-2">
             <Upload className="h-8 w-8 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
-              Bilder hierher ziehen oder klicken
+              {t("recipeMedia.dropOrClick")}
             </p>
             <p className="text-xs text-muted-foreground">
-              JPG, PNG, WebP - max. 10 MB
+              {t("recipeMedia.fileTypes")}
             </p>
           </div>
         )}
@@ -261,7 +263,7 @@ export default function RecipeMediaUpload({ recipeId, steps, onMediaChange }: Re
                 </div>
                 {item.step !== null && (
                   <div className="absolute bottom-1 left-1 bg-primary text-primary-foreground text-[10px] px-1.5 py-0.5 rounded font-medium">
-                    Schritt {item.step + 1}
+                    {t("recipeMedia.step")} {item.step + 1}
                   </div>
                 )}
               </div>
@@ -272,7 +274,7 @@ export default function RecipeMediaUpload({ recipeId, steps, onMediaChange }: Re
                       value={captionValue}
                       onChange={(e) => setCaptionValue(e.target.value)}
                       className="h-7 text-xs"
-                      placeholder="Beschreibung..."
+                      placeholder={t("recipeMedia.descriptionPlaceholder")}
                       autoFocus
                       onKeyDown={(e) => {
                         if (e.key === "Enter") handleUpdateCaption(item.id, captionValue);
@@ -289,7 +291,7 @@ export default function RecipeMediaUpload({ recipeId, steps, onMediaChange }: Re
                       setCaptionValue(item.caption || "");
                     }}
                   >
-                    {item.caption || "Beschreibung hinzufuegen..."}
+                    {item.caption || t("recipeMedia.addDescription")}
                   </p>
                 )}
                 <Select
@@ -297,13 +299,13 @@ export default function RecipeMediaUpload({ recipeId, steps, onMediaChange }: Re
                   onValueChange={(v) => handleStepChange(item.id, v === "none" ? null : parseInt(v, 10))}
                 >
                   <SelectTrigger className="h-6 text-[10px]">
-                    <SelectValue placeholder="Schritt zuweisen" />
+                    <SelectValue placeholder={t("recipeMedia.assignStep")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Kein Schritt</SelectItem>
+                    <SelectItem value="none">{t("recipeMedia.noStep")}</SelectItem>
                     {steps.map((step, sIdx) => (
                       <SelectItem key={sIdx} value={String(sIdx)}>
-                        Schritt {sIdx + 1}: {step.substring(0, 30)}...
+                        {t("recipeMedia.step")} {sIdx + 1}: {step.substring(0, 30)}...
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -317,7 +319,7 @@ export default function RecipeMediaUpload({ recipeId, steps, onMediaChange }: Re
       {media.length === 0 && !uploading && (
         <div className="flex flex-col items-center gap-2 py-4 text-muted-foreground">
           <ImageIcon className="h-8 w-8" />
-          <p className="text-sm">Noch keine Fotos vorhanden</p>
+          <p className="text-sm">{t("recipeMedia.noPhotos")}</p>
         </div>
       )}
     </div>

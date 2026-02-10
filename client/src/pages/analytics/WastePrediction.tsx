@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, ArrowLeft, AlertTriangle, Leaf, Clock, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "wouter";
 import { getWeekDateRange, getISOWeek } from "@shared/constants";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface SuggestedRecipe {
   recipeId: number;
@@ -43,31 +44,32 @@ interface Location {
   name: string;
 }
 
-const RISK_STYLES: Record<string, { bg: string; border: string; text: string; label: string; icon: string }> = {
+const RISK_STYLES: Record<string, { bg: string; border: string; text: string; labelKey: string; icon: string }> = {
   red: {
     bg: "bg-red-50",
     border: "border-red-300",
     text: "text-red-700",
-    label: "Kritisch",
+    labelKey: "waste.critical",
     icon: "text-red-500",
   },
   yellow: {
     bg: "bg-yellow-50",
     border: "border-yellow-300",
     text: "text-yellow-700",
-    label: "Warnung",
+    labelKey: "waste.warning",
     icon: "text-yellow-500",
   },
   green: {
     bg: "bg-green-50",
     border: "border-green-300",
     text: "text-green-700",
-    label: "OK",
+    labelKey: "waste.ok",
     icon: "text-green-500",
   },
 };
 
 export default function WastePrediction() {
+  const { t } = useTranslation();
   const [year, setYear] = useState(new Date().getFullYear());
   const [week, setWeek] = useState(getISOWeek(new Date()));
   const [locationId, setLocationId] = useState<string>("all");
@@ -116,13 +118,13 @@ export default function WastePrediction() {
         <Link href="/reports">
           <Button variant="ghost" size="sm" className="gap-1.5 min-h-[44px]">
             <ArrowLeft className="h-4 w-4" />
-            Reports
+            {t("common.reports")}
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-heading font-bold">Waste-Prediction</h1>
+          <h1 className="text-2xl font-heading font-bold">{t("waste.title")}</h1>
           <p className="text-sm text-muted-foreground">
-            Ablaufrisiko basierend auf Menüplan und Haltbarkeit
+            {t("waste.subtitle")}
           </p>
         </div>
       </div>
@@ -135,15 +137,15 @@ export default function WastePrediction() {
             <div className="flex items-center gap-2 flex-1">
               <Button variant="outline" size="sm" onClick={handlePrevWeek} className="min-h-[44px]">
                 <ChevronLeft className="h-4 w-4 mr-1" />
-                Vorige
+                {t("waste.prev")}
               </Button>
               <div className="text-center min-w-[140px]">
-                <p className="text-sm text-muted-foreground">Kalenderwoche</p>
+                <p className="text-sm text-muted-foreground">{t("waste.calendarWeek")}</p>
                 <p className="text-lg font-semibold">KW {week} / {year}</p>
-                <p className="text-xs text-muted-foreground">{from} bis {to}</p>
+                <p className="text-xs text-muted-foreground">{from} – {to}</p>
               </div>
               <Button variant="outline" size="sm" onClick={handleNextWeek} className="min-h-[44px]">
-                Nächste
+                {t("waste.next")}
                 <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
             </div>
@@ -151,10 +153,10 @@ export default function WastePrediction() {
             <div className="w-full md:w-[200px]">
               <Select value={locationId} onValueChange={setLocationId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Standort" />
+                  <SelectValue placeholder={t("waste.location")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Alle Standorte</SelectItem>
+                  <SelectItem value="all">{t("waste.allLocations")}</SelectItem>
                   {locations?.map((loc) => (
                     <SelectItem key={loc.id} value={String(loc.id)}>
                       {loc.name}
@@ -180,38 +182,38 @@ export default function WastePrediction() {
           <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Gesamt gefährdet</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">{t("waste.totalAtRisk")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-2xl font-bold">{data.summary.totalAtRisk}</p>
-                <p className="text-xs text-muted-foreground">Zutaten</p>
+                <p className="text-xs text-muted-foreground">{t("waste.ingredientsLabel")}</p>
               </CardContent>
             </Card>
             <Card className="border-red-200">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-red-600">Kritisch</CardTitle>
+                <CardTitle className="text-sm font-medium text-red-600">{t("waste.critical")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-2xl font-bold text-red-600">{data.summary.redCount}</p>
-                <p className="text-xs text-muted-foreground">Läuft morgen ab</p>
+                <p className="text-xs text-muted-foreground">{t("waste.expiresTomorrow")}</p>
               </CardContent>
             </Card>
             <Card className="border-yellow-200">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-yellow-600">Warnung</CardTitle>
+                <CardTitle className="text-sm font-medium text-yellow-600">{t("waste.warning")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-2xl font-bold text-yellow-600">{data.summary.yellowCount}</p>
-                <p className="text-xs text-muted-foreground">2-3 Tage</p>
+                <p className="text-xs text-muted-foreground">{t("waste.days23")}</p>
               </CardContent>
             </Card>
             <Card className="border-green-200">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-green-600">In Ordnung</CardTitle>
+                <CardTitle className="text-sm font-medium text-green-600">{t("waste.ok")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-2xl font-bold text-green-600">{data.summary.greenCount}</p>
-                <p className="text-xs text-muted-foreground">Noch haltbar</p>
+                <p className="text-xs text-muted-foreground">{t("waste.stillGood")}</p>
               </CardContent>
             </Card>
           </div>
@@ -220,7 +222,7 @@ export default function WastePrediction() {
           {data.summary.topCategories.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Häufigste Kategorien mit Risiko</CardTitle>
+                <CardTitle className="text-base">{t("waste.topCategories")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-2">
@@ -236,14 +238,14 @@ export default function WastePrediction() {
 
           {/* At-Risk Ingredients */}
           <div className="space-y-3">
-            <h2 className="text-lg font-semibold">Gefährdete Zutaten</h2>
+            <h2 className="text-lg font-semibold">{t("waste.atRiskIngredients")}</h2>
 
             {data.atRisk.length === 0 && (
               <Card>
                 <CardContent className="pt-6 text-center text-muted-foreground">
                   <Leaf className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p className="font-medium">Keine Zutaten gefährdet</p>
-                  <p className="text-sm">Alle geplanten Zutaten sind innerhalb der Haltbarkeit gut eingeteilt.</p>
+                  <p className="font-medium">{t("waste.noRisk")}</p>
+                  <p className="text-sm">{t("waste.noRiskHint")}</p>
                 </CardContent>
               </Card>
             )}
@@ -268,27 +270,27 @@ export default function WastePrediction() {
                             }`}
                             variant="outline"
                           >
-                            {style.label}
+                            {t(style.labelKey)}
                           </Badge>
                         </div>
 
                         <div className="grid gap-1 text-sm text-muted-foreground mt-2">
                           <div className="flex items-center gap-1">
-                            <span className="font-medium">Kategorie:</span>
+                            <span className="font-medium">{t("waste.category")}:</span>
                             <span>{item.categoryLabel}</span>
                           </div>
                           <div className="flex items-center gap-1">
                             <Clock className="h-3 w-3" />
                             <span>
-                              Geplant: {new Date(item.plannedDate).toLocaleDateString("de-AT")}
+                              {t("waste.planned")}: {new Date(item.plannedDate).toLocaleDateString("de-AT")}
                             </span>
                             <ChevronRight className="h-3 w-3" />
                             <span>
-                              Ablauf ca.: {new Date(item.expiryEstimate).toLocaleDateString("de-AT")}
+                              {t("waste.expiryApprox")}: {new Date(item.expiryEstimate).toLocaleDateString("de-AT")}
                             </span>
                           </div>
                           <div>
-                            <span className="font-medium">Verwendet in: </span>
+                            <span className="font-medium">{t("waste.usedIn")}: </span>
                             {item.usedInRecipes.join(", ")}
                           </div>
                         </div>
@@ -297,7 +299,7 @@ export default function WastePrediction() {
                         {item.suggestedRecipes.length > 0 && (
                           <div className="mt-3 pt-2 border-t border-dashed">
                             <p className="text-xs font-medium text-muted-foreground mb-1">
-                              Vorgeschlagene Rezepte zur Verwertung:
+                              {t("waste.suggestedRecipes")}:
                             </p>
                             <div className="flex flex-wrap gap-1">
                               {item.suggestedRecipes.map((recipe) => (
@@ -317,7 +319,7 @@ export default function WastePrediction() {
                         <p className={`text-2xl font-bold ${style.text}`}>
                           {item.daysUntilExpiry}
                         </p>
-                        <p className="text-xs text-muted-foreground">Tage</p>
+                        <p className="text-xs text-muted-foreground">{t("waste.days")}</p>
                       </div>
                     </div>
                   </CardContent>

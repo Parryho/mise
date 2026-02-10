@@ -6,11 +6,12 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Printer, ChevronDown, ChevronUp, Clock, DollarSign, ClipboardList } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatLocalDate } from "@shared/constants";
+import { useTranslation } from "@/hooks/useTranslation";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 function formatEuro(val: number): string {
   return val.toLocaleString("de-AT", { style: "currency", currency: "EUR" });
 }
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface ProductionIngredient {
   name: string;
@@ -40,9 +41,6 @@ interface ProductionEntry {
   mealTotalCost?: number;
 }
 
-const MEAL_LABELS: Record<string, string> = { lunch: "Mittag", dinner: "Abend", breakfast: "Frühstück" };
-const LOC_LABELS: Record<string, string> = { city: "City", sued: "SÜD", ak: "AK" };
-
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
   return d.toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" });
@@ -68,6 +66,7 @@ function getWeekRange(): { start: string; end: string } {
 }
 
 export default function ProductionList() {
+  const { t } = useTranslation();
   const weekRange = getWeekRange();
   const [startDate, setStartDate] = useState(weekRange.start);
   const [endDate, setEndDate] = useState(weekRange.end);
@@ -104,19 +103,19 @@ export default function ProductionList() {
   return (
     <div className="p-4 space-y-4 pb-24">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-heading font-bold">Produktionsliste</h1>
+        <h1 className="text-2xl font-heading font-bold">{t("production.title")}</h1>
         <Button variant="outline" size="sm" className="gap-1" onClick={() => window.print()}>
-          <Printer className="h-4 w-4" /> Drucken
+          <Printer className="h-4 w-4" /> {t("common.print")}
         </Button>
       </div>
 
       <div className="flex items-end gap-2">
         <div className="space-y-1 flex-1">
-          <Label className="text-xs">Von</Label>
+          <Label className="text-xs">{t("common.from")}</Label>
           <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="h-9 text-xs" />
         </div>
         <div className="space-y-1 flex-1">
-          <Label className="text-xs">Bis</Label>
+          <Label className="text-xs">{t("common.to")}</Label>
           <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="h-9 text-xs" />
         </div>
         <Button
@@ -125,7 +124,7 @@ export default function ProductionList() {
           className="h-9 text-xs shrink-0"
           onClick={() => { const r = getWeekRange(); setStartDate(r.start); setEndDate(r.end); }}
         >
-          Diese Woche
+          {t("production.thisWeek")}
         </Button>
       </div>
 
@@ -136,8 +135,8 @@ export default function ProductionList() {
       ) : entries.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
           <ClipboardList className="h-10 w-10 mx-auto mb-3 opacity-30" />
-          <p className="font-medium text-sm">Keine Menüpläne für diesen Zeitraum</p>
-          <p className="text-xs mt-1">Erstellen Sie Menüpläne im Wochenplan, um die Produktionsliste zu sehen.</p>
+          <p className="font-medium text-sm">{t("production.noPlans")}</p>
+          <p className="text-xs mt-1">{t("production.noPlansHint")}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -145,9 +144,9 @@ export default function ProductionList() {
             <Card key={idx}>
               <CardHeader className="py-2 px-3">
                 <CardTitle className="text-sm font-medium flex items-center justify-between">
-                  <span>{formatDate(entry.date)} - {MEAL_LABELS[entry.meal] || entry.meal}</span>
+                  <span>{formatDate(entry.date)} - {t(`production.mealLabels.${entry.meal}`) || entry.meal}</span>
                   <span className="text-xs font-normal text-muted-foreground flex items-center gap-2">
-                    {LOC_LABELS[entry.locationSlug] || entry.locationSlug} | {entry.pax} PAX
+                    {t(`production.locLabels.${entry.locationSlug}`) || entry.locationSlug} | {t("production.totalPax", { pax: entry.pax })}
                     {entry.mealTotalCost != null && entry.mealTotalCost > 0 && (
                       <Badge variant="outline" className="text-[10px] py-0">{formatEuro(entry.mealTotalCost)}</Badge>
                     )}
@@ -178,10 +177,10 @@ export default function ProductionList() {
                       <CollapsibleContent className="px-2 pb-2">
                         <div className="border rounded-lg overflow-hidden bg-secondary/10">
                           <div className="grid grid-cols-4 text-[10px] text-muted-foreground font-medium bg-secondary/30 px-2 py-1.5">
-                            <span>Zutat</span>
-                            <span className="text-right">pro Portion</span>
-                            <span className="text-right">Gesamt ({entry.pax}x)</span>
-                            <span className="text-right">Kosten</span>
+                            <span>{t("production.ingredient")}</span>
+                            <span className="text-right">{t("production.perPortion")}</span>
+                            <span className="text-right">{t("production.costs")} ({entry.pax}x)</span>
+                            <span className="text-right">{t("production.costs")}</span>
                           </div>
                           <div className="divide-y divide-border/30">
                             {dish.ingredients.map((ing, iIdx) => (

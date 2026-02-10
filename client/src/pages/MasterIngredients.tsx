@@ -8,6 +8,7 @@ import { Loader2, PlusCircle, Pencil, Trash2, Search, ArrowLeft } from "lucide-r
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "@/hooks/useTranslation";
 import { Link } from "wouter";
 
 interface MasterIngredient {
@@ -21,19 +22,7 @@ interface MasterIngredient {
   createdAt: string;
 }
 
-const INGREDIENT_CATEGORIES = [
-  { id: "fleisch", label: "Fleisch" },
-  { id: "fisch", label: "Fisch" },
-  { id: "gemuese", label: "Gemüse" },
-  { id: "obst", label: "Obst" },
-  { id: "milchprodukte", label: "Milchprodukte" },
-  { id: "getreide", label: "Getreide/Mehl" },
-  { id: "gewuerze", label: "Gewürze" },
-  { id: "oele", label: "Öle/Fette" },
-  { id: "konserven", label: "Konserven" },
-  { id: "tiefkuehl", label: "Tiefkühl" },
-  { id: "sonstiges", label: "Sonstiges" },
-];
+const INGREDIENT_CATEGORY_IDS = ["fleisch", "fisch", "gemuese", "obst", "milchprodukte", "getreide", "gewuerze", "oele", "konserven", "tiefkuehl", "sonstiges"] as const;
 
 const UNITS = ["g", "kg", "ml", "l", "Stk", "Bund", "Pkg", "Dose"];
 const PRICE_UNITS = ["kg", "l", "Stk", "Pkg", "100g"];
@@ -45,6 +34,7 @@ export default function MasterIngredients() {
   const [catFilter, setCatFilter] = useState("all");
   const [showAdd, setShowAdd] = useState(false);
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const fetchItems = async () => {
     try {
@@ -71,18 +61,18 @@ export default function MasterIngredients() {
   }, [items, search, catFilter]);
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Zutat wirklich löschen?")) return;
+    if (!confirm(t("masterIngredients.deleteConfirm"))) return;
     try {
       await fetch(`/api/master-ingredients/${id}`, { method: "DELETE" });
-      toast({ title: "Gelöscht" });
+      toast({ title: t("common.deleted") });
       fetchItems();
     } catch {
-      toast({ title: "Fehler beim Löschen", variant: "destructive" });
+      toast({ title: t("errors.deletingError"), variant: "destructive" });
     }
   };
 
   const getCategoryLabel = (catId: string) => {
-    return INGREDIENT_CATEGORIES.find(c => c.id === catId)?.label || catId;
+    return t(`masterIngredients.categories.${catId}`);
   };
 
   if (loading) {
@@ -99,15 +89,15 @@ export default function MasterIngredients() {
         <Link href="/recipes">
           <Button variant="ghost" size="sm" className="gap-1 min-h-[44px]">
             <ArrowLeft className="h-4 w-4" />
-            Rezepte
+            {t("nav.recipes")}
           </Button>
         </Link>
         <div className="flex-1">
-          <h1 className="text-xl font-heading font-bold">Zutatenstammdaten</h1>
-          <p className="text-xs text-muted-foreground">{items.length} Zutaten mit Preisen</p>
+          <h1 className="text-xl font-heading font-bold">{t("masterIngredients.title")}</h1>
+          <p className="text-xs text-muted-foreground">{t("masterIngredients.subtitle", { count: items.length })}</p>
         </div>
         <Button size="sm" className="gap-1 min-h-[44px]" onClick={() => setShowAdd(true)}>
-          <PlusCircle className="h-4 w-4" /> Neue Zutat
+          <PlusCircle className="h-4 w-4" /> {t("masterIngredients.newIngredient")}
         </Button>
       </div>
 
@@ -118,7 +108,7 @@ export default function MasterIngredients() {
           <Input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Zutat suchen..."
+            placeholder={t("masterIngredients.searchPlaceholder")}
             className="pl-9"
           />
         </div>
@@ -129,20 +119,20 @@ export default function MasterIngredients() {
             className="h-7 text-xs shrink-0"
             onClick={() => setCatFilter("all")}
           >
-            Alle ({items.length})
+            {t("common.all")} ({items.length})
           </Button>
-          {INGREDIENT_CATEGORIES.map(cat => {
-            const count = items.filter(i => i.category === cat.id).length;
+          {INGREDIENT_CATEGORY_IDS.map(catId => {
+            const count = items.filter(i => i.category === catId).length;
             if (count === 0) return null;
             return (
               <Button
-                key={cat.id}
-                variant={catFilter === cat.id ? "default" : "outline"}
+                key={catId}
+                variant={catFilter === catId ? "default" : "outline"}
                 size="sm"
                 className="h-7 text-xs shrink-0"
-                onClick={() => setCatFilter(cat.id)}
+                onClick={() => setCatFilter(catId)}
               >
-                {cat.label} ({count})
+                {t(`masterIngredients.categories.${catId}`)} ({count})
               </Button>
             );
           })}
@@ -154,11 +144,11 @@ export default function MasterIngredients() {
         <div className="text-center py-12 space-y-3">
           <Search className="h-10 w-10 mx-auto text-muted-foreground/40" />
           <p className="text-muted-foreground font-medium">
-            {items.length === 0 ? "Noch keine Zutatenstammdaten" : "Keine Ergebnisse"}
+            {items.length === 0 ? t("masterIngredients.noIngredients") : t("masterIngredients.noResults")}
           </p>
           {items.length === 0 && (
             <Button variant="outline" size="sm" className="gap-1 min-h-[44px]" onClick={() => setShowAdd(true)}>
-              <PlusCircle className="h-4 w-4" /> Erste Zutat anlegen
+              <PlusCircle className="h-4 w-4" /> {t("masterIngredients.firstIngredient")}
             </Button>
           )}
         </div>
@@ -212,11 +202,12 @@ function AddIngredientDialog({ open, onOpenChange, onSave }: {
   const [supplier, setSupplier] = useState("");
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
-      toast({ title: "Name erforderlich", variant: "destructive" });
+      toast({ title: t("suppliers.nameRequired"), variant: "destructive" });
       return;
     }
     setSaving(true);
@@ -237,13 +228,13 @@ function AddIngredientDialog({ open, onOpenChange, onSave }: {
         const err = await res.json();
         throw new Error(err.error);
       }
-      toast({ title: "Zutat erstellt" });
+      toast({ title: t("masterIngredients.created") });
       setName("");
       setPricePerUnit("");
       setSupplier("");
       onSave();
     } catch (error: any) {
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: error.message, variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -253,7 +244,7 @@ function AddIngredientDialog({ open, onOpenChange, onSave }: {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm">
         <DialogHeader>
-          <DialogTitle>Neue Zutat</DialogTitle>
+          <DialogTitle>{t("masterIngredients.newIngredient")}</DialogTitle>
         </DialogHeader>
         <IngredientForm
           name={name} setName={setName}
@@ -264,7 +255,7 @@ function AddIngredientDialog({ open, onOpenChange, onSave }: {
           supplier={supplier} setSupplier={setSupplier}
           saving={saving}
           onSubmit={handleSubmit}
-          submitLabel="Erstellen"
+          submitLabel={t("common.create")}
         />
       </DialogContent>
     </Dialog>
@@ -281,6 +272,7 @@ function EditIngredientDialog({ item, onSave }: { item: MasterIngredient; onSave
   const [supplier, setSupplier] = useState(item.supplier || "");
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -302,11 +294,11 @@ function EditIngredientDialog({ item, onSave }: { item: MasterIngredient; onSave
         const err = await res.json();
         throw new Error(err.error);
       }
-      toast({ title: "Gespeichert" });
+      toast({ title: t("common.saved") });
       setOpen(false);
       onSave();
     } catch (error: any) {
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: error.message, variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -321,7 +313,7 @@ function EditIngredientDialog({ item, onSave }: { item: MasterIngredient; onSave
       </DialogTrigger>
       <DialogContent className="max-w-sm">
         <DialogHeader>
-          <DialogTitle>Zutat bearbeiten</DialogTitle>
+          <DialogTitle>{t("masterIngredients.editIngredient")}</DialogTitle>
         </DialogHeader>
         <IngredientForm
           name={name} setName={setName}
@@ -332,7 +324,7 @@ function EditIngredientDialog({ item, onSave }: { item: MasterIngredient; onSave
           supplier={supplier} setSupplier={setSupplier}
           saving={saving}
           onSubmit={handleSubmit}
-          submitLabel="Speichern"
+          submitLabel={t("common.save")}
         />
       </DialogContent>
     </Dialog>
@@ -350,26 +342,27 @@ function IngredientForm({ name, setName, category, setCategory, unit, setUnit, p
   onSubmit: (e: React.FormEvent) => void;
   submitLabel: string;
 }) {
+  const { t } = useTranslation();
   return (
     <form onSubmit={onSubmit} className="space-y-3">
       <div className="space-y-1.5">
-        <Label>Name</Label>
-        <Input value={name} onChange={e => setName(e.target.value)} placeholder="z.B. Karotten" required />
+        <Label>{t("common.name")}</Label>
+        <Input value={name} onChange={e => setName(e.target.value)} placeholder={t("masterIngredients.namePlaceholder")} required />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
-          <Label>Kategorie</Label>
+          <Label>{t("masterIngredients.category")}</Label>
           <Select value={category} onValueChange={setCategory}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
-              {INGREDIENT_CATEGORIES.map(c => (
-                <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>
+              {INGREDIENT_CATEGORY_IDS.map(catId => (
+                <SelectItem key={catId} value={catId}>{t(`masterIngredients.categories.${catId}`)}</SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
         <div className="space-y-1.5">
-          <Label>Einheit</Label>
+          <Label>{t("masterIngredients.unit")}</Label>
           <Select value={unit} onValueChange={setUnit}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -382,11 +375,11 @@ function IngredientForm({ name, setName, category, setCategory, unit, setUnit, p
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
-          <Label>Preis (€)</Label>
+          <Label>{t("masterIngredients.price")}</Label>
           <Input type="number" step="0.01" min="0" value={pricePerUnit} onChange={e => setPricePerUnit(e.target.value)} placeholder="0.00" />
         </div>
         <div className="space-y-1.5">
-          <Label>pro</Label>
+          <Label>{t("masterIngredients.per")}</Label>
           <Select value={priceUnit} onValueChange={setPriceUnit}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -398,8 +391,8 @@ function IngredientForm({ name, setName, category, setCategory, unit, setUnit, p
         </div>
       </div>
       <div className="space-y-1.5">
-        <Label>Lieferant</Label>
-        <Input value={supplier} onChange={e => setSupplier(e.target.value)} placeholder="Optional" />
+        <Label>{t("masterIngredients.supplier")}</Label>
+        <Input value={supplier} onChange={e => setSupplier(e.target.value)} placeholder={t("common.optional")} />
       </div>
       <Button type="submit" className="w-full" disabled={saving}>
         {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}

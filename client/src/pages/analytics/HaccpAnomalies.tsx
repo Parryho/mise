@@ -8,6 +8,7 @@ import { Link } from "wouter";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine, Scatter } from "recharts";
 import { cn } from "@/lib/utils";
 import { formatLocalDate } from "@shared/constants";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface Anomaly {
   fridgeId: number;
@@ -48,6 +49,7 @@ interface FridgeTempData {
 }
 
 export default function HaccpAnomalies() {
+  const { t } = useTranslation();
   const [selectedSeverity, setSelectedSeverity] = useState<"ALL" | "CRITICAL" | "WARNING" | "INFO">("ALL");
   const [selectedFridge, setSelectedFridge] = useState<number | null>(null);
   const [days, setDays] = useState(30);
@@ -179,10 +181,10 @@ export default function HaccpAnomalies() {
         <Link href="/reports">
           <Button variant="ghost" size="sm" className="gap-1.5 min-h-[44px]">
             <ArrowLeft className="h-4 w-4" />
-            Reports
+            {t("common.reports")}
           </Button>
         </Link>
-        <h1 className="text-2xl font-heading font-bold">Anomalie-Erkennung</h1>
+        <h1 className="text-2xl font-heading font-bold">{t("anomalies.title")}</h1>
       </div>
 
       {/* Controls */}
@@ -190,12 +192,12 @@ export default function HaccpAnomalies() {
         <CardContent className="p-4 space-y-3">
           <div className="flex flex-wrap gap-3 items-end">
             <div className="space-y-1">
-              <p className="text-xs font-medium text-muted-foreground">Zeitraum</p>
+              <p className="text-xs font-medium text-muted-foreground">{t("anomalies.period")}</p>
               <div className="flex gap-1.5">
                 {[
-                  { value: 7, label: "7 Tage" },
-                  { value: 30, label: "30 Tage" },
-                  { value: 90, label: "90 Tage" },
+                  { value: 7, label: t("anomalies.days7") },
+                  { value: 30, label: t("anomalies.days30") },
+                  { value: 90, label: t("anomalies.days90") },
                 ].map((opt) => (
                   <Button
                     key={opt.value}
@@ -211,7 +213,7 @@ export default function HaccpAnomalies() {
             </div>
 
             <div className="space-y-1">
-              <p className="text-xs font-medium text-muted-foreground">Schweregrad</p>
+              <p className="text-xs font-medium text-muted-foreground">{t("anomalies.severity")}</p>
               <div className="flex gap-1.5">
                 <Button
                   variant={selectedSeverity === "ALL" ? "default" : "outline"}
@@ -219,7 +221,7 @@ export default function HaccpAnomalies() {
                   onClick={() => setSelectedSeverity("ALL")}
                   className="min-h-[44px]"
                 >
-                  Alle
+                  {t("anomalies.all")}
                 </Button>
                 <Button
                   variant={selectedSeverity === "CRITICAL" ? "destructive" : "outline"}
@@ -227,7 +229,7 @@ export default function HaccpAnomalies() {
                   onClick={() => setSelectedSeverity("CRITICAL")}
                   className="min-h-[44px]"
                 >
-                  Kritisch ({anomalyData?.summary.critical || 0})
+                  {t("anomalies.critical")} ({anomalyData?.summary.critical || 0})
                 </Button>
                 <Button
                   variant={selectedSeverity === "WARNING" ? "default" : "outline"}
@@ -235,20 +237,20 @@ export default function HaccpAnomalies() {
                   onClick={() => setSelectedSeverity("WARNING")}
                   className={`min-h-[44px] ${selectedSeverity === "WARNING" ? "bg-amber-600 hover:bg-amber-700" : ""}`}
                 >
-                  Warnung ({anomalyData?.summary.warning || 0})
+                  {t("anomalies.warning")} ({anomalyData?.summary.warning || 0})
                 </Button>
               </div>
             </div>
 
             {uniqueFridges.length > 0 && (
               <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground">Kühlschrank</p>
+                <p className="text-xs font-medium text-muted-foreground">{t("anomalies.fridge")}</p>
                 <select
                   className="px-3 py-2 border rounded-md text-sm min-h-[44px]"
                   value={selectedFridge || ""}
                   onChange={(e) => setSelectedFridge(e.target.value ? parseInt(e.target.value) : null)}
                 >
-                  <option value="">Alle Kühlschränke</option>
+                  <option value="">{t("anomalies.allFridges")}</option>
                   {uniqueFridges.map(fridge => (
                     <option key={fridge.id} value={fridge.id}>
                       {fridge.name}
@@ -270,7 +272,7 @@ export default function HaccpAnomalies() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground mb-1">Kritisch</p>
+                <p className="text-sm text-muted-foreground mb-1">{t("anomalies.critical")}</p>
                 <p className="text-3xl font-bold text-red-600">
                   {anomalyData?.summary.critical || 0}
                 </p>
@@ -284,7 +286,7 @@ export default function HaccpAnomalies() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground mb-1">Warnung</p>
+                <p className="text-sm text-muted-foreground mb-1">{t("anomalies.warning")}</p>
                 <p className="text-3xl font-bold text-amber-600">
                   {anomalyData?.summary.warning || 0}
                 </p>
@@ -298,7 +300,7 @@ export default function HaccpAnomalies() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground mb-1">Information</p>
+                <p className="text-sm text-muted-foreground mb-1">{t("anomalies.info")}</p>
                 <p className="text-3xl font-bold text-blue-600">
                   {anomalyData?.summary.info || 0}
                 </p>
@@ -312,7 +314,7 @@ export default function HaccpAnomalies() {
       {/* Fridge Health Score Cards */}
       {healthScoreQueries.length > 0 && (
         <>
-          <h2 className="text-xl font-heading font-bold">Kühlschrank-Gesundheit</h2>
+          <h2 className="text-xl font-heading font-bold">{t("anomalies.fridgeHealth")}</h2>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {healthScoreQueries.map((query, index) => {
               if (query.isLoading) {
@@ -335,7 +337,7 @@ export default function HaccpAnomalies() {
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="text-center">
-                      <p className="text-sm text-muted-foreground mb-1">Gesundheitswert</p>
+                      <p className="text-sm text-muted-foreground mb-1">{t("anomalies.healthScore")}</p>
                       <p className={cn("text-5xl font-bold", getHealthColor(health.score))}>
                         {health.score}
                       </p>
@@ -353,11 +355,11 @@ export default function HaccpAnomalies() {
                     </div>
                     <div className="text-xs space-y-1">
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Messungen:</span>
+                        <span className="text-muted-foreground">{t("anomalies.measurements")}:</span>
                         <span className="font-semibold">{health.totalChecks}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Anomalien:</span>
+                        <span className="text-muted-foreground">{t("anomalies.anomalies")}:</span>
                         <span className="font-semibold">{health.anomalyCount}</span>
                       </div>
                     </div>
@@ -375,13 +377,13 @@ export default function HaccpAnomalies() {
       {/* Anomaly List */}
       <Card>
         <CardHeader>
-          <CardTitle>Erkannte Anomalien ({filteredAnomalies.length})</CardTitle>
+          <CardTitle>{t("anomalies.detected")} ({filteredAnomalies.length})</CardTitle>
         </CardHeader>
         <CardContent>
           {filteredAnomalies.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Info className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p>Keine Anomalien im ausgewählten Zeitraum gefunden.</p>
+              <p>{t("anomalies.noAnomalies")}</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -400,16 +402,12 @@ export default function HaccpAnomalies() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <Badge {...getSeverityBadgeProps(anomaly.severity)} className={cn("gap-1", getSeverityBadgeProps(anomaly.severity).className)}>
                           {getSeverityIcon(anomaly.severity)}
-                          {anomaly.severity === "CRITICAL" ? "Kritisch" :
-                           anomaly.severity === "WARNING" ? "Warnung" : "Information"}
+                          {anomaly.severity === "CRITICAL" ? t("anomalies.critical") :
+                           anomaly.severity === "WARNING" ? t("anomalies.warning") : t("anomalies.info")}
                         </Badge>
                         <Badge variant="outline" className="gap-1">
                           {getTypeIcon(anomaly.type)}
-                          {anomaly.type === "out_of_range" ? "Außerhalb Bereich" :
-                           anomaly.type === "trend" ? "Trend" :
-                           anomaly.type === "spike" ? "Temperaturspitze" :
-                           anomaly.type === "gap" ? "Messlücke" :
-                           "Sensor-Fehler"}
+                          {t(`anomalies.types.${anomaly.type}`)}
                         </Badge>
                         <span className="text-sm font-semibold">{anomaly.fridgeName}</span>
                       </div>
@@ -427,10 +425,10 @@ export default function HaccpAnomalies() {
                           })}
                         </span>
                         {anomaly.value !== undefined && (
-                          <span className="font-semibold">Wert: {anomaly.value.toFixed(1)}°C</span>
+                          <span className="font-semibold">{t("anomalies.value")}: {anomaly.value.toFixed(1)}°C</span>
                         )}
                         {anomaly.expected && (
-                          <span>Erwartet: {anomaly.expected}</span>
+                          <span>{t("anomalies.expected")}: {anomaly.expected}</span>
                         )}
                       </div>
                     </div>
@@ -446,8 +444,8 @@ export default function HaccpAnomalies() {
       <Card className="bg-muted/30">
         <CardContent className="p-4">
           <p className="text-xs text-muted-foreground">
-            <span className="font-medium">Legende:</span>{" "}
-            Kritisch = ausserhalb Sollbereich | Trend = 3+ steigende/fallende Messungen | Spitze = starke Abweichung vom 7-Tage-Schnitt | Lücke = &gt;8h ohne Messung | Sensor = 5+ gleiche Werte
+            <span className="font-medium">{t("anomalies.legend")}:</span>{" "}
+            {t("anomalies.legendText")}
           </p>
         </CardContent>
       </Card>

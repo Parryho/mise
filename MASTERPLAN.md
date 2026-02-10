@@ -226,7 +226,7 @@ Der Markt teilt sich in teure Enterprise-Losungen (Apicbase EUR500+/Mo, Galley $
 |---|---------|---------|---------|
 | H1 | ✅ 10.02.2026 **N+1 Queries** -- Batch-Loading mit inArray+Maps in allergens, analytics, production, costs | Performance | 6h |
 | H2 | ✅ 10.02.2026 **Error Handling** -- apiFetch/apiPost/apiPut/apiDelete Utility + res.ok Checks in store, Rotation, MenuPlan, RecipeDetail, Print | Clean Code | 4h |
-| H3 | Hardcoded Strings statt i18n in mehreren Seiten | Clean Code | 4h |
+| H3 | ✅ 10.02.2026 **i18n** -- 29 Client-Dateien auf t() umgestellt, ~400 Strings in de.json/en.json | Clean Code | 4h |
 | H4 | ✅ 10.02.2026 **DB Pool-Limits** -- max=20, idleTimeout=30s, connectionTimeout=5s | Performance | 1h |
 | H5 | ✅ 10.02.2026 **Rate-Limiting** -- expensiveRateLimiter + aiRateLimiter auf 12 teure Endpoints | Security | 2h |
 

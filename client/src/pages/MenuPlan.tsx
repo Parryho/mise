@@ -14,6 +14,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { getISOWeek, MEAL_SLOT_LABELS, formatLocalDate, type MealSlotName } from "@shared/constants";
 import { RECIPE_CATEGORIES } from "@shared/schema";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/hooks/useTranslation";
 import AllergenConflictBanner from "@/components/AllergenConflictBanner";
 import { useLocationFilter } from "@/lib/location-context";
 import { DndContext, DragOverlay, useDraggable, useDroppable, type DragEndEvent, type DragStartEvent, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
@@ -38,15 +39,9 @@ interface GuestCount {
   locationId: number | null;
 }
 
-const MEALS = [
-  { key: "lunch", de: "Mittagessen" },
-  { key: "dinner", de: "Abendessen" },
-];
+const MEAL_KEYS = ["lunch", "dinner"] as const;
 
-const COURSES: { key: string; de: string }[] = (Object.keys(MEAL_SLOT_LABELS) as MealSlotName[]).map(k => ({
-  key: k,
-  de: MEAL_SLOT_LABELS[k],
-}));
+const COURSE_KEYS: MealSlotName[] = Object.keys(MEAL_SLOT_LABELS) as MealSlotName[];
 
 function formatDate(date: Date): string {
   return formatLocalDate(date);
@@ -63,8 +58,7 @@ function getWeekDatesFromRange(from: string): Date[] {
   return dates;
 }
 
-const DAY_LABELS = ["MO", "DI", "MI", "DO", "FR", "SA", "SO"];
-const DAY_NAMES_LONG = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
+const DAY_LABEL_KEYS = ["MO", "DI", "MI", "DO", "FR", "SA", "SO"] as const;
 
 function getTodayDayIndex(): number {
   const jsDay = new Date().getDay(); // 0=Sun
@@ -73,6 +67,7 @@ function getTodayDayIndex(): number {
 
 export default function MenuPlan() {
   const { recipes } = useApp();
+  const { t } = useTranslation();
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [week, setWeek] = useState(getISOWeek(now));
@@ -205,10 +200,10 @@ export default function MenuPlan() {
       } else {
         await apiPost('/api/menu-plans', { date: dropDate, meal: dropMeal, course: dropCourse, recipeId: draggedRecipe.id, portions: 1, locationId: selectedLocationId });
       }
-      toast({ title: `${draggedRecipe.name} zugewiesen` });
+      toast({ title: `${draggedRecipe.name} ${t("menu.assigned")}` });
       fetchWeekPlan(year, week);
     } catch (error: any) {
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: error.message, variant: "destructive" });
     }
   };
 
@@ -221,14 +216,14 @@ export default function MenuPlan() {
       {/* Orange Header */}
       <div className="bg-primary text-primary-foreground px-4 pt-4 pb-3">
         <div className="flex items-center justify-between mb-2">
-          <h1 className="font-heading text-xl font-bold uppercase tracking-wide">Wochenplan</h1>
+          <h1 className="font-heading text-xl font-bold uppercase tracking-wide">{t("menu.weekPlan")}</h1>
         </div>
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="icon" className="h-8 w-8 text-primary-foreground hover:bg-white/20" onClick={prevWeek}>
               <ChevronLeft className="h-5 w-5" />
             </Button>
-            <span className="font-heading font-bold text-lg min-w-[60px] text-center">KW {week}</span>
+            <span className="font-heading font-bold text-lg min-w-[60px] text-center">{t("menu.calendarWeekShort")} {week}</span>
             <Button variant="ghost" size="icon" className="h-8 w-8 text-primary-foreground hover:bg-white/20" onClick={nextWeek}>
               <ChevronRight className="h-5 w-5" />
             </Button>
@@ -242,9 +237,9 @@ export default function MenuPlan() {
             <div className="flex items-center gap-3 bg-white/15 rounded-lg px-3 py-1.5 mb-2">
               <Users className="h-3.5 w-3.5 text-primary-foreground/80 shrink-0" />
               <div className="flex items-center gap-3 text-xs text-primary-foreground/90">
-                <span>Mittag: <strong className="text-primary-foreground">{paxSummary.lunch}</strong></span>
-                <span>Abend: <strong className="text-primary-foreground">{paxSummary.dinner}</strong></span>
-                <span className="text-primary-foreground/60">Woche: {paxSummary.total}</span>
+                <span>{t("menu.lunchShort")}: <strong className="text-primary-foreground">{paxSummary.lunch}</strong></span>
+                <span>{t("menu.dinnerShort")}: <strong className="text-primary-foreground">{paxSummary.dinner}</strong></span>
+                <span className="text-primary-foreground/60">{t("menu.weekShort")}: {paxSummary.total}</span>
               </div>
             </div>
           );
@@ -255,7 +250,7 @@ export default function MenuPlan() {
           <div className="flex items-center gap-2">
             {rotationWeekNr > 0 && (
               <Badge className="bg-white/20 text-primary-foreground border-0 text-xs">
-                Rotation W{rotationWeekNr}
+                {t("menu.rotationWeek", { nr: rotationWeekNr })}
               </Badge>
             )}
             {weekDates.length >= 7 && (
@@ -271,15 +266,15 @@ export default function MenuPlan() {
               className={cn("h-8 text-xs text-primary-foreground hover:bg-white/20 gap-1 px-2", recipePanelOpen && "bg-white/20")}
               onClick={() => setRecipePanelOpen(!recipePanelOpen)}
             >
-              <BookOpen className="h-3.5 w-3.5" /> Rezepte
+              <BookOpen className="h-3.5 w-3.5" /> {t("nav.recipes")}
             </Button>
             <Button variant="ghost" size="sm" className="h-8 text-xs text-primary-foreground hover:bg-white/20 gap-1 px-2" onClick={() => setShowShoppingList(true)}>
-              <ShoppingCart className="h-3.5 w-3.5" /> Einkauf
+              <ShoppingCart className="h-3.5 w-3.5" /> {t("menu.shopping")}
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-8 text-xs text-primary-foreground hover:bg-white/20 gap-1 px-2">
-                  <Download className="h-3.5 w-3.5" /> Export
+                  <Download className="h-3.5 w-3.5" /> {t("common.export")}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
@@ -300,14 +295,14 @@ export default function MenuPlan() {
 
       {/* Day Selector Pills */}
       <div className="flex gap-1.5 px-4 py-3 bg-background border-b border-border/50">
-        {DAY_LABELS.map((label, idx) => {
+        {DAY_LABEL_KEYS.map((dayKey, idx) => {
           const isSelected = selectedDay === idx;
           const isToday = isCurrentWeek && idx === getTodayDayIndex();
           const dateObj = weekDates[idx];
           const dayNum = dateObj ? dateObj.getDate() : "";
           return (
             <button
-              key={label}
+              key={dayKey}
               onClick={() => setSelectedDay(idx)}
               className={cn(
                 "flex-1 flex flex-col items-center gap-0.5 py-2 rounded-xl text-xs font-bold transition-all relative press min-h-[48px]",
@@ -316,7 +311,7 @@ export default function MenuPlan() {
                   : "bg-muted text-muted-foreground hover:bg-muted/80"
               )}
             >
-              <span className="text-[10px] font-medium">{label}</span>
+              <span className="text-[10px] font-medium">{t(`menu.days.${dayKey}`)}</span>
               <span className={cn("text-sm", isSelected ? "text-primary-foreground" : "text-foreground")}>{dayNum}</span>
               {isToday && !isSelected && (
                 <span className="absolute -top-0.5 right-1/2 translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary" />
@@ -330,7 +325,7 @@ export default function MenuPlan() {
       {!isCurrentWeek && (
         <div className="px-4 pb-2">
           <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={goToToday}>
-            <CalendarDays className="h-3.5 w-3.5" /> Heute
+            <CalendarDays className="h-3.5 w-3.5" /> {t("menu.today")}
           </Button>
         </div>
       )}
@@ -344,14 +339,14 @@ export default function MenuPlan() {
           {selectedDateStr && (
             <AllergenConflictBanner date={selectedDateStr} locationId={selectedLocationId ?? undefined} />
           )}
-          {MEALS.map(meal => {
-            const pax = getPax(selectedDateStr, meal.key);
+          {MEAL_KEYS.map(mealKey => {
+            const pax = getPax(selectedDateStr, mealKey);
             return (
-            <div key={meal.key} className="space-y-2.5">
+            <div key={mealKey} className="space-y-2.5">
               {/* Section header */}
               <div className="flex items-center justify-between">
                 <h2 className="font-heading text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                  {meal.de}
+                  {t(`meals.${mealKey}`)}
                 </h2>
                 {pax && (
                   <Badge variant="outline" className="gap-1 text-xs font-normal">
@@ -363,19 +358,19 @@ export default function MenuPlan() {
 
               {/* Course cards */}
               <div className="space-y-1.5">
-                {COURSES.map(course => {
-                  const plan = getPlan(selectedDateStr, meal.key, course.key);
+                {COURSE_KEYS.map(courseKey => {
+                  const plan = getPlan(selectedDateStr, mealKey, courseKey);
                   const recipeName = plan ? getRecipeName(plan.recipeId) : null;
 
                   return (
                     <CourseCard
-                      key={course.key}
+                      key={courseKey}
                       date={selectedDateStr}
-                      dayName={DAY_LABELS[selectedDay]}
+                      dayName={t(`menu.days.${DAY_LABEL_KEYS[selectedDay]}`)}
                       dayNum={selectedDate?.getDate() || 0}
-                      meal={meal.key}
-                      course={course.key}
-                      courseLabel={course.de}
+                      meal={mealKey}
+                      course={courseKey}
+                      courseLabel={t(`courses.${courseKey}`)}
                       plan={plan}
                       recipeName={recipeName}
                       recipes={recipes}
@@ -438,6 +433,7 @@ function CourseCard({ date, dayName, dayNum, meal, course, courseLabel, plan, re
   const [portions, setPortions] = useState(String(plan?.portions || 1));
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   useEffect(() => {
     setRecipeId(plan?.recipeId ? String(plan.recipeId) : "");
@@ -454,11 +450,11 @@ function CourseCard({ date, dayName, dayNum, meal, course, courseLabel, plan, re
       } else {
         await apiPost('/api/menu-plans', { date, meal, course, recipeId: recipeVal, portions: portionVal, locationId });
       }
-      toast({ title: "Gespeichert" });
+      toast({ title: t("common.saved") });
       setOpen(false);
       onSave();
     } catch (error: any) {
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: error.message, variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -469,11 +465,11 @@ function CourseCard({ date, dayName, dayNum, meal, course, courseLabel, plan, re
     setSaving(true);
     try {
       await apiDelete(`/api/menu-plans/${plan.id}`);
-      toast({ title: "Gelöscht" });
+      toast({ title: t("common.deleted") });
       setOpen(false);
       onSave();
     } catch (error: any) {
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: error.message, variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -484,13 +480,13 @@ function CourseCard({ date, dayName, dayNum, meal, course, courseLabel, plan, re
   if (recipeName && hasRotation) {
     statusBadge = (
       <Badge className="bg-status-success-subtle text-status-success border-0 text-[10px] shrink-0">
-        Bestätigt
+        {t("menu.confirmed")}
       </Badge>
     );
   } else if (recipeName) {
     statusBadge = (
       <Badge className="bg-status-info-subtle text-status-info border-0 text-[10px] shrink-0">
-        Geplant
+        {t("menu.planned")}
       </Badge>
     );
   }
@@ -517,7 +513,7 @@ function CourseCard({ date, dayName, dayNum, meal, course, courseLabel, plan, re
                 {courseLabel}
               </div>
               <div className={cn("text-sm font-medium truncate", !recipeName && "text-muted-foreground/50 italic")}>
-                {recipeName || "Tippen zum Belegen"}
+                {recipeName || t("menu.tapToAssign")}
               </div>
             </div>
             <div className="flex items-center gap-1.5 shrink-0 ml-2">
@@ -537,13 +533,13 @@ function CourseCard({ date, dayName, dayNum, meal, course, courseLabel, plan, re
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-2">
-            <Label>Rezept</Label>
+            <Label>{t("menu.recipe")}</Label>
             <Select value={recipeId} onValueChange={setRecipeId}>
               <SelectTrigger>
-                <SelectValue placeholder="Rezept wählen..." />
+                <SelectValue placeholder={t("menu.selectRecipe")} />
               </SelectTrigger>
               <SelectContent className="max-h-60">
-                <SelectItem value="none">Kein Rezept</SelectItem>
+                <SelectItem value="none">{t("menu.noRecipe")}</SelectItem>
                 {recipes.map((r: any) => (
                   <SelectItem key={r.id} value={String(r.id)}>{r.name}</SelectItem>
                 ))}
@@ -552,7 +548,7 @@ function CourseCard({ date, dayName, dayNum, meal, course, courseLabel, plan, re
           </div>
 
           <div className="space-y-2">
-            <Label>Portionen</Label>
+            <Label>{t("menu.portions")}</Label>
             <div className="flex gap-2">
               <Input type="number" value={portions} onChange={(e) => setPortions(e.target.value)} min="1" className="flex-1" />
               {pax && pax > 0 && (
@@ -572,7 +568,7 @@ function CourseCard({ date, dayName, dayNum, meal, course, courseLabel, plan, re
           <div className="flex gap-2">
             <Button onClick={handleSave} className="flex-1" disabled={saving}>
               {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Speichern
+              {t("common.save")}
             </Button>
             {plan && (
               <Button variant="destructive" size="icon" onClick={handleDelete} disabled={saving}>
@@ -594,6 +590,7 @@ function ShoppingListDialog({ open, onOpenChange, plans, recipes }: {
 }) {
   const [ingredients, setIngredients] = useState<Map<string, { amount: number; unit: string }>>(new Map());
   const [loading, setLoading] = useState(false);
+  const { t } = useTranslation();
 
   const generateList = async () => {
     setLoading(true);
@@ -649,7 +646,7 @@ function ShoppingListDialog({ open, onOpenChange, plans, recipes }: {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm max-h-[80vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Einkaufsliste</DialogTitle>
+          <DialogTitle>{t("menu.shoppingList")}</DialogTitle>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto">
           {loading ? (
@@ -658,7 +655,7 @@ function ShoppingListDialog({ open, onOpenChange, plans, recipes }: {
             </div>
           ) : ingredientList.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              Keine Zutaten im Menüplan
+              {t("menu.noIngredientsInPlan")}
             </div>
           ) : (
             <ul className="space-y-0">
@@ -683,6 +680,7 @@ function ShoppingListDialog({ open, onOpenChange, plans, recipes }: {
 function RecipePanel({ recipes, onClose }: { recipes: any[]; onClose: () => void }) {
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState("all");
+  const { t } = useTranslation();
 
   const filtered = recipes.filter(r => {
     const matchSearch = !search || r.name.toLowerCase().includes(search.toLowerCase());
@@ -696,7 +694,7 @@ function RecipePanel({ recipes, onClose }: { recipes: any[]; onClose: () => void
       <div className="flex items-center justify-between px-4 py-2.5 border-b bg-muted/40">
         <div className="flex items-center gap-2">
           <GripVertical className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-semibold">Rezepte ziehen</span>
+          <span className="text-sm font-semibold">{t("menu.dragRecipes")}</span>
         </div>
         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onClose}>
           <X className="h-4 w-4" />
@@ -710,7 +708,7 @@ function RecipePanel({ recipes, onClose }: { recipes: any[]; onClose: () => void
           <Input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Suche..."
+            placeholder={t("common.searchPlaceholder")}
             className="h-8 text-sm pl-8"
           />
         </div>
@@ -721,7 +719,7 @@ function RecipePanel({ recipes, onClose }: { recipes: any[]; onClose: () => void
             className="h-6 text-[10px] shrink-0"
             onClick={() => setCatFilter("all")}
           >
-            Alle
+            {t("common.all")}
           </Button>
           {RECIPE_CATEGORIES.map(cat => (
             <Button
@@ -740,7 +738,7 @@ function RecipePanel({ recipes, onClose }: { recipes: any[]; onClose: () => void
       {/* Recipe list */}
       <div className="flex-1 overflow-y-auto px-3 py-1">
         {filtered.length === 0 ? (
-          <div className="text-center py-4 text-sm text-muted-foreground">Keine Rezepte gefunden</div>
+          <div className="text-center py-4 text-sm text-muted-foreground">{t("recipes.noRecipesFound")}</div>
         ) : (
           <div className="space-y-1">
             {filtered.map(recipe => (

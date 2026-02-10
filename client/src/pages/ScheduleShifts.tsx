@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, PlusCircle, Pencil, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface ShiftType {
   id: number;
@@ -22,6 +23,7 @@ export default function ShiftTypesView() {
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const fetchShiftTypes = async () => {
     try {
@@ -40,13 +42,13 @@ export default function ShiftTypesView() {
   }, []);
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Diesen Dienst wirklich löschen?')) return;
+    if (!confirm(t("scheduleShifts.deleteConfirm"))) return;
     try {
       await fetch(`/api/shift-types/${id}`, { method: 'DELETE' });
-      toast({ title: 'Dienst gelöscht' });
+      toast({ title: t("scheduleShifts.deleted") });
       fetchShiftTypes();
     } catch (error) {
-      toast({ title: 'Fehler beim Löschen', variant: 'destructive' });
+      toast({ title: t("common.error"), variant: 'destructive' });
     }
   };
 
@@ -62,10 +64,10 @@ export default function ShiftTypesView() {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <p className="text-sm text-muted-foreground">
-          {shiftTypes.length} Diensttypen
+          {t("scheduleShifts.count", { count: shiftTypes.length })}
         </p>
         <Button size="sm" onClick={() => setShowAdd(true)} className="gap-1 min-h-[44px]">
-          <PlusCircle className="h-4 w-4" /> Neuer Dienst
+          <PlusCircle className="h-4 w-4" /> {t("scheduleShifts.newShift")}
         </Button>
       </div>
 
@@ -73,10 +75,10 @@ export default function ShiftTypesView() {
         <Card>
           <CardContent className="py-12 text-center space-y-3">
             <PlusCircle className="h-10 w-10 mx-auto text-muted-foreground/40" />
-            <p className="text-muted-foreground font-medium">Noch keine Dienste</p>
-            <p className="text-sm text-muted-foreground">Erstellen Sie Schichttypen wie Fruehstueck, Mittag, Abend.</p>
+            <p className="text-muted-foreground font-medium">{t("scheduleShifts.noShifts")}</p>
+            <p className="text-sm text-muted-foreground">{t("scheduleShifts.noShiftsHint")}</p>
             <Button size="sm" onClick={() => setShowAdd(true)} className="gap-1 min-h-[44px]">
-              <PlusCircle className="h-4 w-4" /> Ersten Dienst erstellen
+              <PlusCircle className="h-4 w-4" /> {t("scheduleShifts.firstShift")}
             </Button>
           </CardContent>
         </Card>
@@ -133,11 +135,12 @@ function ShiftTypeAddDialog({ open, onOpenChange, onSave }: {
   const [color, setColor] = useState('#F37021');
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
-      toast({ title: 'Name erforderlich', variant: 'destructive' });
+      toast({ title: t("scheduleShifts.nameRequired"), variant: 'destructive' });
       return;
     }
     setSaving(true);
@@ -147,13 +150,13 @@ function ShiftTypeAddDialog({ open, onOpenChange, onSave }: {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, startTime, endTime, color })
       });
-      toast({ title: 'Dienst erstellt' });
+      toast({ title: t("scheduleShifts.created") });
       setName('');
       setStartTime('08:00');
       setEndTime('16:30');
       onSave();
     } catch (error) {
-      toast({ title: 'Fehler', variant: 'destructive' });
+      toast({ title: t("common.error"), variant: 'destructive' });
     } finally {
       setSaving(false);
     }
@@ -163,29 +166,29 @@ function ShiftTypeAddDialog({ open, onOpenChange, onSave }: {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Neuen Dienst erstellen</DialogTitle>
+          <DialogTitle>{t("scheduleShifts.createShift")}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label>Name</Label>
+            <Label>{t("common.name")}</Label>
             <Input
               value={name}
               onChange={e => setName(e.target.value)}
-              placeholder="z.B. Frühstück, Kochen Mittag..."
+              placeholder={t("scheduleShifts.namePlaceholder")}
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Beginn</Label>
+              <Label>{t("scheduleShifts.startTime")}</Label>
               <Input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label>Ende</Label>
+              <Label>{t("scheduleShifts.endTime")}</Label>
               <Input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} />
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Farbe</Label>
+            <Label>{t("scheduleShifts.color")}</Label>
             <div className="flex gap-2 flex-wrap">
               {COLORS.map(c => (
                 <button
@@ -206,7 +209,7 @@ function ShiftTypeAddDialog({ open, onOpenChange, onSave }: {
           </div>
           <Button type="submit" className="w-full" disabled={saving}>
             {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-            Erstellen
+            {t("common.create")}
           </Button>
         </form>
       </DialogContent>
@@ -222,6 +225,7 @@ function ShiftTypeEditDialog({ shiftType, onSave }: { shiftType: ShiftType; onSa
   const [color, setColor] = useState(shiftType.color);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -232,11 +236,11 @@ function ShiftTypeEditDialog({ shiftType, onSave }: { shiftType: ShiftType; onSa
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, startTime, endTime, color })
       });
-      toast({ title: 'Gespeichert' });
+      toast({ title: t("common.saved") });
       setOpen(false);
       onSave();
     } catch (error) {
-      toast({ title: 'Fehler', variant: 'destructive' });
+      toast({ title: t("common.error"), variant: 'destructive' });
     } finally {
       setSaving(false);
     }
@@ -251,25 +255,25 @@ function ShiftTypeEditDialog({ shiftType, onSave }: { shiftType: ShiftType; onSa
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Dienst bearbeiten</DialogTitle>
+          <DialogTitle>{t("scheduleShifts.editShift")}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label>Name</Label>
+            <Label>{t("common.name")}</Label>
             <Input value={name} onChange={e => setName(e.target.value)} />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Beginn</Label>
+              <Label>{t("scheduleShifts.startTime")}</Label>
               <Input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label>Ende</Label>
+              <Label>{t("scheduleShifts.endTime")}</Label>
               <Input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} />
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Farbe</Label>
+            <Label>{t("scheduleShifts.color")}</Label>
             <div className="flex gap-2 flex-wrap">
               {COLORS.map(c => (
                 <button
@@ -290,7 +294,7 @@ function ShiftTypeEditDialog({ shiftType, onSave }: { shiftType: ShiftType; onSa
           </div>
           <Button type="submit" className="w-full" disabled={saving}>
             {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-            Speichern
+            {t("common.save")}
           </Button>
         </form>
       </DialogContent>

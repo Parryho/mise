@@ -38,6 +38,7 @@ import { de } from "date-fns/locale";
 import { getISOWeek } from "@shared/constants";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface Task {
   id: number;
@@ -79,19 +80,11 @@ const COURSE_ICONS: Record<string, React.ReactNode> = {
   dessert: <CakeSlice className="h-4 w-4 text-pink-500" />,
 };
 
-const COURSE_LABELS: Record<string, string> = {
-  soup: "Suppe",
-  main1: "Hauptgericht 1",
-  side1a: "Beilage 1a",
-  side1b: "Beilage 1b",
-  main2: "Hauptgericht 2",
-  side2a: "Beilage 2a",
-  side2b: "Beilage 2b",
-  dessert: "Dessert",
-};
+const COURSE_KEYS = ["soup", "main1", "side1a", "side1b", "main2", "side2a", "side2b", "dessert"] as const;
 
 export default function Today() {
   const { toast } = useToast();
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { locations } = useLocationFilter();
   const { fridges, logs: haccpLogs } = useApp();
@@ -111,19 +104,19 @@ export default function Today() {
 
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
-    if (hour < 6) return "Guten Abend";
-    if (hour < 11) return "Guten Morgen";
-    if (hour < 14) return "Mahlzeit";
-    if (hour < 18) return "Guten Nachmittag";
-    return "Guten Abend";
-  }, []);
+    if (hour < 6) return t("today.greetingEvening");
+    if (hour < 11) return t("today.greetingMorning");
+    if (hour < 14) return t("today.greetingLunchtime");
+    if (hour < 18) return t("today.greetingAfternoon");
+    return t("today.greetingEvening");
+  }, [t]);
 
   const firstName = user?.name?.split(" ")[0] || "Chef";
 
   const fetchTasks = async () => {
     try {
       const res = await fetch(`/api/tasks?date=${dateStr}`);
-      if (!res.ok) throw new Error("Fehler beim Laden der Tasks");
+      if (!res.ok) throw new Error(t("today.errorLoadingTasks"));
       return await res.json();
     } catch {
       return [];
@@ -140,7 +133,7 @@ export default function Today() {
         fetch("/api/recipes"),
         fetch("/api/locations"),
       ]);
-      if (!weekRes.ok) throw new Error("Fehler beim Laden des Menüplans");
+      if (!weekRes.ok) throw new Error(t("today.errorLoadingMenu"));
       const weekData = await weekRes.json();
       const recipes = await recipesRes.json();
       const locs = await locsRes.json();
@@ -164,7 +157,7 @@ export default function Today() {
   const fetchGuestCounts = async () => {
     try {
       const res = await fetch(`/api/guests?start=${dateStr}&end=${dateStr}`);
-      if (!res.ok) throw new Error("Fehler beim Laden der Gästezahlen");
+      if (!res.ok) throw new Error(t("today.errorLoadingMenu"));
       return await res.json();
     } catch {
       return [];
@@ -198,16 +191,16 @@ export default function Today() {
           date: dateStr,
         }),
       });
-      if (!res.ok) throw new Error("Fehler beim Erstellen");
+      if (!res.ok) throw new Error(t("today.errorCreating"));
       const created = await res.json();
       setTasks([...tasks, created]);
       setNewTitle("");
       setNewNote("");
       setNewPriority("normal");
       setAddDialogOpen(false);
-      toast({ title: "Task erstellt" });
+      toast({ title: t("today.taskCreated") });
     } catch (error: any) {
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: error.message, variant: "destructive" });
     } finally {
       setSubmitting(false);
     }
@@ -221,22 +214,22 @@ export default function Today() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
       });
-      if (!res.ok) throw new Error("Fehler beim Aktualisieren");
+      if (!res.ok) throw new Error(t("today.errorUpdating"));
       const updated = await res.json();
       setTasks(tasks.map(t => t.id === task.id ? updated : t));
     } catch (error: any) {
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: error.message, variant: "destructive" });
     }
   };
 
   const handleDeleteTask = async (taskId: number) => {
     try {
       const res = await fetch(`/api/tasks/${taskId}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Fehler beim Löschen");
+      if (!res.ok) throw new Error(t("today.errorDeleting"));
       setTasks(tasks.filter(t => t.id !== taskId));
-      toast({ title: "Task gelöscht" });
+      toast({ title: t("today.taskDeleted") });
     } catch (error: any) {
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: error.message, variant: "destructive" });
     }
   };
 
@@ -312,7 +305,7 @@ export default function Today() {
           <CardHeader className="pb-2 pt-4 px-4">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <Users className="h-4 w-4" />
-              Gäste heute
+              {t("today.guestsToday")}
             </CardTitle>
           </CardHeader>
           <CardContent className="px-4 pb-4">
@@ -338,7 +331,7 @@ export default function Today() {
                 })}
                 <div className="text-center p-2 rounded-lg bg-primary/10">
                   <div className="flex items-center justify-center gap-1 mb-1">
-                    <span className="text-xs text-primary uppercase tracking-wide font-medium">Gesamt</span>
+                    <span className="text-xs text-primary uppercase tracking-wide font-medium">{t("common.total")}</span>
                   </div>
                   <span className="text-2xl font-bold text-primary tabular-nums">{totalPax.total}</span>
                   <div className="text-[10px] text-primary/70 mt-0.5">
@@ -348,7 +341,7 @@ export default function Today() {
               </div>
             ) : (
               <Link href="/guests" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
-                Keine Gästezahlen erfasst
+                {t("today.noGuestCounts")}
                 <ArrowRight className="h-4 w-4" />
               </Link>
             )}
@@ -362,11 +355,11 @@ export default function Today() {
           <div className="flex items-center justify-between">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <UtensilsCrossed className="h-4 w-4" />
-              Mittagsmenü City
+              {t("today.lunchMenuCity")}
             </CardTitle>
             <Link href="/rotation">
               <Button variant="ghost" size="sm" className="text-xs h-7 px-2 text-primary">
-                Plan öffnen <ArrowRight className="h-3 w-3 ml-1" />
+                {t("today.openPlan")} <ArrowRight className="h-3 w-3 ml-1" />
               </Button>
             </Link>
           </div>
@@ -378,7 +371,7 @@ export default function Today() {
                 <div key={item.id} className="flex items-center gap-2 text-sm py-1">
                   {COURSE_ICONS[item.course] || <span className="w-4" />}
                   <span className="text-muted-foreground text-xs min-w-[60px]">
-                    {COURSE_LABELS[item.course] || item.course}
+                    {t(`courses.${item.course}`) || item.course}
                   </span>
                   <span className="font-medium truncate">{item.recipe?.name}</span>
                 </div>
@@ -386,11 +379,11 @@ export default function Today() {
             </div>
           ) : (
             <div className="text-center py-4">
-              <p className="text-sm text-muted-foreground mb-2">Noch kein Menü geplant</p>
+              <p className="text-sm text-muted-foreground mb-2">{t("today.noMenuPlanned")}</p>
               <Link href="/rotation">
                 <Button variant="outline" size="sm">
                   <CalendarDays className="h-4 w-4 mr-2" />
-                  Menü planen
+                  {t("today.planMenu")}
                 </Button>
               </Link>
             </div>
@@ -406,11 +399,11 @@ export default function Today() {
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                 <Thermometer className="h-4 w-4" />
-                HACCP Status
+                {t("today.haccpStatus")}
               </CardTitle>
               <Link href="/haccp">
                 <Button variant="ghost" size="sm" className="text-xs h-7 px-2 text-primary">
-                  Details <ArrowRight className="h-3 w-3 ml-1" />
+                  {t("common.details")} <ArrowRight className="h-3 w-3 ml-1" />
                 </Button>
               </Link>
             </div>
@@ -427,7 +420,7 @@ export default function Today() {
                     <Circle className="h-5 w-5 text-amber-500" />
                   )}
                   <span className="text-sm font-medium">
-                    {haccpStatus.measured}/{haccpStatus.totalFridges} gemessen
+                    {haccpStatus.measured}/{haccpStatus.totalFridges} {t("today.measured")}
                   </span>
                 </div>
                 {/* Progress bar */}
@@ -446,16 +439,16 @@ export default function Today() {
                 </div>
                 {haccpStatus.alerts > 0 && (
                   <Badge variant="destructive" className="text-xs">
-                    {haccpStatus.alerts} Warnung{haccpStatus.alerts > 1 ? "en" : ""}
+                    {t("haccp.deviationsToday", { count: haccpStatus.alerts })}
                   </Badge>
                 )}
               </div>
             ) : (
               <div className="text-center py-2">
-                <p className="text-sm text-muted-foreground">Keine Kühlgeräte erfasst</p>
+                <p className="text-sm text-muted-foreground">{t("today.noFridges")}</p>
                 <Link href="/haccp">
                   <Button variant="outline" size="sm" className="mt-2">
-                    Einrichten
+                    {t("today.setupHaccp")}
                   </Button>
                 </Link>
               </div>
@@ -469,53 +462,53 @@ export default function Today() {
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                 <ClipboardList className="h-4 w-4" />
-                Aufgaben
+                {t("today.tasksLabel")}
               </CardTitle>
               <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
                 <DialogTrigger asChild>
                   <Button variant="ghost" size="sm" className="text-xs h-7 px-2 text-primary">
-                    <Plus className="h-3 w-3 mr-1" /> Neu
+                    <Plus className="h-3 w-3 mr-1" /> {t("common.new")}
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Neuer Task</DialogTitle>
+                    <DialogTitle>{t("today.newTask")}</DialogTitle>
                   </DialogHeader>
                   <form onSubmit={handleAddTask} className="space-y-4">
                     <div className="space-y-2">
-                      <Label>Titel *</Label>
+                      <Label>{t("today.taskTitle")} *</Label>
                       <Input
                         value={newTitle}
                         onChange={(e) => setNewTitle(e.target.value)}
-                        placeholder="Was ist zu tun?"
+                        placeholder={t("today.taskTitlePlaceholder")}
                         required
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Notiz</Label>
+                      <Label>{t("today.taskNote")}</Label>
                       <Textarea
                         value={newNote}
                         onChange={(e) => setNewNote(e.target.value)}
-                        placeholder="Optionale Details..."
+                        placeholder={t("today.taskNotePlaceholder")}
                         rows={3}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Priorität</Label>
+                      <Label>{t("today.priority")}</Label>
                       <Select value={newPriority} onValueChange={setNewPriority}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="low">Niedrig</SelectItem>
-                          <SelectItem value="normal">Normal</SelectItem>
-                          <SelectItem value="high">Hoch</SelectItem>
+                          <SelectItem value="low">{t("today.priorityLow")}</SelectItem>
+                          <SelectItem value="normal">{t("today.priorityNormal")}</SelectItem>
+                          <SelectItem value="high">{t("today.priorityHigh")}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     <Button type="submit" className="w-full" disabled={submitting || !newTitle.trim()}>
                       {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                      Task erstellen
+                      {t("today.createTask")}
                     </Button>
                   </form>
                 </DialogContent>
@@ -529,12 +522,12 @@ export default function Today() {
                   <span className="flex items-center gap-1.5">
                     <Circle className="h-4 w-4 text-amber-500" />
                     <span className="font-medium">{openTasks.length}</span>
-                    <span className="text-muted-foreground">offen</span>
+                    <span className="text-muted-foreground">{t("today.open")}</span>
                   </span>
                   <span className="flex items-center gap-1.5">
                     <CheckCircle2 className="h-4 w-4 text-green-500" />
                     <span className="font-medium">{doneTasks.length}</span>
-                    <span className="text-muted-foreground">erledigt</span>
+                    <span className="text-muted-foreground">{t("today.done")}</span>
                   </span>
                 </div>
                 {/* Progress bar */}
@@ -546,7 +539,7 @@ export default function Today() {
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-2">Keine Aufgaben für heute</p>
+              <p className="text-sm text-muted-foreground text-center py-2">{t("today.noTasks")}</p>
             )}
           </CardContent>
         </Card>
@@ -554,13 +547,13 @@ export default function Today() {
 
       {/* Quick Actions */}
       <div>
-        <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-3">Schnellzugriff</h2>
+        <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-3">{t("today.quickAccess")}</h2>
         <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-          <QuickAction href="/rotation" icon={CalendarDays} label="Planung" color="text-blue-600" />
-          <QuickAction href="/recipes" icon={ChefHat} label="Rezepte" color="text-primary" />
-          <QuickAction href="/shopping" icon={ShoppingCart} label="Einkauf" color="text-green-600" />
-          <QuickAction href="/production" icon={ClipboardList} label="Produktion" color="text-amber-600" />
-          <QuickAction href="/agent-team" icon={Bot} label="Briefing" color="text-indigo-600" />
+          <QuickAction href="/rotation" icon={CalendarDays} label={t("today.planningLink")} color="text-blue-600" />
+          <QuickAction href="/recipes" icon={ChefHat} label={t("today.recipesLink")} color="text-primary" />
+          <QuickAction href="/shopping" icon={ShoppingCart} label={t("today.shoppingLink")} color="text-green-600" />
+          <QuickAction href="/production" icon={ClipboardList} label={t("today.productionLink")} color="text-amber-600" />
+          <QuickAction href="/agent-team" icon={Bot} label={t("today.briefingLink")} color="text-indigo-600" />
         </div>
       </div>
 
@@ -568,7 +561,7 @@ export default function Today() {
       {tasks.length > 0 && (
         <div className="space-y-3">
           <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-            Aufgaben Details
+            {t("today.taskDetails")}
           </h2>
 
           {openTasks.length > 0 && (
@@ -586,7 +579,7 @@ export default function Today() {
 
           {doneTasks.length > 0 && (
             <div className="space-y-2">
-              <p className="text-xs text-muted-foreground">Erledigt ({doneTasks.length})</p>
+              <p className="text-xs text-muted-foreground">{t("today.done")} ({doneTasks.length})</p>
               {doneTasks.map((task) => (
                 <TaskItem
                   key={task.id}
@@ -633,6 +626,7 @@ function TaskItem({
   onToggle: () => void;
   onDelete: () => void;
 }) {
+  const { t } = useTranslation();
   const isDone = task.status === "done";
   const priorityColors: Record<string, string> = {
     "0": "border-l-gray-400",
@@ -675,15 +669,15 @@ function TaskItem({
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Task löschen?</AlertDialogTitle>
+              <AlertDialogTitle>{t("today.deleteTask")}</AlertDialogTitle>
               <AlertDialogDescription>
-                Möchten Sie "{task.title}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
+                {t("today.deleteTaskConfirm", { title: task.title })}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+              <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
               <AlertDialogAction onClick={onDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                Löschen
+                {t("common.delete")}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

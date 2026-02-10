@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "@/hooks/useTranslation";
 
 /**
  * Push notification toggle card for the Settings page.
@@ -22,29 +23,30 @@ export function PushNotificationToggle() {
     sendTestNotification,
   } = usePushNotifications();
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const handleToggle = async (checked: boolean) => {
     if (checked) {
       const success = await subscribe();
       if (success) {
-        toast({ title: "Push-Benachrichtigungen aktiviert" });
+        toast({ title: t("pushNotifications.activated") });
       } else if (permission === "denied") {
         toast({
-          title: "Berechtigung verweigert",
-          description: "Bitte erlauben Sie Benachrichtigungen in den Browser-Einstellungen.",
+          title: t("pushNotifications.permissionDeniedToast"),
+          description: t("pushNotifications.permissionDeniedDesc"),
           variant: "destructive",
         });
       } else {
         toast({
-          title: "Fehler",
-          description: "Push-Benachrichtigungen konnten nicht aktiviert werden.",
+          title: t("common.error"),
+          description: t("pushNotifications.activationFailed"),
           variant: "destructive",
         });
       }
     } else {
       const success = await unsubscribe();
       if (success) {
-        toast({ title: "Push-Benachrichtigungen deaktiviert" });
+        toast({ title: t("pushNotifications.deactivated") });
       }
     }
   };
@@ -52,11 +54,11 @@ export function PushNotificationToggle() {
   const handleTest = async () => {
     const success = await sendTestNotification();
     if (success) {
-      toast({ title: "Test-Benachrichtigung gesendet" });
+      toast({ title: t("pushNotifications.testSent") });
     } else {
       toast({
-        title: "Fehler",
-        description: "Test-Benachrichtigung konnte nicht gesendet werden.",
+        title: t("common.error"),
+        description: t("pushNotifications.testFailed"),
         variant: "destructive",
       });
     }
@@ -68,10 +70,10 @@ export function PushNotificationToggle() {
         <CardHeader className="py-3">
           <CardTitle className="text-sm flex items-center gap-2">
             <BellOff className="h-4 w-4" />
-            Push-Benachrichtigungen
+            {t("pushNotifications.title")}
           </CardTitle>
           <CardDescription className="text-xs">
-            Ihr Browser unterstützt keine Push-Benachrichtigungen.
+            {t("pushNotifications.notSupported")}
           </CardDescription>
         </CardHeader>
       </Card>
@@ -87,16 +89,16 @@ export function PushNotificationToggle() {
           ) : (
             <Bell className="h-4 w-4" />
           )}
-          Push-Benachrichtigungen
+          {t("pushNotifications.title")}
         </CardTitle>
         <CardDescription className="text-xs">
-          Erhalten Sie Benachrichtigungen bei HACCP-Alarmen und Dienstplanänderungen.
+          {t("pushNotifications.description")}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="space-y-1">
-            <div className="font-medium text-sm">Benachrichtigungen</div>
+            <div className="font-medium text-sm">{t("pushNotifications.label")}</div>
             <div className="flex items-center gap-2">
               <Badge
                 variant={
@@ -109,14 +111,14 @@ export function PushNotificationToggle() {
                 className="text-[10px]"
               >
                 {permission === "granted"
-                  ? "Erlaubt"
+                  ? t("pushNotifications.permissionGranted")
                   : permission === "denied"
-                    ? "Blockiert"
-                    : "Nicht angefragt"}
+                    ? t("pushNotifications.permissionDenied")
+                    : t("pushNotifications.permissionDefault")}
               </Badge>
               {isSubscribed && (
                 <Badge variant="outline" className="text-[10px]">
-                  Aktiv
+                  {t("pushNotifications.active")}
                 </Badge>
               )}
             </div>
@@ -136,8 +138,7 @@ export function PushNotificationToggle() {
           <div className="flex items-start gap-2 text-xs text-destructive bg-destructive/10 p-2 rounded">
             <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
             <span>
-              Benachrichtigungen sind blockiert. Bitte ändern Sie dies in den
-              Browser-Einstellungen und laden Sie die Seite neu.
+              {t("pushNotifications.blocked")}
             </span>
           </div>
         )}
@@ -150,7 +151,7 @@ export function PushNotificationToggle() {
             className="w-full gap-2"
           >
             <Send className="h-3 w-3" />
-            Test-Benachrichtigung senden
+            {t("pushNotifications.sendTest")}
           </Button>
         )}
       </CardContent>

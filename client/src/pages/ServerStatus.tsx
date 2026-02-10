@@ -6,6 +6,7 @@
  */
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
+import { useTranslation } from "@/hooks/useTranslation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -63,6 +64,7 @@ function formatBytes(bytes: number): string {
 }
 
 function StatusIndicator({ status }: { status: "ok" | "degraded" | "error" }) {
+  const { t } = useTranslation();
   if (status === "ok") {
     return (
       <div className="flex items-center gap-2">
@@ -75,19 +77,20 @@ function StatusIndicator({ status }: { status: "ok" | "degraded" | "error" }) {
     return (
       <div className="flex items-center gap-2">
         <AlertTriangle className="h-5 w-5 text-yellow-500" />
-        <span className="text-yellow-600 font-semibold">Eingeschraenkt</span>
+        <span className="text-yellow-600 font-semibold">{t("serverStatus.degraded")}</span>
       </div>
     );
   }
   return (
     <div className="flex items-center gap-2">
       <XCircle className="h-5 w-5 text-red-500" />
-      <span className="text-red-600 font-semibold">Fehler</span>
+      <span className="text-red-600 font-semibold">{t("common.error")}</span>
     </div>
   );
 }
 
 export default function ServerStatus() {
+  const { t } = useTranslation();
   const { user } = useAuth();
 
   const { data: health, isLoading, isError, error, refetch, dataUpdatedAt } = useQuery<HealthData>({
@@ -105,10 +108,10 @@ export default function ServerStatus() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Shield className="h-5 w-5" />
-              Zugriff verweigert
+              {t("serverStatus.accessDenied")}
             </CardTitle>
             <CardDescription>
-              Diese Seite ist nur fuer Administratoren verfuegbar.
+              {t("serverStatus.accessDeniedDesc")}
             </CardDescription>
           </CardHeader>
         </Card>
@@ -129,20 +132,20 @@ export default function ServerStatus() {
       <div className="p-6 space-y-4">
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <Server className="h-6 w-6" />
-          Serverstatus
+          {t("serverStatus.title")}
         </h1>
         <Card className="border-red-200 bg-red-50">
           <CardContent className="pt-6">
             <div className="flex items-center gap-2 text-red-600">
               <XCircle className="h-5 w-5" />
-              <span className="font-semibold">Server nicht erreichbar</span>
+              <span className="font-semibold">{t("serverStatus.serverUnreachable")}</span>
             </div>
             <p className="text-sm text-muted-foreground mt-2">
-              {(error as Error)?.message || "Verbindung zum Server fehlgeschlagen."}
+              {(error as Error)?.message || t("serverStatus.connectionFailed")}
             </p>
             <Button variant="outline" size="sm" className="mt-4" onClick={() => refetch()}>
               <RefreshCw className="h-4 w-4 mr-2" />
-              Erneut versuchen
+              {t("serverStatus.retry")}
             </Button>
           </CardContent>
         </Card>
@@ -159,15 +162,15 @@ export default function ServerStatus() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <Server className="h-6 w-6" />
-          Serverstatus
+          {t("serverStatus.title")}
         </h1>
         <div className="flex items-center gap-3">
           <span className="text-xs text-muted-foreground">
-            Aktualisiert: {lastUpdate}
+            {t("serverStatus.lastUpdated")}: {lastUpdate}
           </span>
           <Button variant="outline" size="sm" onClick={() => refetch()}>
             <RefreshCw className="h-4 w-4 mr-2" />
-            Aktualisieren
+            {t("serverStatus.refresh")}
           </Button>
         </div>
       </div>
@@ -179,7 +182,7 @@ export default function ServerStatus() {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <Activity className="h-4 w-4" />
-              Systemstatus
+              {t("serverStatus.systemStatus")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -201,7 +204,7 @@ export default function ServerStatus() {
           <CardContent>
             <p className="text-xl font-bold">{formatUptime(health.uptime)}</p>
             <p className="text-xs text-muted-foreground mt-1">
-              Seit {new Date(Date.now() - health.uptime * 1000).toLocaleDateString("de-AT")}
+              {t("serverStatus.since")} {new Date(Date.now() - health.uptime * 1000).toLocaleDateString("de-AT")}
             </p>
           </CardContent>
         </Card>
@@ -211,7 +214,7 @@ export default function ServerStatus() {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <Database className="h-4 w-4" />
-              Datenbank
+              {t("serverStatus.database")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -219,20 +222,20 @@ export default function ServerStatus() {
               <>
                 <div className="flex items-center gap-2">
                   <CheckCircle className="h-4 w-4 text-green-500" />
-                  <span className="font-semibold text-green-600">Verbunden</span>
+                  <span className="font-semibold text-green-600">{t("serverStatus.connected")}</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Latenz: {health.db.latencyMs}ms
+                  {t("serverStatus.latency")}: {health.db.latencyMs}ms
                 </p>
               </>
             ) : (
               <>
                 <div className="flex items-center gap-2">
                   <XCircle className="h-4 w-4 text-red-500" />
-                  <span className="font-semibold text-red-600">Getrennt</span>
+                  <span className="font-semibold text-red-600">{t("serverStatus.disconnected")}</span>
                 </div>
                 <p className="text-xs text-red-500 mt-1">
-                  {health.db.error || "Verbindung fehlgeschlagen"}
+                  {health.db.error || t("serverStatus.connectionFailed")}
                 </p>
               </>
             )}
@@ -244,7 +247,7 @@ export default function ServerStatus() {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <HardDrive className="h-4 w-4" />
-              Speicher
+              {t("serverStatus.memory")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -266,7 +269,7 @@ export default function ServerStatus() {
       {/* Detailed memory */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Speicherdetails</CardTitle>
+          <CardTitle className="text-base">{t("serverStatus.memoryDetails")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -275,15 +278,15 @@ export default function ServerStatus() {
               <p className="text-lg font-semibold">{formatBytes(health.memory.rss)}</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Heap Verwendet</p>
+              <p className="text-sm text-muted-foreground">{t("serverStatus.heapUsed")}</p>
               <p className="text-lg font-semibold">{formatBytes(health.memory.heapUsed)}</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Heap Gesamt</p>
+              <p className="text-sm text-muted-foreground">{t("serverStatus.heapTotal")}</p>
               <p className="text-lg font-semibold">{formatBytes(health.memory.heapTotal)}</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Extern</p>
+              <p className="text-sm text-muted-foreground">{t("serverStatus.external")}</p>
               <p className="text-lg font-semibold">{formatBytes(health.memory.external)}</p>
             </div>
           </div>
@@ -294,19 +297,19 @@ export default function ServerStatus() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Server-Info</CardTitle>
+            <CardTitle className="text-base">{t("serverStatus.serverInfo")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Version</span>
+              <span className="text-muted-foreground">{t("serverStatus.version")}</span>
               <Badge variant="outline">{health.version}</Badge>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Zeitstempel</span>
+              <span className="text-muted-foreground">{t("serverStatus.timestamp")}</span>
               <span>{new Date(health.timestamp).toLocaleString("de-AT")}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Auto-Refresh</span>
+              <span className="text-muted-foreground">{t("serverStatus.autoRefresh")}</span>
               <Badge variant="secondary">30s</Badge>
             </div>
           </CardContent>
@@ -314,12 +317,12 @@ export default function ServerStatus() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Monitoring-Hinweise</CardTitle>
+            <CardTitle className="text-base">{t("serverStatus.monitoringHints")}</CardTitle>
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground space-y-1">
-            <p>Prometheus-Metriken: <code className="text-xs bg-muted px-1 py-0.5 rounded">/api/metrics</code></p>
-            <p>Sentry-DSN ist ueber Umgebungsvariable konfiguriert.</p>
-            <p>Diese Seite aktualisiert sich automatisch alle 30 Sekunden.</p>
+            <p>{t("serverStatus.monitoringHint1")} <code className="text-xs bg-muted px-1 py-0.5 rounded">/api/metrics</code></p>
+            <p>{t("serverStatus.monitoringHint2")}</p>
+            <p>{t("serverStatus.monitoringHint3")}</p>
           </CardContent>
         </Card>
       </div>

@@ -10,6 +10,7 @@ import {
   HardDrive, Clock, Plus, Database, ArrowLeft, RefreshCw, CheckCircle
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "@/hooks/useTranslation";
 import { Link } from "wouter";
 
 interface BackupInfo {
@@ -28,6 +29,7 @@ interface StorageUsage {
 
 export default function BackupRestore() {
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [backups, setBackups] = useState<BackupInfo[]>([]);
   const [storageInfo, setStorageInfo] = useState<StorageUsage | null>(null);
   const [loading, setLoading] = useState(true);
@@ -69,10 +71,10 @@ export default function BackupRestore() {
       const res = await fetch("/api/admin/backups", { method: "POST" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      toast({ title: "Backup erstellt", description: `${data.backup.filename} (${data.backup.sizeFormatted})` });
+      toast({ title: t("backup.backupCreated"), description: `${data.backup.filename} (${data.backup.sizeFormatted})` });
       fetchBackups();
     } catch (err: any) {
-      toast({ title: "Fehler", description: err.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
     } finally {
       setCreating(false);
     }
@@ -94,11 +96,11 @@ export default function BackupRestore() {
       const res = await fetch(`/api/admin/backups/${encodeURIComponent(filename)}`, { method: "DELETE" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      toast({ title: "Backup geloescht", description: data.message });
+      toast({ title: t("backup.backupDeleted"), description: data.message });
       setDeleteTarget(null);
       fetchBackups();
     } catch (err: any) {
-      toast({ title: "Fehler", description: err.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
     }
   };
 
@@ -114,11 +116,11 @@ export default function BackupRestore() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      toast({ title: "Wiederherstellung abgeschlossen", description: data.message });
+      toast({ title: t("backup.restoreComplete"), description: data.message });
       setRestoreTarget(null);
       setRestoreConfirm("");
     } catch (err: any) {
-      toast({ title: "Fehler", description: err.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
     } finally {
       setRestoring(false);
     }
@@ -146,10 +148,10 @@ export default function BackupRestore() {
         <div className="flex-1">
           <h1 className="text-2xl font-heading font-bold flex items-center gap-2">
             <Database className="h-6 w-6" />
-            Backup & Wiederherstellung
+            {t("backup.title")}
           </h1>
           <p className="text-sm text-muted-foreground">
-            Datenbank-Sicherungen verwalten
+            {t("backup.subtitle")}
           </p>
         </div>
         <Button
@@ -171,7 +173,7 @@ export default function BackupRestore() {
             </div>
             <div>
               <div className="text-lg font-bold">{storageInfo?.totalSizeFormatted || "..."}</div>
-              <div className="text-xs text-muted-foreground">Speicherverbrauch</div>
+              <div className="text-xs text-muted-foreground">{t("backup.storageUsage")}</div>
             </div>
           </CardContent>
         </Card>
@@ -182,7 +184,7 @@ export default function BackupRestore() {
             </div>
             <div>
               <div className="text-lg font-bold">{storageInfo?.fileCount ?? "..."}</div>
-              <div className="text-xs text-muted-foreground">Backups gesamt</div>
+              <div className="text-xs text-muted-foreground">{t("backup.totalBackups")}</div>
             </div>
           </CardContent>
         </Card>
@@ -192,8 +194,8 @@ export default function BackupRestore() {
               <Clock className="h-5 w-5 text-green-600" />
             </div>
             <div>
-              <div className="text-xs font-medium">Automatisch</div>
-              <div className="text-xs text-muted-foreground">Taeglich, 14 Tage</div>
+              <div className="text-xs font-medium">{t("backup.automatic")}</div>
+              <div className="text-xs text-muted-foreground">{t("backup.automaticSchedule")}</div>
             </div>
           </CardContent>
         </Card>
@@ -204,14 +206,14 @@ export default function BackupRestore() {
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium">Manuelles Backup</p>
+              <p className="font-medium">{t("backup.manualBackup")}</p>
               <p className="text-sm text-muted-foreground">
-                Erstellt sofort eine Sicherung der aktuellen Datenbank
+                {t("backup.manualBackupDesc")}
               </p>
             </div>
             <Button onClick={handleCreate} disabled={creating}>
               {creating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
-              Jetzt Backup erstellen
+              {t("backup.createBackupNow")}
             </Button>
           </div>
         </CardContent>
@@ -220,9 +222,9 @@ export default function BackupRestore() {
       {/* Backup list */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Verfuegbare Backups</CardTitle>
+          <CardTitle className="text-lg">{t("backup.availableBackups")}</CardTitle>
           <CardDescription>
-            Automatische und manuelle Sicherungen
+            {t("backup.availableBackupsDesc")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -233,7 +235,7 @@ export default function BackupRestore() {
           ) : backups.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Database className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p>Noch keine Backups vorhanden</p>
+              <p>{t("backup.noBackups")}</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -246,7 +248,7 @@ export default function BackupRestore() {
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-mono truncate">{backup.filename}</span>
                       <Badge variant={backup.isAutomatic ? "secondary" : "default"} className="text-xs flex-shrink-0">
-                        {backup.isAutomatic ? "Auto" : "Manuell"}
+                        {backup.isAutomatic ? t("backup.auto") : t("backup.manual")}
                       </Badge>
                     </div>
                     <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
@@ -261,7 +263,7 @@ export default function BackupRestore() {
                       size="icon"
                       className="h-8 w-8"
                       onClick={() => handleDownload(backup.filename)}
-                      title="Herunterladen"
+                      title={t("backup.download")}
                     >
                       <Download className="h-4 w-4" />
                     </Button>
@@ -273,7 +275,7 @@ export default function BackupRestore() {
                         setRestoreTarget(backup.filename);
                         setRestoreConfirm("");
                       }}
-                      title="Wiederherstellen"
+                      title={t("backup.restore")}
                     >
                       <RotateCcw className="h-4 w-4" />
                     </Button>
@@ -285,7 +287,7 @@ export default function BackupRestore() {
                           className="h-8 text-xs"
                           onClick={() => handleDelete(backup.filename)}
                         >
-                          Ja
+                          {t("common.yes")}
                         </Button>
                         <Button
                           variant="outline"
@@ -293,7 +295,7 @@ export default function BackupRestore() {
                           className="h-8 text-xs"
                           onClick={() => setDeleteTarget(null)}
                         >
-                          Nein
+                          {t("common.no")}
                         </Button>
                       </div>
                     ) : (
@@ -302,7 +304,7 @@ export default function BackupRestore() {
                         size="icon"
                         className="h-8 w-8 text-destructive hover:text-destructive"
                         onClick={() => setDeleteTarget(backup.filename)}
-                        title="Loeschen"
+                        title={t("common.delete")}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -321,7 +323,7 @@ export default function BackupRestore() {
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2 text-amber-700 dark:text-amber-400">
               <AlertTriangle className="h-5 w-5" />
-              Wiederherstellung bestaetigen
+              {t("backup.confirmRestore")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -330,16 +332,16 @@ export default function BackupRestore() {
                 Backup: <span className="font-mono">{restoreTarget}</span>
               </p>
               <p className="text-sm text-destructive font-medium mt-2">
-                Alle aktuellen Daten werden ueberschrieben!
+                {t("backup.dataOverwriteWarning")}
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                Erstellen Sie vorher ein manuelles Backup, um den aktuellen Stand zu sichern.
+                {t("backup.createBackupFirst")}
               </p>
             </div>
 
             <div className="space-y-2">
               <Label className="text-sm">
-                Bitte tippen Sie <strong>RESTORE</strong> zur Bestaetigung:
+                {t("backup.typeRestore")}
               </Label>
               <Input
                 value={restoreConfirm}
@@ -354,7 +356,7 @@ export default function BackupRestore() {
                 variant="outline"
                 onClick={() => { setRestoreTarget(null); setRestoreConfirm(""); }}
               >
-                Abbrechen
+                {t("common.cancel")}
               </Button>
               <Button
                 variant="default"
@@ -363,7 +365,7 @@ export default function BackupRestore() {
                 onClick={handleRestore}
               >
                 {restoring ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RotateCcw className="h-4 w-4 mr-2" />}
-                Wiederherstellen
+                {t("backup.restore")}
               </Button>
             </div>
           </CardContent>
@@ -376,12 +378,12 @@ export default function BackupRestore() {
           <div className="flex items-start gap-3">
             <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
             <div className="text-sm text-muted-foreground space-y-1">
-              <p className="font-medium text-foreground">Automatisches Backup</p>
+              <p className="font-medium text-foreground">{t("backup.autoBackupInfo")}</p>
               <ul className="list-disc list-inside space-y-0.5">
-                <li>Taeglich wird automatisch eine Sicherung erstellt</li>
-                <li>Backups werden 14 Tage aufbewahrt, dann automatisch bereinigt</li>
-                <li>Gespeichert als komprimierte PostgreSQL-Dumps (.sql.gz)</li>
-                <li>Der db-backup Service laeuft als eigener Docker-Container</li>
+                <li>{t("backup.autoBackupDetails1")}</li>
+                <li>{t("backup.autoBackupDetails2")}</li>
+                <li>{t("backup.autoBackupDetails3")}</li>
+                <li>{t("backup.autoBackupDetails4")}</li>
               </ul>
             </div>
           </div>

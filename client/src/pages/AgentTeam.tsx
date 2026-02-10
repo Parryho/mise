@@ -16,6 +16,7 @@ import {
   FlaskConical,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "@/hooks/useTranslation";
 import { useLocationFilter } from "@/lib/location-context";
 import { apiRequest } from "@/lib/queryClient";
 import AgentCard, { getAgentLabel, type AgentCardProps } from "@/components/AgentCard";
@@ -196,6 +197,7 @@ const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 // ── Component ──────────────────────────────────────────────────────
 
 export default function AgentTeam() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const { locations, selectedSlug } = useLocationFilter();
 
@@ -280,7 +282,7 @@ export default function AgentTeam() {
       connectSSE(data.runId);
     } catch (err: any) {
       setIsRunning(false);
-      toast({ title: "Fehler", description: err.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
     }
   };
 
@@ -369,7 +371,7 @@ export default function AgentTeam() {
         setCurrentPhase(4);
       }
     } catch (err: any) {
-      toast({ title: "Fehler", description: err.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
     }
   };
 
@@ -378,10 +380,10 @@ export default function AgentTeam() {
       {/* Header */}
       <div className="flex items-center gap-2">
         <Bot className="h-6 w-6 text-primary" />
-        <h1 className="text-xl font-bold">Küchen-Team Briefing</h1>
+        <h1 className="text-xl font-bold">{t("agentTeam.title")}</h1>
       </div>
       <p className="text-sm text-muted-foreground">
-        7 AI-Agents analysieren parallel PAX, HACCP, Waste, Allergene, Rezepte, Rotation und Portionen.
+        {t("agentTeam.subtitle")}
       </p>
 
       {/* Controls */}
@@ -390,7 +392,7 @@ export default function AgentTeam() {
           <div className="flex flex-wrap gap-3 items-end">
             {/* Location */}
             <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Standort</label>
+              <label className="text-xs font-medium text-muted-foreground">{t("agentTeam.location")}</label>
               <Select value={locationSlug} onValueChange={setLocationSlug}>
                 <SelectTrigger className="w-[140px]">
                   <SelectValue />
@@ -405,7 +407,7 @@ export default function AgentTeam() {
 
             {/* Week */}
             <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Woche</label>
+              <label className="text-xs font-medium text-muted-foreground">{t("agentTeam.week")}</label>
               <div className="flex items-center gap-1">
                 <Button variant="outline" size="sm" onClick={() => adjustWeek(-1)}>&lt;</Button>
                 <span className="text-sm font-medium px-2 min-w-[160px] text-center">
@@ -418,13 +420,13 @@ export default function AgentTeam() {
             {/* Start */}
             <Button onClick={startBriefing} disabled={isRunning} className="gap-2">
               {isRunning ? (
-                <><Loader2 className="h-4 w-4 animate-spin" /> Läuft...</>
+                <><Loader2 className="h-4 w-4 animate-spin" /> {t("agentTeam.running")}</>
               ) : (
-                <><Play className="h-4 w-4" /> Briefing starten</>
+                <><Play className="h-4 w-4" /> {t("agentTeam.startBriefing")}</>
               )}
             </Button>
             <Button onClick={startDemo} disabled={isRunning} variant="outline" className="gap-2">
-              <FlaskConical className="h-4 w-4" /> Demo
+              <FlaskConical className="h-4 w-4" /> {t("agentTeam.demo")}
             </Button>
           </div>
 
@@ -432,7 +434,7 @@ export default function AgentTeam() {
           {pastRuns && pastRuns.length > 0 && (
             <div className="flex items-center gap-2 flex-wrap">
               <History className="h-4 w-4 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">Letzte:</span>
+              <span className="text-xs text-muted-foreground">{t("agentTeam.recent")}</span>
               {pastRuns.slice(0, 5).map(run => (
                 <Button
                   key={run.id}
@@ -456,7 +458,7 @@ export default function AgentTeam() {
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               <Bot className="h-4 w-4" />
-              Agent Pipeline
+              {t("agentTeam.pipeline")}
               {briefing && (
                 <Badge variant="outline" className="ml-auto text-xs">
                   <Clock className="h-3 w-3 mr-1" />
@@ -469,9 +471,7 @@ export default function AgentTeam() {
             {[1, 2, 3, 4].map(phase => {
               const agents = PHASE_AGENTS[phase];
               const isActive = currentPhase >= phase;
-              const phaseLabel = phase === 4 ? "AI Synthese" :
-                phase === 1 ? "Daten sammeln" :
-                phase === 2 ? "Kontext-Analyse" : "Planung";
+              const phaseLabel = t(`agentTeam.phaseLabels.${phase}`);
 
               if (phase === 4 && !briefing?.hasAiSummary && !isRunning) return null;
 
@@ -479,7 +479,7 @@ export default function AgentTeam() {
                 <div key={phase}>
                   <div className="flex items-center gap-2 mb-2">
                     <Badge variant={isActive ? "default" : "secondary"} className="text-[10px]">
-                      Phase {phase}
+                      {t("agentTeam.phase")} {phase}
                     </Badge>
                     <span className="text-xs text-muted-foreground">{phaseLabel}</span>
                     {phase < 4 && <ChevronRight className="h-3 w-3 text-muted-foreground ml-auto" />}
@@ -508,7 +508,7 @@ export default function AgentTeam() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
-              Aktionspunkte
+              {t("agentTeam.actionItems")}
               <Badge variant="outline" className="ml-auto">
                 {briefing.actionItems.length}
               </Badge>
@@ -526,7 +526,7 @@ export default function AgentTeam() {
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               {briefing.hasAiSummary && <Sparkles className="h-4 w-4 text-primary" />}
-              Zusammenfassung
+              {t("agentTeam.summary")}
               {briefing.hasAiSummary && (
                 <Badge variant="secondary" className="text-[10px]">AI</Badge>
               )}

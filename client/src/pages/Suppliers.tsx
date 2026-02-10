@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader2, PlusCircle, Pencil, Trash2, Search, ArrowLeft, Truck, Phone, Mail } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "@/hooks/useTranslation";
 import { Link } from "wouter";
 
 interface Supplier {
@@ -40,6 +41,7 @@ export default function Suppliers() {
   const [search, setSearch] = useState("");
   const [showAdd, setShowAdd] = useState(false);
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const fetchItems = async () => {
     try {
@@ -65,13 +67,13 @@ export default function Suppliers() {
   }, [items, search]);
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Lieferant wirklich löschen?")) return;
+    if (!confirm(t("suppliers.deleteConfirm"))) return;
     try {
       await fetch(`/api/suppliers/${id}`, { method: "DELETE" });
-      toast({ title: "Gelöscht" });
+      toast({ title: t("common.deleted") });
       fetchItems();
     } catch {
-      toast({ title: "Fehler beim Löschen", variant: "destructive" });
+      toast({ title: t("suppliers.deleteFailed"), variant: "destructive" });
     }
   };
 
@@ -89,15 +91,15 @@ export default function Suppliers() {
         <Link href="/settings">
           <Button variant="ghost" size="sm" className="gap-1 min-h-[44px]">
             <ArrowLeft className="h-4 w-4" />
-            Einstellungen
+            {t("nav.settings")}
           </Button>
         </Link>
         <div className="flex-1">
-          <h1 className="text-xl font-heading font-bold">Lieferanten</h1>
-          <p className="text-xs text-muted-foreground">{items.length} Lieferanten</p>
+          <h1 className="text-xl font-heading font-bold">{t("suppliers.title")}</h1>
+          <p className="text-xs text-muted-foreground">{t("suppliers.count", { count: items.length })}</p>
         </div>
         <Button size="sm" className="gap-1 min-h-[44px]" onClick={() => setShowAdd(true)}>
-          <PlusCircle className="h-4 w-4" /> Neuer Lieferant
+          <PlusCircle className="h-4 w-4" /> {t("suppliers.newSupplier")}
         </Button>
       </div>
 
@@ -107,7 +109,7 @@ export default function Suppliers() {
         <Input
           value={search}
           onChange={e => setSearch(e.target.value)}
-          placeholder="Lieferant suchen..."
+          placeholder={t("suppliers.searchPlaceholder")}
           className="pl-9"
         />
       </div>
@@ -117,11 +119,11 @@ export default function Suppliers() {
         <div className="text-center py-12 space-y-3">
           <Truck className="h-10 w-10 mx-auto text-muted-foreground/40" />
           <p className="text-muted-foreground font-medium">
-            {items.length === 0 ? "Noch keine Lieferanten" : "Keine Ergebnisse"}
+            {items.length === 0 ? t("suppliers.noSuppliers") : t("suppliers.noResults")}
           </p>
           {items.length === 0 && (
             <Button variant="outline" size="sm" className="gap-1 min-h-[44px]" onClick={() => setShowAdd(true)}>
-              <PlusCircle className="h-4 w-4" /> Ersten Lieferanten anlegen
+              <PlusCircle className="h-4 w-4" /> {t("suppliers.firstSupplier")}
             </Button>
           )}
         </div>
@@ -136,13 +138,13 @@ export default function Suppliers() {
                       <Truck className="h-4 w-4 text-muted-foreground shrink-0" />
                       <div className="font-medium truncate">{item.name}</div>
                       {!item.isActive && (
-                        <Badge variant="secondary" className="text-[10px] py-0">Inaktiv</Badge>
+                        <Badge variant="secondary" className="text-[10px] py-0">{t("suppliers.inactive")}</Badge>
                       )}
                     </div>
 
                     {item.contactPerson && (
                       <div className="text-xs text-muted-foreground flex items-center gap-1.5">
-                        <span>Kontakt: {item.contactPerson}</span>
+                        <span>{t("suppliers.contact")}: {item.contactPerson}</span>
                       </div>
                     )}
 
@@ -171,13 +173,13 @@ export default function Suppliers() {
 
                     {item.orderDeadline && (
                       <div className="text-xs text-muted-foreground">
-                        Bestellfrist: {item.orderDeadline}
+                        {t("suppliers.orderDeadline")}: {item.orderDeadline}
                       </div>
                     )}
 
                     {item.minOrder && (
                       <div className="text-xs text-muted-foreground">
-                        Mindestbestellung: {item.minOrder}
+                        {t("suppliers.minOrder")}: {item.minOrder}
                       </div>
                     )}
 
@@ -222,11 +224,12 @@ function AddSupplierDialog({ open, onOpenChange, onSave }: {
   const [isActive, setIsActive] = useState(true);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
-      toast({ title: "Name erforderlich", variant: "destructive" });
+      toast({ title: t("suppliers.nameRequired"), variant: "destructive" });
       return;
     }
     setSaving(true);
@@ -250,7 +253,7 @@ function AddSupplierDialog({ open, onOpenChange, onSave }: {
         const err = await res.json();
         throw new Error(err.error);
       }
-      toast({ title: "Lieferant erstellt" });
+      toast({ title: t("suppliers.supplierCreated") });
       setName("");
       setContactPerson("");
       setPhone("");
@@ -262,7 +265,7 @@ function AddSupplierDialog({ open, onOpenChange, onSave }: {
       setIsActive(true);
       onSave();
     } catch (error: any) {
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: error.message, variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -272,7 +275,7 @@ function AddSupplierDialog({ open, onOpenChange, onSave }: {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Neuer Lieferant</DialogTitle>
+          <DialogTitle>{t("suppliers.newSupplier")}</DialogTitle>
         </DialogHeader>
         <SupplierForm
           name={name} setName={setName}
@@ -286,7 +289,7 @@ function AddSupplierDialog({ open, onOpenChange, onSave }: {
           isActive={isActive} setIsActive={setIsActive}
           saving={saving}
           onSubmit={handleSubmit}
-          submitLabel="Erstellen"
+          submitLabel={t("common.create")}
         />
       </DialogContent>
     </Dialog>
@@ -308,6 +311,7 @@ function EditSupplierDialog({ item, onSave }: { item: Supplier; onSave: () => vo
   const [isActive, setIsActive] = useState(item.isActive);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -332,11 +336,11 @@ function EditSupplierDialog({ item, onSave }: { item: Supplier; onSave: () => vo
         const err = await res.json();
         throw new Error(err.error);
       }
-      toast({ title: "Gespeichert" });
+      toast({ title: t("common.saved") });
       setOpen(false);
       onSave();
     } catch (error: any) {
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: error.message, variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -351,7 +355,7 @@ function EditSupplierDialog({ item, onSave }: { item: Supplier; onSave: () => vo
       </DialogTrigger>
       <DialogContent className="max-w-sm max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Lieferant bearbeiten</DialogTitle>
+          <DialogTitle>{t("suppliers.editSupplier")}</DialogTitle>
         </DialogHeader>
         <SupplierForm
           name={name} setName={setName}
@@ -365,7 +369,7 @@ function EditSupplierDialog({ item, onSave }: { item: Supplier; onSave: () => vo
           isActive={isActive} setIsActive={setIsActive}
           saving={saving}
           onSubmit={handleSubmit}
-          submitLabel="Speichern"
+          submitLabel={t("common.save")}
         />
       </DialogContent>
     </Dialog>
@@ -399,6 +403,7 @@ function SupplierForm({
   onSubmit: (e: React.FormEvent) => void;
   submitLabel: string;
 }) {
+  const { t } = useTranslation();
   const toggleDay = (dayId: string) => {
     if (deliveryDays.includes(dayId)) {
       setDeliveryDays(deliveryDays.filter(d => d !== dayId));
@@ -410,28 +415,28 @@ function SupplierForm({
   return (
     <form onSubmit={onSubmit} className="space-y-3">
       <div className="space-y-1.5">
-        <Label>Name *</Label>
-        <Input value={name} onChange={e => setName(e.target.value)} placeholder="z.B. Metro" required />
+        <Label>{t("common.name")} *</Label>
+        <Input value={name} onChange={e => setName(e.target.value)} placeholder={t("suppliers.namePlaceholder")} required />
       </div>
 
       <div className="space-y-1.5">
-        <Label>Ansprechpartner</Label>
-        <Input value={contactPerson} onChange={e => setContactPerson(e.target.value)} placeholder="Optional" />
+        <Label>{t("suppliers.contactPartner")}</Label>
+        <Input value={contactPerson} onChange={e => setContactPerson(e.target.value)} placeholder={t("common.optional")} />
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
-          <Label>Telefon</Label>
-          <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="Optional" />
+          <Label>{t("suppliers.phone")}</Label>
+          <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder={t("common.optional")} />
         </div>
         <div className="space-y-1.5">
-          <Label>E-Mail</Label>
-          <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Optional" />
+          <Label>{t("suppliers.email")}</Label>
+          <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder={t("common.optional")} />
         </div>
       </div>
 
       <div className="space-y-1.5">
-        <Label>Liefertage</Label>
+        <Label>{t("suppliers.deliveryDays")}</Label>
         <div className="flex gap-2 flex-wrap">
           {WEEKDAYS.map(day => (
             <Button
@@ -449,35 +454,35 @@ function SupplierForm({
       </div>
 
       <div className="space-y-1.5">
-        <Label>Bestellfrist</Label>
+        <Label>{t("suppliers.orderDeadline")}</Label>
         <Input
           value={orderDeadline}
           onChange={e => setOrderDeadline(e.target.value)}
-          placeholder="z.B. Donnerstag 12:00"
+          placeholder={t("suppliers.orderDeadlinePlaceholder")}
         />
       </div>
 
       <div className="space-y-1.5">
-        <Label>Mindestbestellung</Label>
+        <Label>{t("suppliers.minOrder")}</Label>
         <Input
           value={minOrder}
           onChange={e => setMinOrder(e.target.value)}
-          placeholder="z.B. €50"
+          placeholder={t("suppliers.minOrderPlaceholder")}
         />
       </div>
 
       <div className="space-y-1.5">
-        <Label>Notizen</Label>
+        <Label>{t("common.notes")}</Label>
         <Textarea
           value={notes}
           onChange={e => setNotes(e.target.value)}
-          placeholder="Optional"
+          placeholder={t("common.optional")}
           className="min-h-[60px]"
         />
       </div>
 
       <div className="flex items-center justify-between py-2">
-        <Label htmlFor="isActive" className="cursor-pointer">Aktiv</Label>
+        <Label htmlFor="isActive" className="cursor-pointer">{t("suppliers.active")}</Label>
         <Switch
           id="isActive"
           checked={isActive}

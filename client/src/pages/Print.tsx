@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Printer } from "lucide-react";
 import { apiFetch } from "@/lib/api";
+import { useTranslation } from "@/hooks/useTranslation";
 import AllergenBadge from "@/components/AllergenBadge";
 import { formatLocalDate } from "@shared/constants";
 
@@ -25,19 +26,8 @@ interface Recipe {
   allergens: string[];
 }
 
-const DAY_NAMES = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
+const JS_DAY_KEYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"] as const;
 const COURSE_ORDER = ["soup", "main1", "side1a", "side1b", "main2", "side2a", "side2b", "dessert"];
-const COURSE_LABELS: Record<string, string> = {
-  soup: "Suppe",
-  main1: "Haupt 1",
-  side1a: "Beil. 1a",
-  side1b: "Beil. 1b",
-  main2: "Haupt 2",
-  side2a: "Beil. 2a",
-  side2b: "Beil. 2b",
-  dessert: "Dessert",
-  main: "Hauptgang",
-};
 
 function getWeekRange(): { start: string; end: string } {
   const now = new Date();
@@ -53,6 +43,7 @@ function getWeekRange(): { start: string; end: string } {
 }
 
 export default function Print() {
+  const { t } = useTranslation();
   const weekRange = getWeekRange();
   const [startDate, setStartDate] = useState(weekRange.start);
   const [endDate, setEndDate] = useState(weekRange.end);
@@ -100,19 +91,19 @@ export default function Print() {
     <div className="p-4 space-y-4 pb-24">
       {/* Controls (hidden when printing) */}
       <div className="flex justify-between items-center print:hidden">
-        <h1 className="text-2xl font-heading font-bold">Druckansicht</h1>
+        <h1 className="text-2xl font-heading font-bold">{t("print.title")}</h1>
         <Button size="sm" className="gap-1" onClick={() => window.print()}>
-          <Printer className="h-4 w-4" /> Drucken
+          <Printer className="h-4 w-4" /> {t("common.print")}
         </Button>
       </div>
 
       <div className="flex items-end gap-2 print:hidden">
         <div className="space-y-1 flex-1">
-          <Label className="text-xs">Von</Label>
+          <Label className="text-xs">{t("common.from")}</Label>
           <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="h-8 text-xs" />
         </div>
         <div className="space-y-1 flex-1">
-          <Label className="text-xs">Bis</Label>
+          <Label className="text-xs">{t("common.to")}</Label>
           <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="h-8 text-xs" />
         </div>
       </div>
@@ -125,30 +116,30 @@ export default function Print() {
         <div className="print:text-[9pt] print:leading-tight">
           {/* Print header */}
           <div className="hidden print:block text-center mb-4">
-            <h2 className="text-lg font-bold">Menüplan {startDate} - {endDate}</h2>
+            <h2 className="text-lg font-bold">{t("print.menuPlanTitle", { start: startDate, end: endDate })}</h2>
           </div>
 
           {dates.length === 0 && !loading && (
             <div className="text-center py-12 text-muted-foreground">
-              <p className="text-lg font-medium">Keine Menüpläne vorhanden</p>
-              <p className="text-sm mt-1">Für den gewählten Zeitraum sind keine Einträge vorhanden.</p>
+              <p className="text-lg font-medium">{t("print.noMenuPlans")}</p>
+              <p className="text-sm mt-1">{t("print.noMenuPlansHint")}</p>
             </div>
           )}
 
           <table className="w-full border-collapse text-xs">
             <thead>
               <tr className="border-b-2 border-foreground">
-                <th className="p-1 text-left w-16">Tag</th>
+                <th className="p-1 text-left w-16">{t("print.dayColumn")}</th>
                 {locationIds.length > 0 ? (
                   locationIds.flatMap(locId => ["lunch", "dinner"].map(meal => (
                     <th key={`${locId}-${meal}`} className="p-1 text-center border-l">
-                      {locMap[locId] || "?"} {meal === "lunch" ? "Mi" : "Ab"}
+                      {locMap[locId] || "?"} {meal === "lunch" ? t("print.lunchShort") : t("print.dinnerShort")}
                     </th>
                   )))
                 ) : (
                   ["lunch", "dinner"].map(meal => (
                     <th key={meal} className="p-1 text-center border-l">
-                      {meal === "lunch" ? "Mittag" : "Abend"}
+                      {meal === "lunch" ? t("print.lunch") : t("print.dinner")}
                     </th>
                   ))
                 )}
@@ -157,7 +148,7 @@ export default function Print() {
             <tbody>
               {dates.map(date => {
                 const d = new Date(date);
-                const dayName = DAY_NAMES[d.getDay()];
+                const dayName = t(`weekdays.${JS_DAY_KEYS[d.getDay()]}`);
                 const dayNum = `${d.getDate()}.${d.getMonth() + 1}.`;
 
                 return (
@@ -221,7 +212,7 @@ export default function Print() {
 
           {/* Allergen legend (print only) */}
           <div className="hidden print:block mt-4 text-[8pt] text-muted-foreground">
-            A=Gluten B=Krebstiere C=Eier D=Fisch E=Erdnüsse F=Soja G=Milch H=Schalenfrüchte L=Sellerie M=Senf N=Sesam O=Sulfite P=Lupinen R=Weichtiere
+            {t("print.allergenLegend")}
           </div>
         </div>
       )}

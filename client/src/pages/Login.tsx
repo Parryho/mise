@@ -7,10 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Loader2, AlertCircle } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function Login() {
   const [, setLocation] = useLocation();
   const { login } = useAuth();
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -27,7 +29,7 @@ export default function Login() {
     if (result.success) {
       setLocation("/today");
     } else {
-      setError(result.error || "Anmeldung fehlgeschlagen");
+      setError(result.error || t("auth.loginFailed"));
     }
   };
 
@@ -38,7 +40,7 @@ export default function Login() {
           <div className="flex justify-center mb-2">
             <img src="/mise-logo.png" alt="Mise - before Serve" className="h-20 object-contain" />
           </div>
-          <CardDescription>Melden Sie sich an, um fortzufahren</CardDescription>
+          <CardDescription>{t("auth.loginDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -50,20 +52,20 @@ export default function Login() {
             )}
             
             <div className="space-y-2">
-              <Label htmlFor="email">E-Mail</Label>
+              <Label htmlFor="email">{t("auth.email")}</Label>
               <Input 
                 id="email"
                 type="email" 
                 value={email} 
                 onChange={(e) => setEmail(e.target.value)} 
-                placeholder="ihre@email.at"
+                placeholder={t("auth.emailPlaceholder")}
                 required 
                 data-testid="input-email"
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="password">Passwort</Label>
+              <Label htmlFor="password">{t("auth.password")}</Label>
               <Input 
                 id="password"
                 type="password" 
@@ -76,12 +78,12 @@ export default function Login() {
             
             <Button type="submit" className="w-full" disabled={loading} data-testid="button-login">
               {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Anmelden
+              {t("auth.login")}
             </Button>
           </form>
           
           <div className="mt-6 text-center text-sm text-muted-foreground">
-            Kein Konto? Bitte wenden Sie sich an den Administrator.
+            {t("auth.noAccount")}
           </div>
         </CardContent>
       </Card>

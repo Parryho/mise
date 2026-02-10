@@ -6,6 +6,7 @@ import { MEAL_SLOTS, getISOWeek, getWeekDateRange, formatLocalDate } from "@shar
 import { apiFetch, apiPost } from "@/lib/api";
 import { ALLERGENS } from "@shared/allergens";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface RotationSlot {
   id: number;
@@ -25,22 +26,13 @@ interface Recipe {
   allergens?: string[];
 }
 
-const DAY_LABELS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+const DAY_KEYS = ["mo", "di", "mi", "do", "fr", "sa", "so"] as const;
 
 function uiIndexToDbDow(uiIdx: number): number {
   return uiIdx === 6 ? 0 : uiIdx + 1;
 }
 
-const SLOT_LABELS: Record<string, string> = {
-  soup: "Suppe",
-  main1: "Haupt 1",
-  side1a: "Beilage",
-  side1b: "Beilage",
-  main2: "Haupt 2",
-  side2a: "Beilage",
-  side2b: "Beilage",
-  dessert: "Dessert",
-};
+const SLOT_KEYS = ["soup", "main1", "side1a", "side1b", "main2", "side2a", "side2b", "dessert"] as const;
 
 interface BlockDef {
   key: string;
@@ -49,20 +41,23 @@ interface BlockDef {
   label: string;
 }
 
-const ALL_BLOCKS: BlockDef[] = [
-  { key: "city-lunch", locSlug: "city", meal: "lunch", label: "City Mittag" },
-  { key: "city-dinner", locSlug: "city", meal: "dinner", label: "City Abend" },
-  { key: "sued-lunch", locSlug: "sued", meal: "lunch", label: "SÜD Mittag" },
-  { key: "sued-dinner", locSlug: "sued", meal: "dinner", label: "SÜD Abend" },
-];
+const BLOCK_DEFS = [
+  { key: "city-lunch", locSlug: "city", meal: "lunch", i18nKey: "cityLunch" },
+  { key: "city-dinner", locSlug: "city", meal: "dinner", i18nKey: "cityDinner" },
+  { key: "sued-lunch", locSlug: "sued", meal: "lunch", i18nKey: "suedLunch" },
+  { key: "sued-dinner", locSlug: "sued", meal: "dinner", i18nKey: "suedDinner" },
+] as const;
 
 export default function RotationPrint() {
+  const { t } = useTranslation();
   const [templateId, setTemplateId] = useState<number | null>(null);
   const [weekCount, setWeekCount] = useState(6);
   const [weekNr, setWeekNr] = useState(1);
   const [slots, setSlots] = useState<RotationSlot[]>([]);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const allBlocks = BLOCK_DEFS.map(b => ({ ...b, label: t(`rotation.${b.i18nKey}`) }));
 
   const [showBlocks, setShowBlocks] = useState<Record<string, boolean>>(() => {
     try {
@@ -133,7 +128,7 @@ export default function RotationPrint() {
     );
   };
 
-  const visibleBlocks = ALL_BLOCKS.filter(b => showBlocks[b.key]);
+  const visibleBlocks = allBlocks.filter(b => showBlocks[b.key]);
   const numBlocks = visibleBlocks.length;
 
   const colWidthPercent = numBlocks > 0 ? Math.floor(99 / numBlocks) : 25;
@@ -172,7 +167,7 @@ export default function RotationPrint() {
               </Button>
             </Link>
             <div>
-              <h1 className="font-heading text-xl font-bold uppercase tracking-wide">Druckansicht</h1>
+              <h1 className="font-heading text-xl font-bold uppercase tracking-wide">{t("print.title")}</h1>
               <p className="text-[10px] text-primary-foreground/60">
                 W{weekNr} = KW {selectedKW}
               </p>
@@ -184,7 +179,7 @@ export default function RotationPrint() {
             className="gap-1.5 text-xs font-semibold"
             onClick={() => window.print()}
           >
-            <Printer className="h-3.5 w-3.5" /> Drucken
+            <Printer className="h-3.5 w-3.5" /> {t("common.print")}
           </Button>
         </div>
 
@@ -218,7 +213,7 @@ export default function RotationPrint() {
 
         {/* Block toggles */}
         <div className="flex gap-1.5">
-          {ALL_BLOCKS.map(block => (
+          {allBlocks.map(block => (
             <button
               key={block.key}
               onClick={() => setShowBlocks(prev => ({ ...prev, [block.key]: !prev[block.key] }))}
@@ -237,16 +232,16 @@ export default function RotationPrint() {
 
       {numBlocks === 0 ? (
         <div className="text-center py-8 text-muted-foreground print:hidden">
-          Bitte mindestens einen Block auswählen.
+          {t("print.selectBlock")}
         </div>
       ) : (
         <div className="rotation-print-page p-4 print:p-0" style={{ fontSize: "7pt" }}>
           {/* Print-only header */}
           <div className="hidden print:flex print:items-center print:justify-between print:mb-1">
             <span className="font-heading text-[10pt] font-bold uppercase tracking-wide">
-              Wochenplan KW {selectedKW} / {currentYear}
+              {t("print.weekPlanKw", { kw: selectedKW, year: currentYear })}
             </span>
-            <span className="text-[8pt] text-muted-foreground">Rotationswoche W{weekNr}</span>
+            <span className="text-[8pt] text-muted-foreground">{t("print.rotationWeekLabel", { nr: weekNr })}</span>
           </div>
 
           <table className="w-full border-collapse" style={{ tableLayout: "fixed" }}>
@@ -295,7 +290,7 @@ export default function RotationPrint() {
             </thead>
 
             <tbody>
-              {DAY_LABELS.map((dayLabel, dayIdx) => {
+              {DAY_KEYS.map((dayKey, dayIdx) => {
                 const dateStr = weekDates[dayIdx] || "";
                 return MEAL_SLOTS.map((course, slotIdx) => {
                   const isMainCourse = course === "main1" || course === "main2";
@@ -329,7 +324,7 @@ export default function RotationPrint() {
                             >
                               {slotIdx === 0 && (
                                 <span className="font-bold text-foreground">
-                                  {dayLabel} <span className="font-normal text-muted-foreground">{dateStr ? formatDateShort(dateStr) : ""}</span>
+                                  {t(`weekdays.${dayKey}`)} <span className="font-normal text-muted-foreground">{dateStr ? formatDateShort(dateStr) : ""}</span>
                                 </span>
                               )}
                             </td>
@@ -341,7 +336,7 @@ export default function RotationPrint() {
                               )}
                               style={{ lineHeight: "1.2" }}
                             >
-                              {SLOT_LABELS[course]}
+                              {t(`courses.${course}`)}
                             </td>
                             <td
                               key={`n-${block.key}-${course}`}
@@ -352,7 +347,7 @@ export default function RotationPrint() {
                               style={{ lineHeight: "1.2", maxWidth: 0 }}
                             >
                               {isDessert && !recipe ? (
-                                <span className="italic text-muted-foreground">Dessertvariation</span>
+                                <span className="italic text-muted-foreground">{t("rotation.dessertVariation")}</span>
                               ) : recipe ? (
                                 <span title={recipe.name}>{recipe.name}</span>
                               ) : (
@@ -386,7 +381,7 @@ export default function RotationPrint() {
           {/* Allergen legend */}
           <div className="mt-3 pt-2 border-t-2 border-border text-[9px] text-muted-foreground print:text-[7pt] print:mt-2">
             <p className="font-semibold text-foreground/70">
-              Allergenkennzeichnung (EU-VO 1169/2011):{" "}
+              {t("print.allergenDisclaimer")}{" "}
               {Object.entries(ALLERGENS).map(([code, info]) => (
                 <span key={code} className="mr-1.5">
                   <span className="font-bold text-orange-600">{code}</span>={info.nameDE}
@@ -394,7 +389,7 @@ export default function RotationPrint() {
               ))}
             </p>
             <p className="text-muted-foreground/60 mt-1">
-              Gedruckt: {new Date().toLocaleDateString("de-AT")} | KW {selectedKW}/{currentYear} | Rotationswoche W{weekNr}
+              {t("print.printedAt", { date: new Date().toLocaleDateString("de-AT"), kw: selectedKW, year: currentYear, nr: weekNr })}
             </p>
           </div>
         </div>

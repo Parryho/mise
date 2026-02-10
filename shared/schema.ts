@@ -76,6 +76,8 @@ export const recipes = pgTable("recipes", {
   cuisineType: text("cuisine_type"),
   flavorProfile: text("flavor_profile"),
   dishType: text("dish_type"),
+  // null = legacy/unknown, 'auto' = machine-detected, 'verified' = manually confirmed
+  allergenStatus: text("allergen_status"),
 }, (table) => [
   index("idx_recipes_category").on(table.category),
 ]);

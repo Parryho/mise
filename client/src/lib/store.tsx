@@ -30,6 +30,8 @@ export interface Recipe {
   tags?: string[];
   // R2-T4: Last modification timestamp
   updatedAt?: string;
+  // Allergen trust level: null = unknown, 'auto' = machine-detected, 'verified' = manually confirmed
+  allergenStatus?: string | null;
 }
 
 export interface Fridge {

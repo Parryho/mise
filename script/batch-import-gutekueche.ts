@@ -19,6 +19,7 @@
 
 import { Pool } from "pg";
 import * as cheerio from "cheerio";
+import { detectAllergens, getAllergensFromIngredients } from "../server/modules/recipe/allergen-detection";
 
 const DB_URL = process.env.DATABASE_URL || "postgresql://postgres:admin@127.0.0.1:5432/mise";
 const DRY_RUN = process.argv.includes("--dry-run");
@@ -314,13 +315,24 @@ async function main() {
         );
       }
 
-      // Insert ingredients
+      // Insert ingredients with allergen detection
       if (needsIngredients && scraped.ingredients.length > 0) {
         for (const ing of scraped.ingredients) {
+          const ingAllergens = detectAllergens(ing.name);
           await pool.query(
             `INSERT INTO ingredients (recipe_id, name, amount, unit, allergens) VALUES ($1, $2, $3, $4, $5)`,
-            [recipe.id, ing.name, ing.amount, ing.unit, []]
+            [recipe.id, ing.name, ing.amount, ing.unit, ingAllergens]
           );
+        }
+
+        // Aggregate allergens to recipe level
+        const recipeAllergens = getAllergensFromIngredients(scraped.ingredients);
+        await pool.query(
+          `UPDATE recipes SET allergens = $1, allergen_status = 'auto' WHERE id = $2`,
+          [recipeAllergens, recipe.id]
+        );
+        if (recipeAllergens.length > 0) {
+          log(`   🔍 Allergene: ${recipeAllergens.join(', ')}`);
         }
       }
 

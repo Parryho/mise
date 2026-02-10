@@ -78,6 +78,35 @@ export function getSlotCategory(slotKey: string): string {
   return slotKey;
 }
 
+// ============================================================
+// Culinary Tags for intelligent menu planning
+// ============================================================
+
+export const CUISINE_TYPES = {
+  austrian: { de: "Österreichisch", en: "Austrian" },
+  italian: { de: "Italienisch", en: "Italian" },
+  asian: { de: "Asiatisch", en: "Asian" },
+  mediterranean: { de: "Mediterran", en: "Mediterranean" },
+} as const;
+
+export const FLAVOR_PROFILES = {
+  hearty: { de: "Deftig", en: "Hearty" },
+  light: { de: "Leicht", en: "Light" },
+  spicy: { de: "Scharf", en: "Spicy" },
+  creamy: { de: "Cremig", en: "Creamy" },
+  fresh: { de: "Frisch", en: "Fresh" },
+} as const;
+
+export const DISH_TYPES = {
+  needsSides: { de: "Braucht Beilagen", en: "Needs sides" },
+  selfContained: { de: "Komplett", en: "Self-contained" },
+  dessertMain: { de: "Süßes Hauptgericht", en: "Dessert main" },
+} as const;
+
+export type CuisineType = keyof typeof CUISINE_TYPES;
+export type FlavorProfile = keyof typeof FLAVOR_PROFILES;
+export type DishType = keyof typeof DISH_TYPES;
+
 export function getWeekDateRange(year: number, week: number): { from: string; to: string } {
   const jan4 = new Date(year, 0, 4);
   const dayOfWeek = jan4.getDay() || 7;

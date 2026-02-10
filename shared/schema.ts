@@ -72,6 +72,10 @@ export const recipes = pgTable("recipes", {
   // NEW from A: season and prep instructions
   season: text("season").notNull().default("all"),
   prepInstructions: text("prep_instructions"),
+  // Culinary tags for intelligent menu planning
+  cuisineType: text("cuisine_type"),
+  flavorProfile: text("flavor_profile"),
+  dishType: text("dish_type"),
 }, (table) => [
   index("idx_recipes_category").on(table.category),
 ]);

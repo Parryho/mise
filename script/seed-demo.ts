@@ -31,9 +31,9 @@ async function main() {
     await client.query(`
       INSERT INTO locations (slug, name, default_pax, is_active)
       VALUES
-        ('city', 'JUFA City', 60, true),
-        ('sued', 'JUFA SÜD', 45, true),
-        ('ak', 'AK Catering', 80, true)
+        ('city', 'Küche City', 60, true),
+        ('sued', 'Küche SÜD', 45, true),
+        ('ak', 'Catering', 80, true)
       ON CONFLICT (slug) DO NOTHING
     `);
 

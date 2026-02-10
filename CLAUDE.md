@@ -1,6 +1,6 @@
 # mise.at — Unified Kitchen Workflow App
 
-Küchenmanagement-System für JUFA Hotels (City + SÜD) und AK Catering.
+Küchenmanagement-System für Hotels und Gastronomie.
 Menüplanung, 6-Wochen-Rotation, HACCP-Dokumentation, Rezeptverwaltung, Personalplanung, Einkaufslisten, AI-Features.
 
 **Live**: https://mise.at | **Server**: Hetzner VPS `46.225.63.168`
@@ -82,7 +82,7 @@ Menüplanung, 6-Wochen-Rotation, HACCP-Dokumentation, Rezeptverwaltung, Personal
 | Datei | Beschreibung |
 |-------|-------------|
 | `client/src/pages/Catering.tsx` | Catering-Event Verwaltung |
-| `server/airtable.ts` | Airtable-Sync (AK Catering) |
+| `server/airtable.ts` | Airtable-Sync (Catering) |
 
 ### Personal & Dienstplan
 | Datei | Beschreibung |
@@ -222,7 +222,7 @@ server/
 | `users` | Benutzer (Rollen: admin, souschef, koch, fruehkoch, lehrling, abwasch, guest) |
 | `session` | Express Sessions (connect-pg-simple) |
 | `app_settings` | Key-Value App-Einstellungen |
-| `locations` | Standorte: city (JUFA City), sued (JUFA SÜD), ak (AK Catering) |
+| `locations` | Standorte: city (Küche City), sued (Küche SÜD), ak (Catering) |
 | `recipes` | Rezepte mit Kategorie, Allergenen, Tags, Saison |
 | `ingredients` | Zutaten pro Rezept |
 | `master_ingredients` | Zutatenstammdaten mit Preisen + Lieferant |
@@ -295,9 +295,9 @@ Definiert in `shared/constants.ts` → `MEAL_SLOTS`.
 - `kein-rotation` — Vom Auto-Fill ausgeschlossen
 
 ### Standorte
-- `city` — JUFA City (Default PAX: 60)
-- `sued` — JUFA SÜD (Default PAX: 45)
-- `ak` — AK Catering (Default PAX: 80)
+- `city` — Küche City (Default PAX: 60)
+- `sued` — Küche SÜD (Default PAX: 45)
+- `ak` — Catering (Default PAX: 80)
 
 ### TypeScript Path Aliases
 - `@/*` → `client/src/*`

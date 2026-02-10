@@ -1,6 +1,6 @@
 # MASTERPLAN mise.at
 
-> Unified Kitchen Management for JUFA Hotels + AK Catering
+> Unified Kitchen Management for Hotels & Gastronomie
 > Stand: 10. Februar 2026
 
 ---

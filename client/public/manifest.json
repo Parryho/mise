@@ -1,7 +1,7 @@
 {
   "name": "mise.at - Küchenmanagement",
   "short_name": "mise",
-  "description": "Unified kitchen workflow for JUFA Hotels + AK Catering - Rezepte, Menüplanung, HACCP, Personalplanung",
+  "description": "Küchenmanagement für Hotels und Gastronomie — Rezepte, Menüplanung, HACCP, Personalplanung",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#F37021",

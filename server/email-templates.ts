@@ -45,7 +45,7 @@ function baseLayout(title: string, content: string): string {
             <td style="padding: 16px 0; text-align: center;">
               <p style="margin: 0; font-size: 12px; color: ${TEXT_MUTED};">
                 Diese E-Mail wurde automatisch von mise.at gesendet.<br/>
-                JUFA Hotels &amp; AK Catering Kuechenmanagement
+                mise.at Kuechenmanagement
               </p>
             </td>
           </tr>

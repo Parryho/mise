@@ -1,7 +1,7 @@
 # Kitchen Management Software: Comprehensive Market Research
 
 **Date:** 2025-02 (based on knowledge cutoff May 2025)
-**Purpose:** Inform mise.at masterplan for JUFA Hotels + AK Catering
+**Purpose:** Inform mise.at masterplan for hotel kitchen management
 
 ---
 

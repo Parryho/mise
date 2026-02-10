@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "license": "MIT",
-  "description": "mise.at - Unified kitchen workflow app for JUFA Hotels + AK Catering",
+  "description": "mise.at - Küchenmanagement für Hotels und Gastronomie",
   "scripts": {
     "dev:client": "vite dev --port 5000",
     "dev": "cross-env NODE_ENV=development tsx server/index.ts",

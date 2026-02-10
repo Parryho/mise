@@ -40,9 +40,9 @@ const ROLES = [
 ];
 
 const LOCATIONS = [
-  { key: "city", label: "JUFA City", pax: 60 },
-  { key: "sued", label: "JUFA SÜD", pax: 45 },
-  { key: "ak", label: "AK Catering", pax: 80 },
+  { key: "city", label: "Küche City", pax: 60 },
+  { key: "sued", label: "Küche SÜD", pax: 45 },
+  { key: "ak", label: "Catering", pax: 80 },
 ];
 
 export default function SettingsPage() {
@@ -248,7 +248,7 @@ export default function SettingsPage() {
               <div>
                 <div className="font-semibold">mise.at</div>
                 <div className="text-xs text-muted-foreground leading-relaxed">
-                  Küchenmanagement-System für JUFA Hotels und AK Catering. Menüplanung, Rotation, HACCP, Rezeptverwaltung und mehr.
+                  Küchenmanagement-System für Hotels und Gastronomie. Menüplanung, Rotation, HACCP, Rezeptverwaltung und mehr.
                 </div>
               </div>
             </div>

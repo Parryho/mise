@@ -180,7 +180,7 @@ const DEMO_ACTION_ITEMS: ActionItem[] = [
   },
 ];
 
-const DEMO_SUMMARY = `Wochenbriefing KW 7 — JUFA City
+const DEMO_SUMMARY = `Wochenbriefing KW 7 — Küche City
 
 Gästeaufkommen: 313 Gäste gesamt (Ø 63/Tag), Freitag Spitzentag mit 71 Gästen wegen Firmenfeier.
 

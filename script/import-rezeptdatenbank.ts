@@ -1,7 +1,7 @@
 /**
  * Import: Rezeptdatenbank.xlsb → mise DB
  *
- * Parses the JUFA hotel recipe database (Excel Binary) and:
+ * Parses the hotel recipe database (Excel Binary) and:
  * - Matches recipes by name to existing DB entries
  * - Updates ingredients + allergens for matched recipes
  * - Optionally inserts new recipes (--insert-new)

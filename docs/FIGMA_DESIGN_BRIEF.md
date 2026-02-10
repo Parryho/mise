@@ -8,7 +8,7 @@
 ## Projekt-Briefing
 
 **App-Name:** mise.at — Küchenmanagement-System
-**Zielgruppe:** Köche, Souschefs, Küchenleitungen in Hotelküchen (JUFA Hotels) und Catering (AK Catering)
+**Zielgruppe:** Köche, Souschefs, Küchenleitungen in Hotelküchen und Catering-Betrieben
 **Nutzungskontext:** Küche — nasse/bemehlte Hände, Handschuhe, Stress, Zeitdruck, oft nur eine Hand frei
 **Geräte:** Primär Smartphones (PWA), sekundär Tablets und Desktop
 **Sprache:** Deutsch (primär), Englisch (sekundär)
@@ -334,7 +334,7 @@ G = Milch    R = Weichtiere
 ### 19. Öffentliche Seiten (ohne Login)
 
 **Speisekarte** (`/speisekarte/:location/:date`):
-- Orange-Gradient Header mit JUFA-Branding
+- Orange-Gradient Header mit mise-Branding
 - Gang-Karten: Suppe, Hauptgerichte, Dessert
 - Allergen-Badges pro Gericht
 - Große, gut lesbare Schrift
@@ -616,7 +616,7 @@ mise.at Design
 > Diesen Block vor **jeden** der folgenden Prompts setzen, damit Figma den Kontext kennt.
 
 ```
-Context: "mise.at" is a kitchen management PWA for hotel kitchens (JUFA Hotels) and catering. Used by chefs with wet/gloved hands under time pressure. Mobile-first (375px), touch-optimized (min 44px targets). German UI language.
+Context: "mise.at" is a kitchen management PWA for hotel kitchens and catering. Used by chefs with wet/gloved hands under time pressure. Mobile-first (375px), touch-optimized (min 44px targets). German UI language.
 
 Brand: Primary orange #F37021, accent green #16A34A, destructive red #EF4444. Warm cream background hsl(30,20%,98%), dark brown text hsl(20,20%,15%), white cards. Border hsl(30,20%,88%). Radius 8px. Fonts: Oswald uppercase for headings, Inter for body, Roboto Mono for numbers/data. Icons: Lucide icon library. Component style: shadcn/ui New York.
 ```
@@ -1031,7 +1031,7 @@ Filter row: Two small dropdowns side by side — "Alle Typen" and "Alle Status" 
 
 Event cards (stacked vertically):
 
-Card 1: Left color bar (4px, yellow = Brunch). Content: "Sonntagsbrunch JUFA" (Inter 16px semibold). Below: calendar icon "So, 16.02.2026 | 09:00-13:00", people icon "85 Personen", map-pin icon "Saal A", user icon "Fr. Mueller". Status badge top right: green "BESTAETIGT".
+Card 1: Left color bar (4px, yellow = Brunch). Content: "Sonntagsbrunch" (Inter 16px semibold). Below: calendar icon "So, 16.02.2026 | 09:00-13:00", people icon "85 Personen", map-pin icon "Saal A", user icon "Fr. Mueller". Status badge top right: green "BESTAETIGT".
 
 Card 2: Left color bar (purple = Ball). "Faschingsball 2026". "Sa, 01.03.2026 | 19:00-02:00", "220 Personen", "Festsaal". Status: blue "GEPLANT".
 
@@ -1149,7 +1149,7 @@ Each section separated by 24px gap. White cards with border, 8px radius. Items h
 Design a mobile public menu screen (375x812px, scrollable) for hotel guests viewing today's menu. German language. No login required, no bottom navigation.
 
 Hero header: Full width, 160px height, gradient from #F37021 (orange) to #D45A10 (darker orange). White text:
-- "JUFA Hotel City" in Oswald 14px uppercase
+- "Küche City" in Oswald 14px uppercase
 - "Mittagsmenue" in Oswald 28px uppercase
 - "Montag, 10. Februar 2026" in Inter 14px
 

@@ -1,5 +1,5 @@
 /**
- * Seed comprehensive recipe pool for JUFA Hotel buffet rotation.
+ * Seed comprehensive recipe pool for hotel buffet rotation.
  * 335 Rezepte: 65 Suppen, 70 Fleisch/Fisch, 70 Vegetarisch/Vegan,
  *              55 Stärkebeilagen, 60 Gemüsebeilagen, 15 Mehlspeise-Garnituren
  *

@@ -13,7 +13,7 @@ import type { Request, Response } from "express";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-import { db } from "./db";
+import { db } from "../../db";
 import { recipeMedia, recipes, updateRecipeMediaSchema } from "@shared/schema";
 import { eq, asc } from "drizzle-orm";
 

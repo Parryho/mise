@@ -4,12 +4,7 @@ import { insertRecipeSchema, updateRecipeSchema, insertIngredientSchema, insertS
 import { autoCategorize } from "@shared/categorizer";
 import { db } from "../db";
 import { eq } from "drizzle-orm";
-import { scrapeRecipe } from "../scraper";
-import { resolveRecipeIngredients, wouldCreateCycle } from "../sub-recipes";
-import { handleAIRecipeImport } from "../llm-recipe-import";
-import { handleGetSuggestions } from "../recipe-suggestions";
-import { scaleRecipeHandler } from "../intelligent-scaling";
-import { recipeMediaUpload, handleUploadMedia, handleGetMedia, handleUpdateMedia, handleDeleteMedia } from "../recipe-media";
+import { scrapeRecipe, resolveRecipeIngredients, wouldCreateCycle, handleAIRecipeImport, handleGetSuggestions, scaleRecipeHandler, recipeMediaUpload, handleUploadMedia, handleGetMedia, handleUpdateMedia, handleDeleteMedia } from "../modules/recipe";
 import multer from "multer";
 import { createRequire } from "module";
 const _require = createRequire(typeof __filename !== "undefined" ? __filename : import.meta.url);

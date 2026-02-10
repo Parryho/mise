@@ -10,7 +10,7 @@ import { handleGdprExportOwn, handleGdprExportUser, handleGdprCountsOwn, handleG
 import { healthHandler } from "../health";
 import { encrypt, decrypt } from "../crypto";
 import { metricsHandler } from "../metrics";
-import { getUploadDir } from "../recipe-media";
+import { getUploadDir } from "../modules/recipe";
 
 export function registerAdminRoutes(app: Express) {
   // === ADMIN: App Settings ===

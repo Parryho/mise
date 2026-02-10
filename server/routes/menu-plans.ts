@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { requireAuth, requireRole, getParam, storage } from "./middleware";
 import { insertMenuPlanSchema, updateMenuPlanSchema, insertMenuPlanTemperatureSchema } from "@shared/schema";
-import { generateWeekFromRotation, getOrGenerateWeekPlan } from "../rotation";
+import { generateWeekFromRotation, getOrGenerateWeekPlan } from "../modules/menu";
 import { formatLocalDate } from "@shared/constants";
 
 export function registerMenuPlanRoutes(app: Express) {

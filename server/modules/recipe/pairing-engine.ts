@@ -5,7 +5,7 @@
  * Provides score maps for the rotation agent v3.
  */
 
-import { pool } from "./db";
+import { pool } from "../../db";
 
 // ── Time Decay ──────────────────────────────────────────────────────────
 

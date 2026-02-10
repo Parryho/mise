@@ -3,8 +3,8 @@
  * Combines recipe allergens with ingredient allergens.
  */
 
-import { storage } from "./storage";
-import { db } from "./db";
+import { storage } from "../../storage";
+import { db } from "../../db";
 import { menuPlans, recipes, ingredients, guestAllergenProfiles } from "@shared/schema";
 import { and, gte, lte, eq, inArray } from "drizzle-orm";
 import { ALLERGENS } from "@shared/allergens";

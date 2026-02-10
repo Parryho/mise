@@ -3,7 +3,7 @@
  * from parent→child recipe links, with cycle detection.
  */
 
-import { storage } from "./storage";
+import { storage } from "../../storage";
 
 interface ResolvedIngredient {
   name: string;

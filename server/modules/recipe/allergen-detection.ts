@@ -185,7 +185,7 @@ export async function suggestAllergensForRecipeHandler(req: any, res: any) {
       return res.status(400).json({ error: "recipeId erforderlich" });
     }
 
-    const { storage } = await import("./storage");
+    const { storage } = await import("../../storage");
     const ingredients = await storage.getIngredients(recipeId);
 
     const suggestions = suggestAllergensForRecipe(ingredients);

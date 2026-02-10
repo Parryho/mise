@@ -26,11 +26,11 @@
  * - STARCH_GROUPS für Kollisionsvermeidung innerhalb einer Mahlzeit
  */
 
-import { storage } from "./storage";
+import { storage } from "../../storage";
 import type { Recipe, RotationSlot } from "@shared/schema";
 import type { MealSlotName } from "@shared/constants";
-import { loadAllScores } from "./pairing-engine";
-import { pool } from "./db";
+import { loadAllScores } from "../recipe/pairing-engine";
+import { pool } from "../../db";
 
 // ============================================================
 // Starch Groups — Kollisionsvermeidung innerhalb einer Mahlzeit

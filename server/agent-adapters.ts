@@ -6,11 +6,9 @@
 import { getPaxForecast } from "./pax-forecast";
 import { detectAnomalies, getFridgeHealthScore } from "./haccp-anomaly";
 import { getWastePredictions } from "./waste-prediction";
-import { getRecipeSuggestions } from "./recipe-suggestions";
-import { getAllergensFromIngredients } from "./allergen-detection";
+import { getRecipeSuggestions, getAllergensFromIngredients, scaleRecipe } from "./modules/recipe";
 import { formatLocalDate } from "@shared/constants";
-import { getRotationAnalysis } from "./smart-rotation";
-import { scaleRecipe } from "./intelligent-scaling";
+import { getRotationAnalysis } from "./modules/menu";
 import { storage } from "./storage";
 
 // ── Types ──────────────────────────────────────────────────────────

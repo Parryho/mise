@@ -3,8 +3,8 @@
  * category balance, and recency. Optionally uses Claude AI for more nuanced ranking.
  */
 
-import { db } from "./db";
-import { storage } from "./storage";
+import { db } from "../../db";
+import { storage } from "../../storage";
 import { recipes, ingredients, menuPlans, rotationSlots } from "@shared/schema";
 import { and, gte, lte, eq, sql } from "drizzle-orm";
 import { RECIPE_CATEGORIES } from "@shared/schema";

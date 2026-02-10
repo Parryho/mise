@@ -3,11 +3,11 @@
  * Ported from Menuplaner (Project A) and refactored for Drizzle ORM.
  */
 
-import { storage } from "./storage";
+import { storage } from "../../storage";
 import type { InsertMenuPlan, InsertRotationSlot } from "@shared/schema";
 import { menuPlans, rotationSlots as rotationSlotsTable } from "@shared/schema";
 import { MEAL_SLOTS, getWeekDateRange, formatLocalDate } from "@shared/constants";
-import { db } from "./db";
+import { db } from "../../db";
 import { and, eq, gte, lte } from "drizzle-orm";
 
 /**

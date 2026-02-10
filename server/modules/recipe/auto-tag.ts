@@ -1,4 +1,4 @@
-import { db } from "./db";
+import { db } from "../../db";
 import { recipes } from "@shared/schema";
 import { eq, isNull, or } from "drizzle-orm";
 

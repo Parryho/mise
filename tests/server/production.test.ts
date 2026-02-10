@@ -3,7 +3,7 @@
  * All database calls are mocked.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { scaleIngredient } from "../../server/intelligent-scaling";
+import { scaleIngredient } from "../../server/modules/recipe";
 import { convertUnit, calculateCost } from "../../shared/units";
 import type { Unit } from "../../shared/units";
 

@@ -2,14 +2,13 @@
  * Recipes tests: CRUD mock, ingredient scaling, allergen detection, sub-recipe cycles, auto-categorization.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { detectAllergens, suggestAllergensForRecipe, getAllergensFromIngredients } from "../../server/allergen-detection";
-import { scaleIngredient, scaleIngredientPreview } from "../../server/intelligent-scaling";
+import { detectAllergens, suggestAllergensForRecipe, getAllergensFromIngredients, scaleIngredient, scaleIngredientPreview } from "../../server/modules/recipe";
 import { autoCategorize } from "../../shared/categorizer";
 
 // -------------------------------------------------------
 // Mock storage for sub-recipes (wouldCreateCycle)
 // -------------------------------------------------------
-vi.mock("../../server/storage", () => {
+vi.mock("../../server/storage", async () => {
   const links: Record<number, Array<{ childRecipeId: number; portionMultiplier: number }>> = {};
   return {
     storage: {
@@ -194,7 +193,7 @@ describe("Sub-Recipe Cycle Detection", () => {
   });
 
   it("detects self-reference cycle (A -> A)", async () => {
-    const { wouldCreateCycle } = await import("../../server/sub-recipes");
+    const { wouldCreateCycle } = await import("../../server/modules/recipe/sub-recipes");
     // parentId === childId
     const result = await wouldCreateCycle(1, 1);
     expect(result).toBe(true);
@@ -203,7 +202,7 @@ describe("Sub-Recipe Cycle Detection", () => {
   it("detects direct cycle (A -> B -> A)", async () => {
     // B already links to A
     mockStorage._setLinks(2, [{ childRecipeId: 1, portionMultiplier: 1 }]);
-    const { wouldCreateCycle } = await import("../../server/sub-recipes");
+    const { wouldCreateCycle } = await import("../../server/modules/recipe/sub-recipes");
     // Adding A -> B would create cycle
     const result = await wouldCreateCycle(1, 2);
     expect(result).toBe(true);
@@ -212,21 +211,21 @@ describe("Sub-Recipe Cycle Detection", () => {
   it("detects transitive cycle (A -> B -> C -> A)", async () => {
     mockStorage._setLinks(2, [{ childRecipeId: 3, portionMultiplier: 1 }]);
     mockStorage._setLinks(3, [{ childRecipeId: 1, portionMultiplier: 1 }]);
-    const { wouldCreateCycle } = await import("../../server/sub-recipes");
+    const { wouldCreateCycle } = await import("../../server/modules/recipe/sub-recipes");
     const result = await wouldCreateCycle(1, 2);
     expect(result).toBe(true);
   });
 
   it("allows valid sub-recipe link (no cycle)", async () => {
     mockStorage._setLinks(2, [{ childRecipeId: 3, portionMultiplier: 1 }]);
-    const { wouldCreateCycle } = await import("../../server/sub-recipes");
+    const { wouldCreateCycle } = await import("../../server/modules/recipe/sub-recipes");
     // Adding A -> B is fine since B -> C -> (no link back to A)
     const result = await wouldCreateCycle(1, 2);
     expect(result).toBe(false);
   });
 
   it("allows link when child has no sub-recipes", async () => {
-    const { wouldCreateCycle } = await import("../../server/sub-recipes");
+    const { wouldCreateCycle } = await import("../../server/modules/recipe/sub-recipes");
     const result = await wouldCreateCycle(1, 5);
     expect(result).toBe(false);
   });

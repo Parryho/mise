@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { requireAuth, requireRole, expensiveRateLimiter } from "./middleware";
 import { getPaxTrends, getHaccpCompliance, getPopularDishes } from "../analytics";
-import { getWeeklyCostReport } from "../costs";
+import { getWeeklyCostReport } from "../modules/menu";
 import { handlePaxForecast } from "../pax-forecast";
 import { handleGetWastePrediction } from "../waste-prediction";
 

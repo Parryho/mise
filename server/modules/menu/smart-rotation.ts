@@ -9,7 +9,7 @@
  */
 
 import Anthropic from "@anthropic-ai/sdk";
-import { storage } from "./storage";
+import { storage } from "../../storage";
 import type { Recipe, RotationSlot } from "@shared/schema";
 import { RECIPE_CATEGORIES } from "@shared/schema";
 import { MEAL_SLOTS, MEAL_SLOT_LABELS, type MealSlotName } from "@shared/constants";

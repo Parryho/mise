@@ -3,12 +3,12 @@
  * V2: Supplier grouping, daily breakdown, sub-recipe resolution.
  */
 
-import { storage } from "./storage";
-import { db } from "./db";
+import { storage } from "../../storage";
+import { db } from "../../db";
 import { menuPlans, guestCounts } from "@shared/schema";
 import { and, gte, lte } from "drizzle-orm";
 import { convertUnit, calculateCost, type Unit } from "@shared/units";
-import { resolveRecipeIngredients } from "./sub-recipes";
+import { resolveRecipeIngredients } from "../recipe/sub-recipes";
 
 const DEFAULT_PAX: Record<string, number> = { city: 60, sued: 45, ak: 80 };
 

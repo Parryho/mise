@@ -4,10 +4,8 @@ import {
   insertRotationTemplateSchema, updateRotationTemplateSchema,
   insertRotationSlotSchema, updateRotationSlotSchema
 } from "@shared/schema";
-import { getRotationOverview, ensureDefaultTemplate } from "../rotation";
-import { autoFillRotation } from "../rotation-agent";
-import { handleOptimizeRotation, handleGetAnalysis } from "../smart-rotation";
-import { handleGetWeekCombos, handleSubmitFeedback, handleGetMyRatings, handleGetPairingScores, handleGetDashboardStats, handleGetLearnedRules, handleAIValidate, handleGameFeedback, handleAIResearch, handleGameEntry, handleGetGameEntries } from "../quiz-feedback";
+import { getRotationOverview, ensureDefaultTemplate, autoFillRotation, handleOptimizeRotation, handleGetAnalysis } from "../modules/menu";
+import { handleGetWeekCombos, handleSubmitFeedback, handleGetMyRatings, handleGetPairingScores, handleGetDashboardStats, handleGetLearnedRules, handleAIValidate, handleGameFeedback, handleAIResearch, handleGameEntry, handleGetGameEntries } from "../modules/recipe";
 
 export function registerRotationRoutes(app: Express) {
   // --- Rotation Templates ---

@@ -189,7 +189,7 @@ export async function scaleRecipe(
   targetServings: number;
   scaledIngredients: ScaledIngredient[];
 }> {
-  const { storage } = await import("./storage");
+  const { storage } = await import("../../storage");
 
   const recipe = await storage.getRecipe(recipeId);
   if (!recipe) {

@@ -3,7 +3,7 @@
  */
 
 import type { Request, Response } from "express";
-import { pool } from "./db";
+import { pool } from "../../db";
 import { quizFeedbackBatchSchema } from "@shared/schema";
 import { aggregatePairingScores, analyzePatterns } from "./pairing-engine";
 

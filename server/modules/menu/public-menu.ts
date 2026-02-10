@@ -3,8 +3,8 @@
  * No authentication required.
  */
 
-import { storage } from "./storage";
-import { db } from "./db";
+import { storage } from "../../storage";
+import { db } from "../../db";
 import { menuPlans, recipes, locations } from "@shared/schema";
 import { and, eq } from "drizzle-orm";
 import { ALLERGENS } from "@shared/allergens";

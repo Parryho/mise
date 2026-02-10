@@ -3,7 +3,7 @@
  * showing allergen information per EU-Verordnung 1169/2011.
  */
 
-import { storage } from "./storage";
+import { storage } from "../../storage";
 import { ALLERGENS } from "@shared/allergens";
 
 interface BuffetCard {
@@ -49,7 +49,7 @@ export async function getBuffetCards(recipeIds: number[]): Promise<BuffetCard[]>
  */
 export async function getBuffetCardsForDate(date: string, locationId?: number): Promise<BuffetCard[]> {
   const { menuPlans } = await import("@shared/schema");
-  const { db } = await import("./db");
+  const { db } = await import("../../db");
   const { and, eq } = await import("drizzle-orm");
 
   const conditions: any[] = [eq(menuPlans.date, date)];

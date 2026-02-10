@@ -1,9 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { requireAuth, requireRole, requireAdmin, audit, getParam, storage, expensiveRateLimiter } from "./middleware";
 import { insertMasterIngredientSchema, updateMasterIngredientSchema, insertSupplierSchema, updateSupplierSchema } from "@shared/schema";
-import { getProductionList } from "../production";
-import { getShoppingList } from "../shopping";
-import { getDishCost, getWeeklyCostReport } from "../costs";
+import { getProductionList, getShoppingList, getDishCost, getWeeklyCostReport } from "../modules/menu";
 
 export function registerSupplierRoutes(app: Express) {
   // --- Master Ingredients ---

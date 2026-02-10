@@ -1,9 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { requireAuth, getParam, aiRateLimiter } from "./middleware";
-import { getDailyAllergenMatrix, getWeeklyAllergenMatrix } from "../allergens";
-import { getBuffetCardsForDate } from "../buffet-cards";
-import { detectAllergensHandler, suggestAllergensForRecipeHandler } from "../allergen-detection";
-import { getPublicMenu } from "../public-menu";
+import { getDailyAllergenMatrix, getWeeklyAllergenMatrix, detectAllergensHandler, suggestAllergensForRecipeHandler } from "../modules/recipe";
+import { getBuffetCardsForDate, getPublicMenu } from "../modules/menu";
 import { formatLocalDate } from "@shared/constants";
 
 export function registerPublicRoutes(app: Express) {

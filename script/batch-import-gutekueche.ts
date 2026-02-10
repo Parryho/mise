@@ -1,21 +1,25 @@
 /**
- * Batch-Import: Rezeptdaten von gutekueche.at nachschlagen.
+ * Batch-Import: Rezeptdaten von mehreren Quellen nachschlagen.
  *
- * Sucht für jedes Rezept ohne Zutaten/Schritte auf gutekueche.at,
+ * Sucht für jedes Rezept ohne Zutaten/Schritte auf gutekueche.at, chefkoch.de,
+ * ichkoche.at, eatsmarter.de, lecker.de, kochbar.de, kuechengoetter.de,
  * parst JSON-LD (Schema.org Recipe), und schreibt Zutaten + Schritte in die DB.
  *
  * Features:
- * - Resumable: persists discovered source_url so DDG is not re-queried
- * - Prefers stored source_url over DDG search
+ * - Resumable: persists discovered source_url so search is not repeated
+ * - Prefers stored source_url
+ * - Site-internal search (no DuckDuckGo by default)
+ * - URL validation via JSON-LD before persisting
  * - Jittered delays to avoid rate-limiting
  * - Idempotent (überspringt Rezepte mit vorhandenen Daten)
- * - Fallback auf chefkoch.de wenn gutekueche.at kein Ergebnis liefert
  * - Detailliertes Logging
  *
  * Usage:
  *   npx tsx script/batch-import-gutekueche.ts
- *   npx tsx script/batch-import-gutekueche.ts --dry-run     # Nur suchen, nicht schreiben
- *   npx tsx script/batch-import-gutekueche.ts --limit 10    # Nur 10 Rezepte
+ *   npx tsx script/batch-import-gutekueche.ts --dry-run
+ *   npx tsx script/batch-import-gutekueche.ts --limit 10
+ *   npx tsx script/batch-import-gutekueche.ts --sources gutekueche,chefkoch,ichkoche
+ *   npx tsx script/batch-import-gutekueche.ts --enable-ddg
  *   DATABASE_URL=postgresql://... npx tsx script/batch-import-gutekueche.ts
  */
 
@@ -25,14 +29,23 @@ import { detectAllergens, getAllergensFromIngredients } from "../server/modules/
 
 const DB_URL = process.env.DATABASE_URL || "postgresql://postgres:admin@127.0.0.1:5432/mise";
 const DRY_RUN = process.argv.includes("--dry-run");
+const ENABLE_DDG = process.argv.includes("--enable-ddg");
 const LIMIT = (() => {
   const idx = process.argv.indexOf("--limit");
   return idx >= 0 ? parseInt(process.argv[idx + 1], 10) : 0;
 })();
+const ALLOWED_SOURCES = (() => {
+  const idx = process.argv.indexOf("--sources");
+  if (idx >= 0 && process.argv[idx + 1]) {
+    return new Set(process.argv[idx + 1].split(",").map(s => s.trim().toLowerCase()));
+  }
+  return null; // null = all sources
+})();
 
-const SEARCH_DELAY_MS = 8000; // delay after DDG search to avoid rate-limiting
-const LOOP_DELAY_MS = 2500;   // delay between recipe iterations
+const SEARCH_DELAY_MS = 4000;
+const LOOP_DELAY_MS = 2000;
 const USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+const FETCH_TIMEOUT_MS = 10000;
 
 // ── Helpers ─────────────────────────────────────────────────
 
@@ -49,7 +62,59 @@ function log(msg: string) {
   console.log(`[batch-import] ${msg}`);
 }
 
-// ── Search: gutekueche.at listing page → DDG fallback ──────
+function sourceEnabled(name: string): boolean {
+  return !ALLOWED_SOURCES || ALLOWED_SOURCES.has(name);
+}
+
+// ── Generic fetch + URL helpers ─────────────────────────────
+
+async function fetchHtml(url: string): Promise<string | null> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent": USER_AGENT,
+        "Accept": "text/html,application/xhtml+xml",
+        "Accept-Language": "de-DE,de;q=0.9",
+      },
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    if (!res.ok) return null;
+    return await res.text();
+  } catch {
+    return null;
+  }
+}
+
+function absoluteUrl(base: string, href: string): string | null {
+  if (!href || href.startsWith("#") || href.startsWith("javascript:")) return null;
+  try {
+    return new URL(href, base).href;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Validate that a URL is a real recipe page with JSON-LD Recipe data.
+ */
+async function validateRecipeUrl(url: string): Promise<boolean> {
+  const html = await fetchHtml(url);
+  if (!html) return false;
+  const $ = cheerio.load(html);
+  const scripts = $('script[type="application/ld+json"]').toArray();
+  for (const script of scripts) {
+    try {
+      const data = JSON.parse($(script).html() || "");
+      if (findRecipeInJsonLd(data)) return true;
+    } catch { continue; }
+  }
+  return false;
+}
+
+// ── Slug helpers ────────────────────────────────────────────
 
 function slugify(name: string): string {
   return name.toLowerCase()
@@ -57,7 +122,6 @@ function slugify(name: string): string {
     .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 
-// Stop words and cooking adjectives to strip from recipe names
 const STOP_WORDS = new Set(["mit", "und", "auf", "in", "nach", "vom", "aus", "zum", "zur", "im", "am", "fuer", "von", "an", "ueber"]);
 const COOKING_ADJ = new Set(["gebratener", "gebratene", "gebratenes", "gebackener", "gebackene", "gebackenes",
   "panierter", "panierte", "paniertes", "gratinierter", "gratinierte", "gratiniertes",
@@ -65,31 +129,15 @@ const COOKING_ADJ = new Set(["gebratener", "gebratene", "gebratenes", "gebackene
   "einfacher", "einfache", "einfaches", "klassischer", "klassische", "klassisches",
   "warmer", "warme", "warmes", "kalter", "kalte", "kaltes"]);
 
-/**
- * Generate slug variants for gutekueche.at listing pages.
- * Returns up to 4 variants to try: full → significant words → individual nouns → root word
- */
 function getSlugVariants(recipeName: string): string[] {
   const slug = slugify(recipeName);
   const variants: string[] = [slug];
-
   const words = slug.split("-").filter(w => !STOP_WORDS.has(w));
-  // Without cooking adjectives
   const nouns = words.filter(w => !COOKING_ADJ.has(w));
-
-  if (nouns.length > 0 && nouns.join("-") !== slug) {
-    variants.push(nouns.join("-"));
-  }
-
-  // Individual words from right (last word is usually the main dish type)
+  if (nouns.length > 0 && nouns.join("-") !== slug) variants.push(nouns.join("-"));
   for (let i = nouns.length - 1; i >= 0; i--) {
-    if (nouns[i].length >= 4 && !variants.includes(nouns[i])) {
-      variants.push(nouns[i]);
-    }
+    if (nouns[i].length >= 4 && !variants.includes(nouns[i])) variants.push(nouns[i]);
   }
-
-  // For compound German words, try both prefix (root) and suffix
-  // e.g. zanderfilet → zander + filet, gemuesecurry → gemuese + curry, blattsalat → blatt + salat
   const compoundSuffixes = ["filet", "suppe", "salat", "curry", "gulasch", "braten", "steak",
     "stueck", "scheiben", "pueree", "creme", "sauce", "sosse", "auflauf", "eintopf", "kuchen"];
   for (const word of nouns) {
@@ -101,118 +149,221 @@ function getSlugVariants(recipeName: string): string[] {
       }
     }
   }
-
-  return variants.slice(0, 6); // max 6 variants
+  return variants.slice(0, 6);
 }
 
+// ── Generic site-internal search ────────────────────────────
+
+interface SiteConfig {
+  name: string;
+  domain: string;
+  searchUrls: (query: string) => string[];
+  linkSelector: string;
+  linkFilter?: (href: string) => boolean;
+}
+
+const SITE_CONFIGS: SiteConfig[] = [
+  {
+    name: "chefkoch",
+    domain: "chefkoch.de",
+    searchUrls: (q) => [
+      `https://www.chefkoch.de/rs/s0/${encodeURIComponent(q)}/Rezepte.html`,
+    ],
+    linkSelector: "a[href*='/rezepte/']",
+    linkFilter: (href) => /\/rezepte\/\d+/.test(href),
+  },
+  {
+    name: "ichkoche",
+    domain: "ichkoche.at",
+    searchUrls: (q) => [
+      `https://www.ichkoche.at/suche?search=${encodeURIComponent(q)}`,
+      `https://www.ichkoche.at/suche/${encodeURIComponent(q)}`,
+    ],
+    linkSelector: "a[href*='/rezepte/']",
+    linkFilter: (href) => href.includes("/rezepte/") && !href.endsWith("/rezepte/"),
+  },
+  {
+    name: "eatsmarter",
+    domain: "eatsmarter.de",
+    searchUrls: (q) => [
+      `https://www.eatsmarter.de/rezepte/suche/${encodeURIComponent(q)}`,
+      `https://www.eatsmarter.de/suche?q=${encodeURIComponent(q)}`,
+    ],
+    linkSelector: "a[href*='/rezepte/']",
+    linkFilter: (href) => /\/rezepte\/[a-z]/.test(href) && !href.endsWith("/rezepte/"),
+  },
+  {
+    name: "lecker",
+    domain: "lecker.de",
+    searchUrls: (q) => [
+      `https://www.lecker.de/suche?search_api_fulltext=${encodeURIComponent(q)}`,
+    ],
+    linkSelector: "a[href*='-']",
+    linkFilter: (href) => /lecker\.de\/[a-z].*-\d+\.html/.test(href),
+  },
+  {
+    name: "kochbar",
+    domain: "kochbar.de",
+    searchUrls: (q) => [
+      `https://www.kochbar.de/rezepte/${encodeURIComponent(q)}.html`,
+      `https://www.kochbar.de/suche/${encodeURIComponent(q)}`,
+    ],
+    linkSelector: "a[href*='/rezept/']",
+    linkFilter: (href) => /\/rezept\/\d+/.test(href),
+  },
+  {
+    name: "kuechengoetter",
+    domain: "kuechengoetter.de",
+    searchUrls: (q) => [
+      `https://www.kuechengoetter.de/suche?search=${encodeURIComponent(q)}`,
+      `https://www.kuechengoetter.de/suche?q=${encodeURIComponent(q)}`,
+    ],
+    linkSelector: "a[href*='/rezepte/']",
+    linkFilter: (href) => href.includes("/rezepte/") && !href.endsWith("/rezepte/"),
+  },
+];
+
 /**
- * Strategy 1: gutekueche.at listing page "{slug}-rezepte"
- * Tries multiple slug variants for better coverage.
+ * Generic internal search: fetch search page, parse links, validate top candidates.
  */
-async function searchViaGutekuecheListing(recipeName: string): Promise<string | null> {
+async function searchSiteInternal(config: SiteConfig, recipeName: string): Promise<string | null> {
+  for (const searchUrl of config.searchUrls(recipeName)) {
+    const html = await fetchHtml(searchUrl);
+    if (!html) continue;
+
+    const $ = cheerio.load(html);
+    const candidates: string[] = [];
+
+    $(config.linkSelector).each((_, el) => {
+      const href = $(el).attr("href");
+      if (!href) return;
+      const abs = absoluteUrl(searchUrl, href);
+      if (!abs) return;
+      if (config.linkFilter && !config.linkFilter(abs)) return;
+      if (!candidates.includes(abs)) candidates.push(abs);
+    });
+
+    log(`   [search] ${config.domain} candidates: ${candidates.length} (via ${searchUrl.split("?")[0]})`);
+
+    // Validate top 5 candidates
+    for (const url of candidates.slice(0, 5)) {
+      const valid = await validateRecipeUrl(url);
+      if (valid) {
+        log(`   [search] ${config.domain} validated: ${url}`);
+        return url;
+      }
+      await sleep(jitter(500));
+    }
+
+    if (candidates.length > 0) {
+      log(`   [search] ${config.domain} none validated`);
+    }
+
+    // Only try first working search URL per site
+    break;
+  }
+
+  return null;
+}
+
+// ── gutekueche.at listing page search ───────────────────────
+
+async function searchGutekuecheListing(recipeName: string): Promise<string | null> {
   const variants = getSlugVariants(recipeName);
   const nameSlug = slugify(recipeName);
 
   for (const variant of variants) {
     const listingUrl = `https://www.gutekueche.at/${variant}-rezepte`;
+    const html = await fetchHtml(listingUrl);
+    if (!html) continue;
 
-    try {
-      const res = await fetch(listingUrl, {
-        headers: { "User-Agent": USER_AGENT, "Accept": "text/html", "Accept-Language": "de-DE,de;q=0.9" },
-      });
-      if (!res.ok) continue;
+    const $ = cheerio.load(html);
+    let bestUrl: string | null = null;
+    let bestScore = 0;
+    const nameWords = nameSlug.split("-");
 
-      const html = await res.text();
-      const $ = cheerio.load(html);
-
-      // Score recipe links by how well they match our recipe name
-      let bestUrl: string | null = null;
-      let bestScore = 0;
-      const nameWords = nameSlug.split("-");
-
-      $("a[href*='-rezept-']").each((_, el) => {
-        const href = $(el).attr("href") || "";
-        const hrefSlug = href.replace(/^\//, "").replace(/-rezept-\d+$/, "");
-        const hrefWords = hrefSlug.split("-");
-        const matchCount = nameWords.filter(w => hrefWords.some(hw => hw.includes(w) || w.includes(hw))).length;
-        const score = matchCount / nameWords.length;
-        if (score > bestScore) {
-          bestScore = score;
-          bestUrl = href.startsWith("http") ? href : `https://www.gutekueche.at${href}`;
-        }
-      });
-
-      // Accept if at least 40% of name words match, or take first link from the full-name listing
-      if (bestUrl && (bestScore >= 0.4 || variant === nameSlug)) {
-        return bestUrl;
+    $("a[href*='-rezept-']").each((_, el) => {
+      const href = $(el).attr("href") || "";
+      const hrefSlug = href.replace(/^\//, "").replace(/-rezept-\d+$/, "");
+      const hrefWords = hrefSlug.split("-");
+      const matchCount = nameWords.filter(w => hrefWords.some(hw => hw.includes(w) || w.includes(hw))).length;
+      const score = matchCount / nameWords.length;
+      if (score > bestScore) {
+        bestScore = score;
+        bestUrl = href.startsWith("http") ? href : `https://www.gutekueche.at${href}`;
       }
-    } catch {
-      continue;
+    });
+
+    if (bestUrl && (bestScore >= 0.4 || variant === nameSlug)) {
+      return bestUrl;
     }
   }
 
   return null;
 }
 
-/**
- * Strategy 2: DuckDuckGo HTML search (fallback)
- */
+// ── DuckDuckGo search (disabled by default) ─────────────────
+
 async function searchViaDDG(recipeName: string, site: string): Promise<string | null> {
+  if (!ENABLE_DDG) return null;
+
   const query = encodeURIComponent(`"${recipeName}" rezept site:${site}`);
   const searchUrl = `https://html.duckduckgo.com/html/?q=${query}`;
+  const html = await fetchHtml(searchUrl);
+  if (!html) return null;
 
-  try {
-    const res = await fetch(searchUrl, {
-      headers: {
-        "User-Agent": USER_AGENT,
-        "Accept": "text/html",
-        "Accept-Language": "de-DE,de;q=0.9",
-      },
-    });
-    if (!res.ok) return null;
+  const $ = cheerio.load(html);
+  let foundUrl: string | null = null;
 
-    const html = await res.text();
-    const $ = cheerio.load(html);
-
-    let foundUrl: string | null = null;
-
-    $("a.result__a, a.result__url, a[href]").each((_, el) => {
-      if (foundUrl) return;
-      const href = $(el).attr("href") || "";
-
-      if (href.includes("uddg=")) {
-        const match = href.match(/uddg=([^&]+)/);
-        if (match) {
-          const decoded = decodeURIComponent(match[1]);
-          if (decoded.includes(site) && decoded.startsWith("http")) {
-            foundUrl = decoded;
-          }
-        }
-      } else if (href.includes(site)) {
-        foundUrl = href.startsWith("http") ? href : `https:${href}`;
+  $("a.result__a, a.result__url, a[href]").each((_, el) => {
+    if (foundUrl) return;
+    const href = $(el).attr("href") || "";
+    if (href.includes("uddg=")) {
+      const match = href.match(/uddg=([^&]+)/);
+      if (match) {
+        const decoded = decodeURIComponent(match[1]);
+        if (decoded.includes(site) && decoded.startsWith("http")) foundUrl = decoded;
       }
-    });
+    } else if (href.includes(site)) {
+      foundUrl = href.startsWith("http") ? href : `https:${href}`;
+    }
+  });
 
-    return foundUrl;
-  } catch {
-    return null;
-  }
+  return foundUrl;
 }
 
+// ── Main search orchestrator ────────────────────────────────
+
 async function searchRecipeUrl(recipeName: string, category?: string): Promise<{ url: string; source: string } | null> {
-  // 1) gutekueche.at listing page (fast, no rate-limiting)
-  const listingResult = await searchViaGutekuecheListing(recipeName);
-  if (listingResult) {
-    return { url: listingResult, source: "gutekueche.at" };
+  // 1) gutekueche.at listing page (fast, no rate-limiting risk)
+  if (sourceEnabled("gutekueche")) {
+    const result = await searchGutekuecheListing(recipeName);
+    if (result) {
+      // Validate before returning
+      const valid = await validateRecipeUrl(result);
+      if (valid) return { url: result, source: "gutekueche.at" };
+      log(`   [search] gutekueche.at listing found but validation failed: ${result}`);
+    }
   }
 
-  // 2) DDG search: gutekueche.at then chefkoch.de
-  for (const site of ["gutekueche.at", "chefkoch.de"]) {
-    const ddgResult = await searchViaDDG(recipeName, site);
-    if (ddgResult) {
-      return { url: ddgResult, source: site };
+  // 2) Site-internal search for each configured site
+  for (const config of SITE_CONFIGS) {
+    if (!sourceEnabled(config.name)) continue;
+    const result = await searchSiteInternal(config, recipeName);
+    if (result) return { url: result, source: config.domain };
+    await sleep(jitter(1500));
+  }
+
+  // 3) DDG fallback (only if --enable-ddg)
+  if (ENABLE_DDG) {
+    for (const site of ["gutekueche.at", "chefkoch.de"]) {
+      const result = await searchViaDDG(recipeName, site);
+      if (result) {
+        const valid = await validateRecipeUrl(result);
+        if (valid) return { url: result, source: site };
+      }
+      await sleep(jitter(1000));
     }
-    await sleep(jitter(1000));
   }
 
   return null;
@@ -230,34 +381,19 @@ interface ScrapedData {
 }
 
 async function scrapeRecipeUrl(url: string): Promise<ScrapedData | null> {
-  try {
-    const res = await fetch(url, {
-      headers: {
-        "User-Agent": USER_AGENT,
-        "Accept": "text/html,application/xhtml+xml",
-        "Accept-Language": "de-DE,de;q=0.9"
-      },
-    });
-    if (!res.ok) return null;
+  const html = await fetchHtml(url);
+  if (!html) return null;
 
-    const html = await res.text();
-    const $ = cheerio.load(html);
-
-    // Parse JSON-LD
-    const scripts = $('script[type="application/ld+json"]').toArray();
-    for (const script of scripts) {
-      try {
-        const data = JSON.parse($(script).html() || "");
-        const recipe = findRecipeInJsonLd(data);
-        if (recipe) {
-          return { ...recipe, sourceUrl: url };
-        }
-      } catch { continue; }
-    }
-    return null;
-  } catch {
-    return null;
+  const $ = cheerio.load(html);
+  const scripts = $('script[type="application/ld+json"]').toArray();
+  for (const script of scripts) {
+    try {
+      const data = JSON.parse($(script).html() || "");
+      const recipe = findRecipeInJsonLd(data);
+      if (recipe) return { ...recipe, sourceUrl: url };
+    } catch { continue; }
   }
+  return null;
 }
 
 function findRecipeInJsonLd(data: any): Omit<ScrapedData, "sourceUrl"> | null {
@@ -276,7 +412,6 @@ function findRecipeInJsonLd(data: any): Omit<ScrapedData, "sourceUrl"> | null {
 }
 
 function parseJsonLdRecipe(data: any): Omit<ScrapedData, "sourceUrl"> {
-  // Portions
   let portions = 4;
   if (data.recipeYield) {
     const y = Array.isArray(data.recipeYield) ? data.recipeYield[0] : data.recipeYield;
@@ -284,7 +419,6 @@ function parseJsonLdRecipe(data: any): Omit<ScrapedData, "sourceUrl"> {
     if (m) portions = parseInt(m[1], 10);
   }
 
-  // Prep time (ISO 8601)
   let prepTime = 0;
   const t = data.totalTime || data.prepTime || data.cookTime;
   if (t) {
@@ -294,7 +428,6 @@ function parseJsonLdRecipe(data: any): Omit<ScrapedData, "sourceUrl"> {
     if (min) prepTime += parseInt(min[1], 10);
   }
 
-  // Image
   let image: string | null = null;
   if (data.image) {
     if (typeof data.image === "string") image = data.image;
@@ -302,7 +435,6 @@ function parseJsonLdRecipe(data: any): Omit<ScrapedData, "sourceUrl"> {
     else if (data.image.url) image = data.image.url;
   }
 
-  // Steps
   let steps: string[] = [];
   if (data.recipeInstructions) {
     if (typeof data.recipeInstructions === "string") {
@@ -317,7 +449,6 @@ function parseJsonLdRecipe(data: any): Omit<ScrapedData, "sourceUrl"> {
     }
   }
 
-  // Ingredients
   const ingredients: { name: string; amount: number; unit: string }[] = [];
   if (Array.isArray(data.recipeIngredient)) {
     for (const ing of data.recipeIngredient) {
@@ -357,9 +488,10 @@ async function main() {
 
   log(`Database: ${DB_URL.replace(/:[^:@]+@/, ":***@")}`);
   log(`Mode: ${DRY_RUN ? "DRY RUN (keine DB-Änderungen)" : "LIVE"}`);
+  log(`Sources: ${ALLOWED_SOURCES ? [...ALLOWED_SOURCES].join(", ") : "alle"}`);
+  log(`DDG: ${ENABLE_DDG ? "enabled" : "disabled (use --enable-ddg to enable)"}`);
   if (LIMIT) log(`Limit: ${LIMIT} Rezepte`);
 
-  // Find recipes that need data
   const { rows: recipesNeedingData } = await pool.query(`
     SELECT r.id, r.name, r.category, r.steps, r.allergens, r.image, r.source_url,
       (SELECT COUNT(*) FROM ingredients i WHERE i.recipe_id = r.id) as ingredient_count
@@ -379,6 +511,7 @@ async function main() {
   let errors = 0;
   let storedUrlHits = 0;
   let webSearches = 0;
+  const sourceCounts: Record<string, number> = {};
 
   for (const recipe of recipesNeedingData) {
     const needsIngredients = parseInt(recipe.ingredient_count) === 0;
@@ -386,36 +519,37 @@ async function main() {
 
     log(`── ${recipe.name} (ID ${recipe.id}) — braucht: ${needsIngredients ? "Zutaten " : ""}${needsSteps ? "Schritte" : ""}`);
 
-    // A) Prefer stored source_url over DDG search
+    // A) Prefer stored source_url (validate it still works)
     let found: { url: string; source: string } | null = null;
 
     if (recipe.source_url && typeof recipe.source_url === "string" && recipe.source_url.startsWith("http")) {
       found = {
         url: recipe.source_url,
-        source: recipe.source_url.includes("chefkoch.de") ? "chefkoch.de" : "gutekueche.at",
+        source: new URL(recipe.source_url).hostname.replace("www.", ""),
       };
       log(`   → stored: ${found.url}`);
       storedUrlHits++;
     } else {
       found = await searchRecipeUrl(recipe.name, recipe.category);
       webSearches++;
-      // Jittered delay after search
       await sleep(jitter(SEARCH_DELAY_MS));
     }
 
     if (!found) {
-      log(`   ✗ Nicht gefunden auf gutekueche.at / chefkoch.de`);
+      log(`   ✗ Nicht gefunden`);
       notFound++;
       await sleep(jitter(LOOP_DELAY_MS));
       continue;
     }
 
     const { url, source } = found;
+    sourceCounts[source] = (sourceCounts[source] || 0) + 1;
+
     if (!recipe.source_url || !recipe.source_url.startsWith("http")) {
       log(`   → found ${source}: ${url}`);
     }
 
-    // B) Persist discovered URL so subsequent runs skip DDG
+    // B) Persist discovered URL ONLY after validation passed (already validated in search)
     if (!recipe.source_url || !recipe.source_url.startsWith("http")) {
       if (!DRY_RUN) {
         await pool.query(`UPDATE recipes SET source_url = $1 WHERE id = $2`, [url, recipe.id]);
@@ -442,7 +576,6 @@ async function main() {
 
     // Write to database
     try {
-      // Update recipe steps, image, source URL
       if (needsSteps && scraped.steps.length > 0) {
         await pool.query(
           `UPDATE recipes SET steps = $1, source_url = $2 WHERE id = $3`,
@@ -450,7 +583,6 @@ async function main() {
         );
       }
 
-      // Update image if recipe has none
       if (!recipe.image && scraped.image) {
         await pool.query(
           `UPDATE recipes SET image = $1 WHERE id = $2`,
@@ -458,7 +590,6 @@ async function main() {
         );
       }
 
-      // Insert ingredients with allergen detection
       if (needsIngredients && scraped.ingredients.length > 0) {
         for (const ing of scraped.ingredients) {
           const ingAllergens = detectAllergens(ing.name);
@@ -468,14 +599,13 @@ async function main() {
           );
         }
 
-        // Aggregate allergens to recipe level
         const recipeAllergens = getAllergensFromIngredients(scraped.ingredients);
         await pool.query(
           `UPDATE recipes SET allergens = $1, allergen_status = 'auto' WHERE id = $2`,
           [recipeAllergens, recipe.id]
         );
         if (recipeAllergens.length > 0) {
-          log(`   🔍 Allergene: ${recipeAllergens.join(', ')}`);
+          log(`   Allergene: ${recipeAllergens.join(", ")}`);
         }
       }
 
@@ -495,6 +625,9 @@ async function main() {
   log(`Nicht gefunden: ${notFound}`);
   log(`Fehler: ${errors}`);
   log(`URL aus DB: ${storedUrlHits} | Web-Suchen: ${webSearches}`);
+  if (Object.keys(sourceCounts).length > 0) {
+    log(`Quellen: ${Object.entries(sourceCounts).map(([k, v]) => `${k}: ${v}`).join(", ")}`);
+  }
   log("=== Fertig ===");
 
   await pool.end();

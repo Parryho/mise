@@ -51,9 +51,23 @@ function log(msg: string) {
 
 // ── Search via DuckDuckGo HTML (bot-friendly, no JS needed) ─
 
-async function searchRecipeUrl(recipeName: string): Promise<{ url: string; source: string } | null> {
+async function searchRecipeUrl(recipeName: string, category?: string): Promise<{ url: string; source: string } | null> {
+  // Try direct gutekueche.at URL first (slug-based, very fast, no DDG needed)
+  const slug = recipeName.toLowerCase()
+    .replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss")
+    .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const directUrl = `https://www.gutekueche.at/${slug}-rezept`;
+  try {
+    const probe = await fetch(directUrl, { method: "HEAD", headers: { "User-Agent": USER_AGENT }, redirect: "follow" });
+    if (probe.ok) {
+      return { url: directUrl, source: "gutekueche.at" };
+    }
+  } catch { /* ignore */ }
+
+  // Fallback: DDG search with quoted name
   for (const site of ["gutekueche.at", "chefkoch.de"]) {
-    const query = encodeURIComponent(`${recipeName} rezept site:${site}`);
+    const name = `"${recipeName}"`;
+    const query = encodeURIComponent(`${name} rezept site:${site}`);
     const searchUrl = `https://html.duckduckgo.com/html/?q=${query}`;
 
     try {
@@ -81,13 +95,14 @@ async function searchRecipeUrl(recipeName: string): Promise<{ url: string; sourc
           const match = href.match(/uddg=([^&]+)/);
           if (match) {
             const decoded = decodeURIComponent(match[1]);
-            if (decoded.includes(site) && (decoded.includes("rezept") || decoded.includes("Rezept"))) {
+            // Accept any URL from the target site (not just those with "rezept" in path)
+            if (decoded.includes(site) && decoded.startsWith("http")) {
               foundUrl = decoded;
             }
           }
         }
-        // Direct URL
-        else if (href.includes(site) && (href.includes("rezept") || href.includes("Rezept"))) {
+        // Direct URL from target site
+        else if (href.includes(site)) {
           foundUrl = href.startsWith("http") ? href : `https:${href}`;
         }
       });
@@ -284,7 +299,7 @@ async function main() {
       log(`   → stored: ${found.url}`);
       storedUrlHits++;
     } else {
-      found = await searchRecipeUrl(recipe.name);
+      found = await searchRecipeUrl(recipe.name, recipe.category);
       ddgSearches++;
       // Jittered delay after DDG search
       await sleep(jitter(SEARCH_DELAY_MS));

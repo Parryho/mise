@@ -604,13 +604,11 @@ Phase 2 (Tag-System) bringt bereits 80% Verbesserung. Pairing-Scores sind option
 | 13.5 | Allergen-Vertrauensanzeige (auto/verified/unbekannt) | ✅ Done | 10.02. |
 | 13.6 | Manuelles Speichern setzt allergenStatus = verified | ✅ Done | 10.02. |
 | 13.7 | Zutat-Suche (Toggle + Server-Side EXISTS Query) | ✅ Done | 10.02. |
-| 13.8 | Backfill + Batch-Import auf Server ausführen | ⏳ TODO | |
+| 13.8 | Backfill + Batch-Import auf Server ausführen | ✅ Done | 10.02. |
+| 13.9 | JUFA Rezeptdatenbank.xlsb Import-Script | ✅ Done | 10.02. |
+| 13.10 | Multi-Source Batch-Import (6 Seiten + URL-Validierung) | ✅ Done | 10.02. |
 
-**Noch auf Server ausführen:**
-```bash
-npx tsx script/batch-import-gutekueche.ts   # ~313 Rezepte mit Zutaten befüllen
-npx tsx script/backfill-allergens.ts         # Allergene aus Zutaten erkennen
-```
+**Ergebnis:** 151 Rezepte mit Zutaten, 102 verified, 74 auto. Multi-Source: gutekueche.at + chefkoch.de + ichkoche.at + eatsmarter.de + lecker.de + kochbar.de + kuechengoetter.de.
 
 ---
 

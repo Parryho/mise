@@ -568,6 +568,23 @@ async function main() {
 
     log(`   ✓ ${scraped.ingredients.length} Zutaten, ${scraped.steps.length} Schritte`);
 
+    // Step/ingredient consistency check: warn if steps mention ingredients not in the list
+    if (scraped.steps.length > 0 && scraped.ingredients.length > 0) {
+      const STEP_INGREDIENT_KEYWORDS = [
+        "mehl", "butter", "milch", "sahne", "rahm", "ei", "eier", "öl", "zucker",
+        "salz", "pfeffer", "knoblauch", "zwiebel", "senf", "essig", "wein",
+        "käse", "parmesan", "obers", "topfen", "joghurt", "honig", "zitrone",
+      ];
+      const ingNamesLower = scraped.ingredients.map((i: any) => i.name.toLowerCase());
+      const stepsText = scraped.steps.join(" ").toLowerCase();
+      const missing = STEP_INGREDIENT_KEYWORDS.filter(kw =>
+        stepsText.includes(kw) && !ingNamesLower.some((n: string) => n.includes(kw))
+      );
+      if (missing.length > 0) {
+        log(`   ⚠ In Schritten erwähnt aber nicht in Zutaten: ${missing.join(", ")}`);
+      }
+    }
+
     if (DRY_RUN) {
       updated++;
       await sleep(jitter(LOOP_DELAY_MS));

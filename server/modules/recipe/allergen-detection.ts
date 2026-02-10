@@ -54,10 +54,10 @@ const ALLERGEN_KEYWORDS: Record<string, string[]> = {
     "schafskäse", "feta", "gorgonzola", "camembert", "brie"
   ],
 
-  // H - Schalenfrüchte
+  // H - Schalenfrüchte (true tree nuts only — NOT nutmeg/Muskatnuss)
   H: [
     "mandel", "haselnuss", "walnuss", "cashew", "pistazie",
-    "macadamia", "pekanuss", "paranuss", "nuss"
+    "macadamia", "pekanuss", "paranuss", "pekannuss", "nuss"
   ],
 
   // L - Sellerie
@@ -94,6 +94,9 @@ const ALLERGEN_KEYWORDS: Record<string, string[]> = {
   ],
 };
 
+// Ingredients that contain "nuss" but are NOT tree nuts (allergen H)
+const H_EXCLUSIONS = ["muskat", "muskatnuss", "kokosnuss"];
+
 /**
  * Detect allergens from a single ingredient name.
  * Case-insensitive, partial match.
@@ -102,11 +105,19 @@ export function detectAllergens(ingredientName: string): string[] {
   if (!ingredientName) return [];
 
   const normalized = ingredientName.toLowerCase().trim();
+
+  // Sanitize: skip entries < 2 chars or without alphabetic characters
+  if (normalized.length < 2 || !/[a-zäöüß]/.test(normalized)) return [];
+
   const detected = new Set<string>();
 
   for (const [allergenCode, keywords] of Object.entries(ALLERGEN_KEYWORDS)) {
     for (const keyword of keywords) {
       if (normalized.includes(keyword)) {
+        // H exclusion: "nuss" matches muskatnuss/kokosnuss → skip
+        if (allergenCode === "H" && H_EXCLUSIONS.some(ex => normalized.includes(ex))) {
+          break;
+        }
         detected.add(allergenCode);
         break; // Found match for this allergen, move to next
       }

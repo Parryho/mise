@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Minus, Plus, ExternalLink, Loader2, Trash2, Pencil, X } from "lucide-react";
+import { Minus, Plus, ExternalLink, Loader2, Trash2, Pencil, X, CheckCircle2, AlertTriangle } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -312,8 +312,26 @@ export default function RecipeDetailDialog({ recipe, open, onOpenChange, readOnl
                       <span className="font-bold bg-white/20 px-1 rounded mr-1">{code}</span>
                       {ALLERGENS[code as AllergenCode]?.[lang]}
                     </Badge>
-                  )) : <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">{t("noAllergens")}</Badge>}
+                  )) : (
+                    <Badge variant="outline" className={
+                      recipe.allergenStatus === 'verified'
+                        ? "text-green-600 border-green-200 bg-green-50"
+                        : "text-muted-foreground border-border bg-muted"
+                    }>
+                      {t("noAllergens")}
+                    </Badge>
+                  )}
                 </div>
+                {recipe.allergenStatus === 'auto' && (
+                  <p className="text-xs text-orange-600 flex items-center gap-1 mt-1.5">
+                    <AlertTriangle className="h-3 w-3" /> Automatisch erkannt
+                  </p>
+                )}
+                {recipe.allergenStatus === 'verified' && (
+                  <p className="text-xs text-green-600 flex items-center gap-1 mt-1.5">
+                    <CheckCircle2 className="h-3 w-3" /> Geprüft
+                  </p>
+                )}
               </div>
 
               {recipe.tags && recipe.tags.length > 0 && (

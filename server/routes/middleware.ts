@@ -53,6 +53,24 @@ export const registerRateLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Rate limiter for expensive endpoints (AI/LLM calls, heavy analytics)
+export const expensiveRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  message: { error: "Zu viele Anfragen. Bitte warten Sie eine Minute." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Rate limiter for AI endpoints (Claude API calls)
+export const aiRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 5,
+  message: { error: "Zu viele AI-Anfragen. Bitte warten Sie eine Minute." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Auth middleware
 export const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
   const userId = req.session.userId;

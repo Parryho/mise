@@ -5,8 +5,8 @@
 
 import { storage } from "./storage";
 import { db } from "./db";
-import { menuPlans, guestCounts } from "@shared/schema";
-import { and, gte, lte } from "drizzle-orm";
+import { menuPlans, guestCounts, recipes } from "@shared/schema";
+import { and, gte, lte, inArray } from "drizzle-orm";
 import { calculateCost, type Unit } from "@shared/units";
 import { resolveRecipeIngredients } from "./sub-recipes";
 
@@ -63,7 +63,10 @@ export async function getProductionList(startDate: string, endDate: string): Pro
   const masterByName: Record<string, typeof masterIngs[0]> = {};
   for (const mi of masterIngs) masterByName[mi.name.toLowerCase()] = mi;
 
-  // Load recipes and resolve ingredients (including sub-recipes)
+  // Batch load recipes (avoid N+1), then resolve ingredients per recipe
+  const allRecipes = await db.select().from(recipes).where(inArray(recipes.id, recipeIds));
+  const recipeLookup = new Map(allRecipes.map(r => [r.id, r]));
+
   const recipeMap: Record<number, {
     name: string;
     prepTime: number;
@@ -71,7 +74,7 @@ export async function getProductionList(startDate: string, endDate: string): Pro
   }> = {};
 
   for (const id of recipeIds) {
-    const recipe = await storage.getRecipe(id);
+    const recipe = recipeLookup.get(id);
     if (!recipe) continue;
     const resolved = await resolveRecipeIngredients(id);
     recipeMap[id] = {

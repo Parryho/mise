@@ -1,11 +1,11 @@
 import type { Express, Request, Response } from "express";
-import { requireRole, getParam } from "./middleware";
+import { requireRole, getParam, aiRateLimiter } from "./middleware";
 import { storage } from "./middleware";
 import { runTeamBriefing, registerSSEListener, unregisterSSEListener, type SSEEvent } from "../agent-team";
 
 export function registerAgentTeamRoutes(app: Express) {
   // Start a new briefing run
-  app.post("/api/agent-team/run", requireRole("admin", "souschef"), async (req: Request, res: Response) => {
+  app.post("/api/agent-team/run", requireRole("admin", "souschef"), aiRateLimiter, async (req: Request, res: Response) => {
     try {
       const { locationSlug, weekStart } = req.body;
       if (!locationSlug || !weekStart) {

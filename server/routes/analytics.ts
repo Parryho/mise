@@ -1,5 +1,5 @@
 import type { Express, Request, Response } from "express";
-import { requireAuth, requireRole } from "./middleware";
+import { requireAuth, requireRole, expensiveRateLimiter } from "./middleware";
 import { getPaxTrends, getHaccpCompliance, getPopularDishes } from "../analytics";
 import { getWeeklyCostReport } from "../costs";
 import { handlePaxForecast } from "../pax-forecast";
@@ -41,7 +41,7 @@ export function registerAnalyticsRoutes(app: Express) {
     }
   });
 
-  app.get("/api/analytics/food-cost", requireRole("admin", "souschef"), async (req: Request, res: Response) => {
+  app.get("/api/analytics/food-cost", requireRole("admin", "souschef"), expensiveRateLimiter, async (req: Request, res: Response) => {
     try {
       const startDate = String(req.query.startDate);
       const endDate = String(req.query.endDate);
@@ -53,6 +53,6 @@ export function registerAnalyticsRoutes(app: Express) {
     }
   });
 
-  app.get("/api/analytics/pax-forecast", requireAuth, handlePaxForecast);
-  app.get("/api/analytics/waste-prediction", requireAuth, handleGetWastePrediction);
+  app.get("/api/analytics/pax-forecast", requireAuth, expensiveRateLimiter, handlePaxForecast);
+  app.get("/api/analytics/waste-prediction", requireAuth, expensiveRateLimiter, handleGetWastePrediction);
 }

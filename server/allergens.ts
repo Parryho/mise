@@ -6,7 +6,7 @@
 import { storage } from "./storage";
 import { db } from "./db";
 import { menuPlans, recipes, ingredients, guestAllergenProfiles } from "@shared/schema";
-import { and, gte, lte, eq } from "drizzle-orm";
+import { and, gte, lte, eq, inArray } from "drizzle-orm";
 import { ALLERGENS } from "@shared/allergens";
 import { formatLocalDate } from "@shared/constants";
 
@@ -48,20 +48,31 @@ export async function getDailyAllergenMatrix(date: string, locationId?: number):
   const locMap: Record<number, string> = {};
   for (const loc of locs) locMap[loc.id] = loc.slug;
 
-  // Collect recipe allergens
+  // Batch load recipes + ingredients (avoid N+1)
   const recipeIds = Array.from(new Set(plans.filter(p => p.recipeId).map(p => p.recipeId!)));
   const recipeAllergens: Record<number, { name: string; allergens: string[] }> = {};
 
-  for (const id of recipeIds) {
-    const recipe = await storage.getRecipe(id);
-    if (!recipe) continue;
-    const ings = await storage.getIngredients(id);
-    // Merge recipe-level allergens with ingredient-level allergens
-    const allCodes = new Set<string>(recipe.allergens || []);
-    for (const ing of ings) {
-      for (const a of (ing.allergens || [])) allCodes.add(a);
+  if (recipeIds.length > 0) {
+    const allRecipes = await db.select().from(recipes).where(inArray(recipes.id, recipeIds));
+    const recipeMap = new Map(allRecipes.map(r => [r.id, r]));
+
+    const allIngs = await storage.getIngredientsByRecipeIds(recipeIds);
+    const ingsByRecipe = new Map<number, typeof allIngs>();
+    for (const ing of allIngs) {
+      if (!ingsByRecipe.has(ing.recipeId)) ingsByRecipe.set(ing.recipeId, []);
+      ingsByRecipe.get(ing.recipeId)!.push(ing);
     }
-    recipeAllergens[id] = { name: recipe.name, allergens: Array.from(allCodes).sort() };
+
+    for (const id of recipeIds) {
+      const recipe = recipeMap.get(id);
+      if (!recipe) continue;
+      const ings = ingsByRecipe.get(id) || [];
+      const allCodes = new Set<string>(recipe.allergens || []);
+      for (const ing of ings) {
+        for (const a of (ing.allergens || [])) allCodes.add(a);
+      }
+      recipeAllergens[id] = { name: recipe.name, allergens: Array.from(allCodes).sort() };
+    }
   }
 
   // Group by meal+location

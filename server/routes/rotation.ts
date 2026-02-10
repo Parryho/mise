@@ -1,5 +1,5 @@
 import type { Express, Request, Response } from "express";
-import { requireAuth, requireRole, storage } from "./middleware";
+import { requireAuth, requireRole, storage, aiRateLimiter } from "./middleware";
 import {
   insertRotationTemplateSchema, updateRotationTemplateSchema,
   insertRotationSlotSchema, updateRotationSlotSchema
@@ -120,7 +120,7 @@ export function registerRotationRoutes(app: Express) {
   });
 
   // --- Auto-fill rotation slots ---
-  app.post("/api/rotation/auto-fill", requireRole("admin", "souschef"), async (req: Request, res: Response) => {
+  app.post("/api/rotation/auto-fill", requireRole("admin", "souschef"), aiRateLimiter, async (req: Request, res: Response) => {
     try {
       const { templateId, overwrite } = req.body;
       if (!templateId) {
@@ -134,7 +134,7 @@ export function registerRotationRoutes(app: Express) {
   });
 
   // --- Optimize + Analysis (delegate to handlers) ---
-  app.post("/api/rotation/optimize", requireRole("admin", "souschef"), handleOptimizeRotation);
+  app.post("/api/rotation/optimize", requireRole("admin", "souschef"), aiRateLimiter, handleOptimizeRotation);
   app.get("/api/rotation/:templateId/analysis", requireAuth, handleGetAnalysis);
 
   // --- Quiz Feedback Routes ---

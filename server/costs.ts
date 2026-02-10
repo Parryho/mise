@@ -5,23 +5,31 @@
 
 import { storage } from "./storage";
 import { db } from "./db";
-import { menuPlans, guestCounts } from "@shared/schema";
-import { and, gte, lte } from "drizzle-orm";
+import { menuPlans, guestCounts, recipes } from "@shared/schema";
+import { and, gte, lte, inArray } from "drizzle-orm";
 import { calculateCost, type Unit } from "@shared/units";
 import { resolveRecipeIngredients } from "./sub-recipes";
 
 const DEFAULT_PAX: Record<string, number> = { city: 60, sued: 45, ak: 80 };
 
-export async function getDishCost(recipeId: number): Promise<{
+export async function getDishCost(
+  recipeId: number,
+  preloadedMaster?: Record<string, any>
+): Promise<{
   recipeId: number;
   costPerPortion: number;
   ingredients: Array<{ name: string; quantity: number; unit: string; cost: number; fromSubRecipe?: string }>;
 }> {
   // Resolve all ingredients including sub-recipes
   const resolvedIngs = await resolveRecipeIngredients(recipeId);
-  const masterIngs = await storage.getMasterIngredients();
-  const masterByName: Record<string, typeof masterIngs[0]> = {};
-  for (const mi of masterIngs) masterByName[mi.name.toLowerCase()] = mi;
+  let masterByName: Record<string, any>;
+  if (preloadedMaster) {
+    masterByName = preloadedMaster;
+  } else {
+    const masterIngs = await storage.getMasterIngredients();
+    masterByName = {};
+    for (const mi of masterIngs) masterByName[mi.name.toLowerCase()] = mi;
+  }
 
   const ingredientCosts = resolvedIngs.map(i => {
     const master = masterByName[i.name.toLowerCase()];
@@ -75,15 +83,23 @@ export async function getWeeklyCostReport(startDate: string, endDate: string): P
     guestLookup[key] = gc.adults + gc.children;
   }
 
-  // Precompute recipe costs
+  // Batch load recipes + precompute costs (avoid N+1)
   const recipeIds = Array.from(new Set(plans.filter(p => p.recipeId).map(p => p.recipeId!)));
   const dishCosts: Record<number, number> = {};
   const dishNames: Record<number, string> = {};
 
+  if (recipeIds.length > 0) {
+    const allRecipes = await db.select().from(recipes).where(inArray(recipes.id, recipeIds));
+    for (const r of allRecipes) dishNames[r.id] = r.name;
+  }
+
+  // Load master ingredients once for all getDishCost calls
+  const masterIngs = await storage.getMasterIngredients();
+  const masterByName: Record<string, typeof masterIngs[0]> = {};
+  for (const mi of masterIngs) masterByName[mi.name.toLowerCase()] = mi;
+
   for (const id of recipeIds) {
-    const recipe = await storage.getRecipe(id);
-    if (recipe) dishNames[id] = recipe.name;
-    const costInfo = await getDishCost(id);
+    const costInfo = await getDishCost(id, masterByName);
     dishCosts[id] = costInfo.costPerPortion;
   }
 

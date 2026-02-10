@@ -1,5 +1,5 @@
 import type { Express, Request, Response } from "express";
-import { requireAuth, requireRole, requireAdmin, audit, getParam, storage } from "./middleware";
+import { requireAuth, requireRole, requireAdmin, audit, getParam, storage, expensiveRateLimiter } from "./middleware";
 import { insertMasterIngredientSchema, updateMasterIngredientSchema, insertSupplierSchema, updateSupplierSchema } from "@shared/schema";
 import { getProductionList } from "../production";
 import { getShoppingList } from "../shopping";
@@ -39,7 +39,7 @@ export function registerSupplierRoutes(app: Express) {
   });
 
   // --- Production List ---
-  app.get("/api/production-list", requireAuth, async (req: Request, res: Response) => {
+  app.get("/api/production-list", requireAuth, expensiveRateLimiter, async (req: Request, res: Response) => {
     try {
       const startDate = req.query.startDate as string;
       const endDate = req.query.endDate as string;
@@ -54,7 +54,7 @@ export function registerSupplierRoutes(app: Express) {
   });
 
   // --- Shopping List ---
-  app.get("/api/shopping-list", requireAuth, async (req: Request, res: Response) => {
+  app.get("/api/shopping-list", requireAuth, expensiveRateLimiter, async (req: Request, res: Response) => {
     try {
       const startDate = req.query.startDate as string;
       const endDate = req.query.endDate as string;
@@ -69,7 +69,7 @@ export function registerSupplierRoutes(app: Express) {
   });
 
   // --- Costs ---
-  app.get("/api/costs", requireRole("admin", "souschef"), async (req: Request, res: Response) => {
+  app.get("/api/costs", requireRole("admin", "souschef"), expensiveRateLimiter, async (req: Request, res: Response) => {
     try {
       const recipeId = req.query.recipeId ? parseInt(req.query.recipeId as string) : undefined;
       if (recipeId) {

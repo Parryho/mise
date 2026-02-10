@@ -224,11 +224,11 @@ Der Markt teilt sich in teure Enterprise-Losungen (Apicbase EUR500+/Mo, Galley $
 
 | # | Finding | Bereich | Aufwand |
 |---|---------|---------|---------|
-| H1 | N+1 Queries in Analytics/Production/Shopping | Performance | 6h |
+| H1 | ✅ 10.02.2026 **N+1 Queries** -- Batch-Loading mit inArray+Maps in allergens, analytics, production, costs | Performance | 6h |
 | H2 | Fehlende Error Handling bei API-Calls im Client | Clean Code | 4h |
 | H3 | Hardcoded Strings statt i18n in mehreren Seiten | Clean Code | 4h |
-| H4 | Keine DB-Connection-Pool-Limits konfiguriert | Performance | 1h |
-| H5 | Rate-Limiting nur auf Auth, nicht auf teure Endpoints | Security | 2h |
+| H4 | ✅ 10.02.2026 **DB Pool-Limits** -- max=20, idleTimeout=30s, connectionTimeout=5s | Performance | 1h |
+| H5 | ✅ 10.02.2026 **Rate-Limiting** -- expensiveRateLimiter + aiRateLimiter auf 12 teure Endpoints | Security | 2h |
 
 ### MITTEL (bei Gelegenheit)
 

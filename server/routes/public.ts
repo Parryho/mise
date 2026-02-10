@@ -1,5 +1,5 @@
 import type { Express, Request, Response } from "express";
-import { requireAuth, getParam } from "./middleware";
+import { requireAuth, getParam, aiRateLimiter } from "./middleware";
 import { getDailyAllergenMatrix, getWeeklyAllergenMatrix } from "../allergens";
 import { getBuffetCardsForDate } from "../buffet-cards";
 import { detectAllergensHandler, suggestAllergensForRecipeHandler } from "../allergen-detection";
@@ -46,8 +46,8 @@ export function registerPublicRoutes(app: Express) {
   });
 
   // Phase 3: AI Allergen Detection
-  app.post("/api/allergens/detect", requireAuth, detectAllergensHandler);
-  app.post("/api/allergens/suggest-recipe", requireAuth, suggestAllergensForRecipeHandler);
+  app.post("/api/allergens/detect", requireAuth, aiRateLimiter, detectAllergensHandler);
+  app.post("/api/allergens/suggest-recipe", requireAuth, aiRateLimiter, suggestAllergensForRecipeHandler);
 
   // ==========================================
   // Phase 2: Public Menu (Batch 5) — NO AUTH

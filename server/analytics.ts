@@ -5,7 +5,7 @@
 import { db } from "./db";
 import { storage } from "./storage";
 import { guestCounts, haccpLogs, fridges, menuPlans, rotationSlots, recipes } from "@shared/schema";
-import { and, gte, lte, eq, sql, desc } from "drizzle-orm";
+import { and, gte, lte, eq, sql, desc, inArray } from "drizzle-orm";
 import { formatLocalDate } from "@shared/constants";
 
 // ==========================================
@@ -189,21 +189,25 @@ export async function getPopularDishes(limit = 20): Promise<Array<{
     countMap[rc.recipeId].rotation = rc.count;
   }
 
-  // Get recipe details and sort
-  const results = await Promise.all(
-    Object.entries(countMap).map(async ([idStr, counts]) => {
-      const id = parseInt(idStr);
-      const recipe = await storage.getRecipe(id);
-      return {
-        recipeId: id,
-        recipeName: recipe?.name || `#${id}`,
-        category: recipe?.category || '',
-        menuPlanCount: counts.menuPlan,
-        rotationCount: counts.rotation,
-        totalCount: counts.menuPlan + counts.rotation,
-      };
-    })
-  );
+  // Batch load recipe details (avoid N+1)
+  const recipeIds = Object.keys(countMap).map(Number);
+  const allRecipes = recipeIds.length > 0
+    ? await db.select().from(recipes).where(inArray(recipes.id, recipeIds))
+    : [];
+  const recipeMap = new Map(allRecipes.map(r => [r.id, r]));
+
+  const results = Object.entries(countMap).map(([idStr, counts]) => {
+    const id = parseInt(idStr);
+    const recipe = recipeMap.get(id);
+    return {
+      recipeId: id,
+      recipeName: recipe?.name || `#${id}`,
+      category: recipe?.category || '',
+      menuPlanCount: counts.menuPlan,
+      rotationCount: counts.rotation,
+      totalCount: counts.menuPlan + counts.rotation,
+    };
+  });
 
   return results
     .sort((a, b) => b.totalCount - a.totalCount)

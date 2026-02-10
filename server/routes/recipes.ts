@@ -1,5 +1,5 @@
 import type { Express, Request, Response } from "express";
-import { requireAuth, requireAdmin, requireRole, audit, getParam, storage } from "./middleware";
+import { requireAuth, requireAdmin, requireRole, audit, getParam, storage, aiRateLimiter } from "./middleware";
 import { insertRecipeSchema, updateRecipeSchema, insertIngredientSchema, insertSubRecipeLinkSchema, recipes, ingredients } from "@shared/schema";
 import { autoCategorize } from "@shared/categorizer";
 import { db } from "../db";
@@ -419,8 +419,8 @@ export function registerRecipeRoutes(app: Express) {
   });
 
   // === AI RECIPE IMPORT + SUGGESTIONS ===
-  app.post("/api/recipes/ai-import", requireAuth, handleAIRecipeImport);
-  app.get("/api/recipes/suggestions", requireAuth, handleGetSuggestions);
+  app.post("/api/recipes/ai-import", requireAuth, aiRateLimiter, handleAIRecipeImport);
+  app.get("/api/recipes/suggestions", requireAuth, aiRateLimiter, handleGetSuggestions);
 
   // === INTELLIGENT SCALING ===
   app.post("/api/recipes/scale", requireAuth, scaleRecipeHandler);

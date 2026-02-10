@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Printer } from "lucide-react";
+import { apiFetch } from "@/lib/api";
 import AllergenBadge from "@/components/AllergenBadge";
 import { formatLocalDate } from "@shared/constants";
 
@@ -61,18 +62,16 @@ export default function Print() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetch("/api/locations").then(r => r.json()).then(setLocations).catch(() => {});
+    apiFetch("/api/locations").then(setLocations).catch(() => {});
   }, []);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [planRes, recipeRes] = await Promise.all([
-        fetch(`/api/menu-plans?start=${startDate}&end=${endDate}`),
-        fetch("/api/recipes"),
+      const [planData, recipeData] = await Promise.all([
+        apiFetch<MenuPlanEntry[]>(`/api/menu-plans?start=${startDate}&end=${endDate}`),
+        apiFetch<Recipe[]>("/api/recipes"),
       ]);
-      const planData: MenuPlanEntry[] = await planRes.json();
-      const recipeData: Recipe[] = await recipeRes.json();
 
       const recipeMap: Record<number, Recipe> = {};
       for (const r of recipeData) recipeMap[r.id] = r;

@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Printer, ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
 import { MEAL_SLOTS, getISOWeek, getWeekDateRange, formatLocalDate } from "@shared/constants";
+import { apiFetch, apiPost } from "@/lib/api";
 import { ALLERGENS } from "@shared/allergens";
 import { cn } from "@/lib/utils";
 
@@ -101,9 +102,9 @@ export default function RotationPrint() {
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/rotation-templates/ensure-default", { method: "POST" }).then(r => r.json()),
-      fetch("/api/recipes").then(r => r.json()),
-    ]).then(([tmpl, recs]) => {
+      apiPost("/api/rotation-templates/ensure-default", {}),
+      apiFetch("/api/recipes"),
+    ]).then(([tmpl, recs]: [any, any]) => {
       setTemplateId(tmpl.id);
       setWeekCount(tmpl.weekCount || 6);
       setRecipes(recs);
@@ -114,8 +115,7 @@ export default function RotationPrint() {
 
   useEffect(() => {
     if (!templateId) return;
-    fetch(`/api/rotation-slots/${templateId}?weekNr=${weekNr}`)
-      .then(r => r.json())
+    apiFetch(`/api/rotation-slots/${templateId}?weekNr=${weekNr}`)
       .then(data => setSlots(data))
       .catch(() => {});
   }, [templateId, weekNr]);

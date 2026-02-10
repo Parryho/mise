@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { getISOWeek, MEAL_SLOT_LABELS, MEAL_SLOTS } from "@shared/constants";
+import { apiFetch, apiPost, apiPut } from "@/lib/api";
 
 interface RotationSlot {
   id: number;
@@ -112,10 +113,9 @@ export default function Rotation() {
 
   const loadTemplates = async () => {
     try {
-      const res = await fetch("/api/rotation-templates");
-      const data = await res.json();
+      const data = await apiFetch<RotationTemplate[]>("/api/rotation-templates");
       setTemplates(data);
-      return data as RotationTemplate[];
+      return data;
     } catch {
       return [] as RotationTemplate[];
     }
@@ -123,8 +123,8 @@ export default function Rotation() {
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/rotation-templates/ensure-default", { method: "POST" }).then(r => r.json()),
-      fetch("/api/recipes").then(r => r.json()),
+      apiPost<RotationTemplate>("/api/rotation-templates/ensure-default", {}),
+      apiFetch<Recipe[]>("/api/recipes"),
     ]).then(async ([tmpl, recs]) => {
       setTemplateId(tmpl.id);
       setWeekCount(tmpl.weekCount || 6);
@@ -174,16 +174,14 @@ export default function Rotation() {
 
   useEffect(() => {
     if (!templateId) return;
-    fetch(`/api/rotation-slots/${templateId}?weekNr=${weekNr}`)
-      .then(r => r.json())
+    apiFetch<RotationSlot[]>(`/api/rotation-slots/${templateId}?weekNr=${weekNr}`)
       .then(data => setSlots(data))
       .catch(() => {});
   }, [templateId, weekNr]);
 
   useEffect(() => {
     if (!templateId) return;
-    fetch(`/api/rotation-slots/${templateId}`)
-      .then(r => r.json())
+    apiFetch<RotationSlot[]>(`/api/rotation-slots/${templateId}`)
       .then(data => setAllSlots(data))
       .catch(() => {});
   }, [templateId]);
@@ -264,10 +262,8 @@ export default function Rotation() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       toast({ title: "Geleert", description: `${data.cleared} Slots geleert.` });
-      const slotsRes = await fetch(`/api/rotation-slots/${templateId}?weekNr=${weekNr}`);
-      setSlots(await slotsRes.json());
-      const allSlotsRes = await fetch(`/api/rotation-slots/${templateId}`);
-      setAllSlots(await allSlotsRes.json());
+      setSlots(await apiFetch(`/api/rotation-slots/${templateId}?weekNr=${weekNr}`));
+      setAllSlots(await apiFetch(`/api/rotation-slots/${templateId}`));
       setClearDayOpen(false);
     } catch (err: any) {
       toast({ title: "Fehler", description: err.message, variant: "destructive" });
@@ -291,10 +287,8 @@ export default function Rotation() {
         title: "Küchenchef-Agent fertig",
         description: `${data.filled} Gerichte zugewiesen, ${data.skipped} übersprungen.`,
       });
-      const slotsRes = await fetch(`/api/rotation-slots/${templateId}?weekNr=${weekNr}`);
-      setSlots(await slotsRes.json());
-      const allSlotsRes = await fetch(`/api/rotation-slots/${templateId}`);
-      setAllSlots(await allSlotsRes.json());
+      setSlots(await apiFetch(`/api/rotation-slots/${templateId}?weekNr=${weekNr}`));
+      setAllSlots(await apiFetch(`/api/rotation-slots/${templateId}`));
     } catch (err: any) {
       toast({ title: "Fehler", description: err.message, variant: "destructive" });
     } finally {
@@ -305,11 +299,7 @@ export default function Rotation() {
 
   const handleSlotChange = async (slotId: number, recipeId: number | null) => {
     try {
-      await fetch(`/api/rotation-slots/${slotId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ recipeId }),
-      });
+      await apiPut(`/api/rotation-slots/${slotId}`, { recipeId });
       setSlots(prev => prev.map(s => s.id === slotId ? { ...s, recipeId } : s));
     } catch {
       toast({ title: "Fehler beim Speichern", variant: "destructive" });

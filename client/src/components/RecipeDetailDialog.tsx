@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Recipe, Ingredient, useApp } from "@/lib/store";
 import { ALLERGENS, AllergenCode, useTranslation } from "@/lib/i18n";
+import { apiFetch } from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -60,8 +61,7 @@ export default function RecipeDetailDialog({ recipe, open, onOpenChange, readOnl
     if (ingredients.length > 0) return;
     setLoadingIngredients(true);
     try {
-      const res = await fetch(`/api/recipes/${recipe.id}/ingredients`);
-      const data = await res.json();
+      const data = await apiFetch<Ingredient[]>(`/api/recipes/${recipe.id}/ingredients`);
       setIngredients(data);
       setEditIngredients(data);
     } catch (error) {
@@ -110,8 +110,7 @@ export default function RecipeDetailDialog({ recipe, open, onOpenChange, readOnl
       });
       toast({ title: "Rezept gespeichert" });
       setEditMode(false);
-      const res = await fetch(`/api/recipes/${recipe.id}/ingredients`);
-      const data = await res.json();
+      const data = await apiFetch<Ingredient[]>(`/api/recipes/${recipe.id}/ingredients`);
       setIngredients(data);
     } catch (error: any) {
       toast({ title: "Fehler", description: error.message, variant: "destructive" });

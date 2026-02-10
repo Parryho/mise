@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { AllergenCode } from "./i18n";
+import { apiFetch, apiPost, apiPut, apiDelete } from "./api";
 
 // Types matching the backend
 // Derived from RECIPE_CATEGORIES in shared/schema.ts
@@ -76,8 +77,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const fetchRecipes = async () => {
     try {
-      const res = await fetch('/api/recipes');
-      setRecipes(await res.json());
+      setRecipes(await apiFetch<Recipe[]>('/api/recipes'));
     } catch (error) {
       console.error('Failed to fetch recipes:', error);
     }
@@ -85,8 +85,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const fetchFridges = async () => {
     try {
-      const res = await fetch('/api/fridges');
-      setFridges(await res.json());
+      setFridges(await apiFetch<Fridge[]>('/api/fridges'));
     } catch (error) {
       console.error('Failed to fetch fridges:', error);
     }
@@ -94,8 +93,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const fetchLogs = async () => {
     try {
-      const res = await fetch('/api/haccp-logs');
-      setLogs(await res.json());
+      setLogs(await apiFetch<HaccpLog[]>('/api/haccp-logs'));
     } catch (error) {
       console.error('Failed to fetch logs:', error);
     }
@@ -114,81 +112,47 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const addRecipe = async (recipe: Omit<Recipe, 'id'> & { ingredientsList?: Ingredient[] }): Promise<Recipe> => {
-    const res = await fetch('/api/recipes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(recipe)
-    });
-    const created = await res.json();
+    const created = await apiPost<Recipe>('/api/recipes', recipe);
     await fetchRecipes();
     return created;
   };
 
   const updateRecipe = async (id: number, recipe: Partial<Recipe> & { ingredientsList?: Ingredient[] }): Promise<Recipe> => {
-    const res = await fetch(`/api/recipes/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(recipe)
-    });
-    const updated = await res.json();
+    const updated = await apiPut<Recipe>(`/api/recipes/${id}`, recipe);
     await fetchRecipes();
     return updated;
   };
 
   const importRecipe = async (url: string): Promise<Recipe> => {
-    const res = await fetch('/api/recipes/import', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url })
-    });
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.error || 'Import failed');
-    }
-    const created = await res.json();
+    const created = await apiPost<Recipe>('/api/recipes/import', { url });
     await fetchRecipes();
     return created;
   };
 
   const deleteRecipe = async (id: number): Promise<void> => {
-    await fetch(`/api/recipes/${id}`, { method: 'DELETE' });
+    await apiDelete(`/api/recipes/${id}`);
     await fetchRecipes();
   };
 
   const addFridge = async (fridge: Omit<Fridge, 'id'>): Promise<Fridge> => {
-    const res = await fetch('/api/fridges', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(fridge)
-    });
-    const created = await res.json();
+    const created = await apiPost<Fridge>('/api/fridges', fridge);
     await fetchFridges();
     return created;
   };
 
   const updateFridge = async (id: number, fridge: Partial<Fridge>): Promise<Fridge> => {
-    const res = await fetch(`/api/fridges/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(fridge)
-    });
-    const updated = await res.json();
+    const updated = await apiPut<Fridge>(`/api/fridges/${id}`, fridge);
     await fetchFridges();
     return updated;
   };
 
   const deleteFridge = async (id: number): Promise<void> => {
-    await fetch(`/api/fridges/${id}`, { method: 'DELETE' });
+    await apiDelete(`/api/fridges/${id}`);
     await fetchFridges();
   };
 
   const addLog = async (log: Omit<HaccpLog, 'id'>): Promise<HaccpLog> => {
-    const res = await fetch('/api/haccp-logs', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(log)
-    });
-    const created = await res.json();
+    const created = await apiPost<HaccpLog>('/api/haccp-logs', log);
     await fetchLogs();
     return created;
   };
@@ -196,10 +160,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const getFridgeName = (id: number) => fridges.find(f => f.id === id)?.name || "Unknown";
 
   return (
-    <AppContext.Provider value={{ 
-      recipes, 
-      fridges, 
-      logs, 
+    <AppContext.Provider value={{
+      recipes,
+      fridges,
+      logs,
       loading,
       addRecipe,
       updateRecipe,
@@ -208,7 +172,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       addFridge,
       updateFridge,
       deleteFridge,
-      addLog, 
+      addLog,
       getFridgeName,
       refetch: fetchAll
     }}>

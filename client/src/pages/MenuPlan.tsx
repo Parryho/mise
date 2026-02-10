@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useApp } from "@/lib/store";
+import { apiFetch, apiPost, apiPut, apiDelete } from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -92,8 +93,7 @@ export default function MenuPlan() {
   const fetchGuestCounts = async (from: string, to: string) => {
     try {
       const locParam = selectedLocationId ? `&locationId=${selectedLocationId}` : "";
-      const res = await fetch(`/api/guests?start=${from}&end=${to}${locParam}`);
-      const data = await res.json();
+      const data = await apiFetch(`/api/guests?start=${from}&end=${to}${locParam}`);
       setGuestCounts(data);
     } catch (error) {
       console.error('Failed to fetch guest counts:', error);
@@ -103,8 +103,7 @@ export default function MenuPlan() {
   const fetchWeekPlan = async (y: number, w: number) => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/menu-plans/week?year=${y}&week=${w}`);
-      const data = await res.json();
+      const data = await apiFetch<any>(`/api/menu-plans/week?year=${y}&week=${w}`);
       setPlans(data.plans || []);
       setRotationWeekNr(data.rotationWeekNr || 0);
       setWeekFrom(data.from || "");
@@ -202,17 +201,9 @@ export default function MenuPlan() {
 
     try {
       if (existingPlan) {
-        await fetch(`/api/menu-plans/${existingPlan.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ recipeId: draggedRecipe.id, portions: existingPlan.portions, locationId: selectedLocationId })
-        });
+        await apiPut(`/api/menu-plans/${existingPlan.id}`, { recipeId: draggedRecipe.id, portions: existingPlan.portions, locationId: selectedLocationId });
       } else {
-        await fetch('/api/menu-plans', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ date: dropDate, meal: dropMeal, course: dropCourse, recipeId: draggedRecipe.id, portions: 1, locationId: selectedLocationId })
-        });
+        await apiPost('/api/menu-plans', { date: dropDate, meal: dropMeal, course: dropCourse, recipeId: draggedRecipe.id, portions: 1, locationId: selectedLocationId });
       }
       toast({ title: `${draggedRecipe.name} zugewiesen` });
       fetchWeekPlan(year, week);
@@ -456,29 +447,12 @@ function CourseCard({ date, dayName, dayNum, meal, course, courseLabel, plan, re
   const handleSave = async () => {
     setSaving(true);
     try {
+      const recipeVal = recipeId && recipeId !== 'none' ? parseInt(recipeId) : null;
+      const portionVal = parseInt(portions) || 1;
       if (plan) {
-        await fetch(`/api/menu-plans/${plan.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            recipeId: recipeId && recipeId !== 'none' ? parseInt(recipeId) : null,
-            portions: parseInt(portions) || 1,
-            locationId,
-          })
-        });
+        await apiPut(`/api/menu-plans/${plan.id}`, { recipeId: recipeVal, portions: portionVal, locationId });
       } else {
-        await fetch('/api/menu-plans', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            date,
-            meal,
-            course,
-            recipeId: recipeId && recipeId !== 'none' ? parseInt(recipeId) : null,
-            portions: parseInt(portions) || 1,
-            locationId,
-          })
-        });
+        await apiPost('/api/menu-plans', { date, meal, course, recipeId: recipeVal, portions: portionVal, locationId });
       }
       toast({ title: "Gespeichert" });
       setOpen(false);
@@ -494,7 +468,7 @@ function CourseCard({ date, dayName, dayNum, meal, course, courseLabel, plan, re
     if (!plan) return;
     setSaving(true);
     try {
-      await fetch(`/api/menu-plans/${plan.id}`, { method: 'DELETE' });
+      await apiDelete(`/api/menu-plans/${plan.id}`);
       toast({ title: "Gelöscht" });
       setOpen(false);
       onSave();
@@ -629,8 +603,7 @@ function ShoppingListDialog({ open, onOpenChange, plans, recipes }: {
       const recipeIds = Array.from(new Set(plans.filter(p => p.recipeId).map(p => p.recipeId!)));
       if (recipeIds.length === 0) { setIngredients(ingredientMap); return; }
 
-      const res = await fetch(`/api/ingredients/bulk?recipeIds=${recipeIds.join(",")}`);
-      const allIngs: { recipeId: number; name: string; amount: number; unit: string }[] = await res.json();
+      const allIngs = await apiFetch<{ recipeId: number; name: string; amount: number; unit: string }[]>(`/api/ingredients/bulk?recipeIds=${recipeIds.join(",")}`);
 
       for (const plan of plans) {
         if (!plan.recipeId) continue;

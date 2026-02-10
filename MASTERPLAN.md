@@ -593,9 +593,28 @@ Phase 2 (Tag-System) bringt bereits 80% Verbesserung. Pairing-Scores sind option
 
 **Gesamtaufwand bisher: ~420h über 4 Tage (07.-10.02.2026)**
 
+### Phase 13: Rezeptdatenbank + Allergene verlässlich machen (10.02.2026)
+
+| # | Task | Status | Datum |
+|---|------|--------|-------|
+| 13.1 | `allergen_status` Spalte auf recipes (null/auto/verified) | ✅ Done | 10.02. |
+| 13.2 | Batch-Scraper: Allergen-Detection pro Zutat beim Import | ✅ Done | 10.02. |
+| 13.3 | Backfill-Script: Allergene aus bestehenden Zutaten erkennen | ✅ Done | 10.02. |
+| 13.4 | URL-Import: Auto-Allergen-Detection bei Scraping | ✅ Done | 10.02. |
+| 13.5 | Allergen-Vertrauensanzeige (auto/verified/unbekannt) | ✅ Done | 10.02. |
+| 13.6 | Manuelles Speichern setzt allergenStatus = verified | ✅ Done | 10.02. |
+| 13.7 | Zutat-Suche (Toggle + Server-Side EXISTS Query) | ✅ Done | 10.02. |
+| 13.8 | Backfill + Batch-Import auf Server ausführen | ⏳ TODO | |
+
+**Noch auf Server ausführen:**
+```bash
+npx tsx script/batch-import-gutekueche.ts   # ~313 Rezepte mit Zutaten befüllen
+npx tsx script/backfill-allergens.ts         # Allergene aus Zutaten erkennen
+```
+
 ---
 
-## 13. Nächster Terminal-Befehl
+## 14. Nächster Terminal-Befehl
 ```bash
 # 🔥 JETZT: Generator anpassen (Phase 11.7-11.9)
 code server/modules/menu/rotation-agent.ts

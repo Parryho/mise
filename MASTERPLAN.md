@@ -610,6 +610,9 @@ Phase 2 (Tag-System) bringt bereits 80% Verbesserung. Pairing-Scores sind option
 
 | 13.11 | Allergen-Detection Rewrite (exactTokens + substrings) | ✅ Done | 10.02. |
 | 13.12 | Recompute: 218/421 Rezepte korrigiert (false C/H/O entfernt) | ✅ Done | 10.02. |
+| 13.13 | JUFA-Branding entfernt — System generisch gemacht (16 Dateien) | ✅ Done | 10.02. |
+| 13.14 | Rezeptbilder: 421 Pexels-Duplikate → echte gescrapte Bilder | ✅ Done | 10.02. |
+| 13.15 | Bildvalidierung: 76 kaputte Unsplash-URLs → NULL + SVG-Fallback | ✅ Done | 10.02. |
 
 **Ergebnis:** Alle 421 Rezepte haben Zutaten + Allergene. Batch-Import: 343 Rezepte (chefkoch.de: 215, gutekueche.at: 115, lecker.de: 13). Backfill: 20 Rezepte nachträglich Allergene erkannt. Multi-Source: gutekueche.at + chefkoch.de + ichkoche.at + eatsmarter.de + lecker.de + kochbar.de + kuechengoetter.de. Allergen-Detection v2: Hybrid-Matching (exactTokens für kurze Begriffe wie "ei"/"nuss"/"wein", substrings für lange spezifische Begriffe). 218 Rezepte korrigiert — massive Reduktion von False Positives (C aus "Weizenmehl", H aus "Kalbsnuss", O aus "Schweinefleisch").
 

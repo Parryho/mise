@@ -17,7 +17,20 @@ app.set("trust proxy", 1);
 
 // Security headers (X-Content-Type-Options, X-Frame-Options, HSTS, etc.)
 app.use(helmet({
-  contentSecurityPolicy: false, // CSP handled by Vite/React separately
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "blob:", "https://images.pexels.com", "https://images.unsplash.com"],
+      connectSrc: ["'self'"],
+      frameSrc: ["'none'"],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+    },
+  },
   crossOriginEmbedderPolicy: false, // Allow loading external images
 }));
 

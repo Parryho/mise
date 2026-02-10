@@ -216,9 +216,9 @@ Der Markt teilt sich in teure Enterprise-Losungen (Apicbase EUR500+/Mo, Galley $
 | K1 | ✅ 09.02.2026 **Code-Splitting** -- React.lazy fur 40 Seiten, Bundle 1959kB→524kB | Performance | 4h |
 | K2 | ✅ 09.02.2026 **DB-Transaktionen** -- Rezepte, GDPR, Rotation, Catering atomar | Architektur | 6h |
 | K3 | ✅ 10.02.2026 **getOrGenerateWeekPlan** -- Cached, nur bei force=true regenerieren | Architektur | 4h |
-| K4 | **AppProvider God Context** -- Ein Context fur alles, refetch ladt ALLES neu | Architektur | 8h |
-| K5 | **SMTP-Passwort im Klartext** in app_settings | Security | 3h |
-| K6 | **Content Security Policy** fehlt (helmet CSP disabled) | Security | 3h |
+| K4 | ✅ 10.02.2026 **AppProvider** -- Targeted refetch statt fetchAll bei Mutationen | Architektur | 8h |
+| K5 | ✅ 10.02.2026 **SMTP-Passwort verschluesselt** -- AES-256-GCM in app_settings | Security | 3h |
+| K6 | ✅ 10.02.2026 **Content Security Policy** -- Helmet CSP mit Whitelist aktiviert | Security | 3h |
 
 ### HOCH (zeitnah)
 

@@ -8,6 +8,7 @@ import { handleGetVapidPublicKey, handlePushSubscribe, handlePushUnsubscribe, ha
 import { handleListBackups, handleCreateBackup, handleDownloadBackup, handleRestoreBackup, handleDeleteBackup } from "../backup";
 import { handleGdprExportOwn, handleGdprExportUser, handleGdprCountsOwn, handleGdprCountsUser, handleGdprDeleteOwn, handleGdprDeleteUser } from "../gdpr";
 import { healthHandler } from "../health";
+import { encrypt, decrypt } from "../crypto";
 import { metricsHandler } from "../metrics";
 import { getUploadDir } from "../recipe-media";
 
@@ -407,18 +408,18 @@ export function registerAdminRoutes(app: Express) {
         email_weekly_report: email_weekly_report || "false",
       };
 
-      // Only update password if not masked
+      // Only update password if not masked — encrypt before storing
       if (smtp_pass && smtp_pass !== "********") {
-        settingsToSave.smtp_pass = smtp_pass;
+        settingsToSave.smtp_pass = encrypt(smtp_pass);
       }
 
       for (const [key, value] of Object.entries(settingsToSave)) {
         await storage.setSetting(key, value);
       }
 
-      // Re-initialize transporter with new settings
+      // Re-initialize transporter with new settings (decrypt stored password)
       const savedPass = smtp_pass === "********"
-        ? (await storage.getSetting("smtp_pass"))?.value || ""
+        ? decrypt((await storage.getSetting("smtp_pass"))?.value || "")
         : smtp_pass || "";
 
       initializeTransporter({

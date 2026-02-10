@@ -74,25 +74,36 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [logs, setLogs] = useState<HaccpLog[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const fetchRecipes = async () => {
+    try {
+      const res = await fetch('/api/recipes');
+      setRecipes(await res.json());
+    } catch (error) {
+      console.error('Failed to fetch recipes:', error);
+    }
+  };
+
+  const fetchFridges = async () => {
+    try {
+      const res = await fetch('/api/fridges');
+      setFridges(await res.json());
+    } catch (error) {
+      console.error('Failed to fetch fridges:', error);
+    }
+  };
+
+  const fetchLogs = async () => {
+    try {
+      const res = await fetch('/api/haccp-logs');
+      setLogs(await res.json());
+    } catch (error) {
+      console.error('Failed to fetch logs:', error);
+    }
+  };
+
   const fetchAll = async () => {
     try {
-      const [recipesRes, fridgesRes, logsRes] = await Promise.all([
-        fetch('/api/recipes'),
-        fetch('/api/fridges'),
-        fetch('/api/haccp-logs')
-      ]);
-      
-      const [recipesData, fridgesData, logsData] = await Promise.all([
-        recipesRes.json(),
-        fridgesRes.json(),
-        logsRes.json()
-      ]);
-
-      setRecipes(recipesData);
-      setFridges(fridgesData);
-      setLogs(logsData);
-    } catch (error) {
-      console.error('Failed to fetch data:', error);
+      await Promise.all([fetchRecipes(), fetchFridges(), fetchLogs()]);
     } finally {
       setLoading(false);
     }
@@ -109,7 +120,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       body: JSON.stringify(recipe)
     });
     const created = await res.json();
-    await fetchAll();
+    await fetchRecipes();
     return created;
   };
 
@@ -120,7 +131,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       body: JSON.stringify(recipe)
     });
     const updated = await res.json();
-    await fetchAll();
+    await fetchRecipes();
     return updated;
   };
 
@@ -135,13 +146,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       throw new Error(error.error || 'Import failed');
     }
     const created = await res.json();
-    await fetchAll();
+    await fetchRecipes();
     return created;
   };
 
   const deleteRecipe = async (id: number): Promise<void> => {
     await fetch(`/api/recipes/${id}`, { method: 'DELETE' });
-    await fetchAll();
+    await fetchRecipes();
   };
 
   const addFridge = async (fridge: Omit<Fridge, 'id'>): Promise<Fridge> => {
@@ -151,7 +162,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       body: JSON.stringify(fridge)
     });
     const created = await res.json();
-    await fetchAll();
+    await fetchFridges();
     return created;
   };
 
@@ -162,13 +173,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       body: JSON.stringify(fridge)
     });
     const updated = await res.json();
-    await fetchAll();
+    await fetchFridges();
     return updated;
   };
 
   const deleteFridge = async (id: number): Promise<void> => {
     await fetch(`/api/fridges/${id}`, { method: 'DELETE' });
-    await fetchAll();
+    await fetchFridges();
   };
 
   const addLog = async (log: Omit<HaccpLog, 'id'>): Promise<HaccpLog> => {
@@ -178,7 +189,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       body: JSON.stringify(log)
     });
     const created = await res.json();
-    await fetchAll();
+    await fetchLogs();
     return created;
   };
 

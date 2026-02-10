@@ -292,7 +292,7 @@ function AddRecipeDialog({ defaultCategory }: { defaultCategory?: string }) {
         category,
         portions: 1,
         prepTime: 0,
-        image: getDefaultRecipeImage(category, name),
+        image: null,
         sourceUrl: null,
         steps: [],
         allergens: [],

@@ -37,6 +37,10 @@ export function registerRecipeRoutes(app: Express) {
   app.post("/api/recipes", requireAuth, async (req, res) => {
     try {
       const parsed = insertRecipeSchema.parse(req.body);
+      // If allergens provided manually, mark as verified
+      if (parsed.allergens && parsed.allergens.length > 0) {
+        (parsed as any).allergenStatus = 'verified';
+      }
       const recipe = await db.transaction(async (tx) => {
         const [created] = await tx.insert(recipes).values(parsed).returning();
         if (req.body.ingredientsList && Array.isArray(req.body.ingredientsList)) {
@@ -174,7 +178,7 @@ export function registerRecipeRoutes(app: Express) {
         return res.status(400).json({ error: "Maximal 100 Rezepte pro Import" });
       }
 
-      const validCategories = ["ClearSoups", "CreamSoups", "MainMeat", "MainVegan", "Sides", "ColdSauces", "HotSauces", "Salads", "HotDesserts", "ColdDesserts"];
+      const validCategories = ["ClearSoups", "CreamSoups", "MainMeat", "MainFish", "MainVegan", "Sides", "ColdSauces", "HotSauces", "Salads", "HotDesserts", "ColdDesserts"];
       const created: any[] = [];
       const errors: { index: number; error: string }[] = [];
 

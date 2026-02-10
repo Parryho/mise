@@ -108,15 +108,12 @@ export class DatabaseStorage {
     if (filters?.searchIngredients && filters?.q && filters.q.length >= 2) {
       // Server-side ingredient search using EXISTS subquery
       const term = `%${filters.q.toLowerCase()}%`;
-      const results = await db.execute(sql`
-        SELECT r.* FROM recipes r
-        WHERE EXISTS (
+      return db.select().from(recipes).where(
+        sql`EXISTS (
           SELECT 1 FROM ingredients i
-          WHERE i.recipe_id = r.id AND LOWER(i.name) LIKE ${term}
-        )
-        ORDER BY r.name
-      `);
-      return results.rows as Recipe[];
+          WHERE i.recipe_id = ${recipes.id} AND LOWER(i.name) LIKE ${term}
+        )`
+      ).orderBy(recipes.name);
     }
     let query = db.select().from(recipes);
     if (filters?.category) {

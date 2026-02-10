@@ -50,6 +50,7 @@ export default function RecipeDetailDialog({ recipe, open, onOpenChange, readOnl
 
   useEffect(() => {
     if (open) {
+      setIngredients([]);
       loadIngredients();
       setPortions(recipe.portions);
     } else {
@@ -58,7 +59,6 @@ export default function RecipeDetailDialog({ recipe, open, onOpenChange, readOnl
   }, [open, recipe.id]);
 
   const loadIngredients = async () => {
-    if (ingredients.length > 0) return;
     setLoadingIngredients(true);
     try {
       const data = await apiFetch<Ingredient[]>(`/api/recipes/${recipe.id}/ingredients`);

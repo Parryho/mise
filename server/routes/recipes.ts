@@ -151,17 +151,17 @@ export function registerRecipeRoutes(app: Express) {
   // R2-T6: JSON Bulk Import (Admin only)
   app.post("/api/recipes/import-json", requireAdmin, async (req, res) => {
     try {
-      const recipes = req.body;
+      const importData = req.body;
 
-      if (!Array.isArray(recipes)) {
+      if (!Array.isArray(importData)) {
         return res.status(400).json({ error: "Body muss ein Array von Rezepten sein" });
       }
 
-      if (recipes.length === 0) {
+      if (importData.length === 0) {
         return res.status(400).json({ error: "Leeres Array" });
       }
 
-      if (recipes.length > 100) {
+      if (importData.length > 100) {
         return res.status(400).json({ error: "Maximal 100 Rezepte pro Import" });
       }
 
@@ -169,8 +169,8 @@ export function registerRecipeRoutes(app: Express) {
       const created: any[] = [];
       const errors: { index: number; error: string }[] = [];
 
-      for (let i = 0; i < recipes.length; i++) {
-        const r = recipes[i];
+      for (let i = 0; i < importData.length; i++) {
+        const r = importData[i];
 
         // Validate required fields
         if (!r.name || typeof r.name !== "string") {

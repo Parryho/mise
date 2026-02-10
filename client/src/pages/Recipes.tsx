@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, Clock, Users, PlusCircle, Link2, Loader2, ArrowLeft, Camera, FileUp, X, Package } from "lucide-react";
+import { Search, Clock, Users, PlusCircle, Link2, Loader2, ArrowLeft, Camera, FileUp, X } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { RECIPE_CATEGORIES } from "@shared/schema";
 import RecipeDetailDialog from "@/components/RecipeDetailDialog";
 import { getDefaultRecipeImage } from "@/lib/recipe-images";
-import { Link } from "wouter";
+
 
 // Debounce hook
 function useDebounce<T>(value: T, delay: number): T {
@@ -184,22 +184,15 @@ export default function Recipes() {
     <div className="p-4 space-y-4 pb-24">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-heading font-bold">{t("recipes")}</h1>
-        <div className="flex gap-2">
-          <Link href="/recipes/ingredients">
-            <Button variant="outline" size="sm" className="gap-1 text-xs">
-              <Package className="h-3.5 w-3.5" /> Stammdaten
-            </Button>
-          </Link>
-          <AddRecipeDialog />
-        </div>
+        <AddRecipeDialog />
       </div>
 
       {/* Global Search */}
       <div className="relative">
-        <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+        <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
         <Input
-          placeholder="Alle Rezepte durchsuchen..."
-          className="pl-9 bg-secondary/50 border-0"
+          placeholder="Rezept suchen..."
+          className="pl-10 h-12 text-base bg-secondary/50 border-border"
           value={globalSearch}
           onChange={(e) => setGlobalSearch(e.target.value)}
           data-testid="input-global-search-main"

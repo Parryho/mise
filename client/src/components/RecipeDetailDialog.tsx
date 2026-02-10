@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Minus, Plus, ExternalLink, Loader2, Trash2, Pencil, Download, FileText, X } from "lucide-react";
+import { Minus, Plus, ExternalLink, Loader2, Trash2, Pencil, X } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -141,10 +141,6 @@ export default function RecipeDetailDialog({ recipe, open, onOpenChange, readOnl
     }
   };
 
-  const exportRecipe = (format: 'pdf' | 'docx') => {
-    window.open(`/api/recipes/${recipe.id}/export/${format}`, '_blank');
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
@@ -171,16 +167,10 @@ export default function RecipeDetailDialog({ recipe, open, onOpenChange, readOnl
                   <Button variant="outline" size="sm" className="gap-1.5" onClick={startEdit}>
                     <Pencil className="h-3.5 w-3.5" /> Bearbeiten
                   </Button>
-                  <Button variant="outline" size="sm" className="gap-1.5" onClick={() => exportRecipe('pdf')}>
-                    <Download className="h-3.5 w-3.5" /> PDF
-                  </Button>
-                  <Button variant="outline" size="sm" className="gap-1.5" onClick={() => exportRecipe('docx')}>
-                    <FileText className="h-3.5 w-3.5" /> DOCX
-                  </Button>
                   {recipe.sourceUrl && (
                     <Button variant="outline" size="sm" className="gap-1.5" asChild>
                       <a href={recipe.sourceUrl} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="h-3.5 w-3.5" /> Website
+                        <ExternalLink className="h-3.5 w-3.5" /> Quelle
                       </a>
                     </Button>
                   )}
@@ -209,18 +199,18 @@ export default function RecipeDetailDialog({ recipe, open, onOpenChange, readOnl
                 <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
               </div>
 
-              <div className="grid grid-cols-3 gap-2">
-                <div className="space-y-2">
-                  <Label>Kategorie</Label>
-                  <Select value={editCategory} onValueChange={setEditCategory}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {CATEGORIES.map(cat => (
-                        <SelectItem key={cat.id} value={cat.id}>{cat.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="space-y-2">
+                <Label>Kategorie</Label>
+                <Select value={editCategory} onValueChange={setEditCategory}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIES.map(cat => (
+                      <SelectItem key={cat.id} value={cat.id}>{cat.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label>Portionen</Label>
                   <Input type="number" value={editPortions} onChange={(e) => setEditPortions(e.target.value)} />
@@ -233,12 +223,12 @@ export default function RecipeDetailDialog({ recipe, open, onOpenChange, readOnl
 
               <div className="space-y-2">
                 <Label>{t("allergens")} (A-N)</Label>
-                <div className="flex flex-wrap gap-1">
+                <div className="flex flex-wrap gap-1.5">
                   {Object.values(ALLERGENS).map(alg => (
                     <Badge
                       key={alg.code}
                       variant={editAllergens.includes(alg.code) ? "destructive" : "outline"}
-                      className="cursor-pointer text-xs"
+                      className="cursor-pointer min-h-[36px] min-w-[36px] px-2.5 text-sm flex items-center justify-center"
                       onClick={() => toggleAllergen(alg.code)}
                     >
                       {alg.code}
@@ -256,9 +246,9 @@ export default function RecipeDetailDialog({ recipe, open, onOpenChange, readOnl
                 </div>
                 <div className="space-y-2 max-h-48 overflow-y-auto">
                   {editIngredients.map((ing, idx) => (
-                    <div key={idx} className="flex gap-1 items-center">
+                    <div key={idx} className="flex gap-1.5 items-center">
                       <Input
-                        className="w-16 text-xs h-8"
+                        className="w-20 text-sm h-10"
                         type="number"
                         step="0.1"
                         value={ing.amount}
@@ -266,19 +256,19 @@ export default function RecipeDetailDialog({ recipe, open, onOpenChange, readOnl
                         placeholder="Menge"
                       />
                       <Input
-                        className="w-14 text-xs h-8"
+                        className="w-16 text-sm h-10"
                         value={ing.unit}
                         onChange={(e) => updateIngredient(idx, 'unit', e.target.value)}
-                        placeholder="Einheit"
+                        placeholder="Einh."
                       />
                       <Input
-                        className="flex-1 text-xs h-8"
+                        className="flex-1 text-sm h-10"
                         value={ing.name}
                         onChange={(e) => updateIngredient(idx, 'name', e.target.value)}
                         placeholder="Zutat"
                       />
-                      <Button type="button" size="icon" variant="ghost" className="h-8 w-8" onClick={() => removeIngredient(idx)}>
-                        <X className="h-3 w-3" />
+                      <Button type="button" size="icon" variant="ghost" className="h-10 w-10 shrink-0" onClick={() => removeIngredient(idx)}>
+                        <X className="h-4 w-4" />
                       </Button>
                     </div>
                   ))}
@@ -307,10 +297,10 @@ export default function RecipeDetailDialog({ recipe, open, onOpenChange, readOnl
                 <span className="font-medium text-sm flex items-center gap-2">
                   <Users className="h-4 w-4" /> {t("portions")}
                 </span>
-                <div className="flex items-center gap-3 bg-background rounded-md border border-border p-1">
-                  <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setPortions(Math.max(1, portions - 1))}><Minus className="h-3 w-3" /></Button>
-                  <span className="font-mono font-bold w-6 text-center">{portions}</span>
-                  <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setPortions(portions + 1)}><Plus className="h-3 w-3" /></Button>
+                <div className="flex items-center gap-2 bg-background rounded-md border border-border p-1">
+                  <Button size="icon" variant="ghost" className="h-9 w-9" onClick={() => setPortions(Math.max(1, portions - 1))}><Minus className="h-4 w-4" /></Button>
+                  <span className="font-mono font-bold w-8 text-center text-lg">{portions}</span>
+                  <Button size="icon" variant="ghost" className="h-9 w-9" onClick={() => setPortions(portions + 1)}><Plus className="h-4 w-4" /></Button>
                 </div>
               </div>
 

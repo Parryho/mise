@@ -10,19 +10,25 @@ Menüplanung, 6-Wochen-Rotation, HACCP-Dokumentation, Rezeptverwaltung, Personal
 
 ## Wo finde ich was?
 
-### Menüplanung & Rotation
+### Menüplanung & Rotation — `server/modules/menu/`
 | Datei | Beschreibung |
 |-------|-------------|
 | `client/src/pages/MenuPlan.tsx` | Wochenplan-UI mit Drag & Drop |
 | `client/src/pages/Rotation.tsx` | 6-Wochen-Rotation Editor |
 | `client/src/pages/RotationPrint.tsx` | Rotation Druckansicht |
 | `client/src/pages/SmartRotation.tsx` | AI-gestützte Rotation-Optimierung |
-| `server/rotation.ts` | Rotation CRUD + Wochenplan-Generierung |
-| `server/rotation-agent.ts` | AI Auto-Fill Agent (v2) mit kulinarischen Regeln |
-| `server/smart-rotation.ts` | Claude API Rotation-Optimierung |
+| `server/modules/menu/index.ts` | **Barrel** — Public API des Menu-Moduls |
+| `server/modules/menu/rotation.ts` | Rotation CRUD + Wochenplan-Generierung |
+| `server/modules/menu/rotation-agent.ts` | AI Auto-Fill Agent (v2) mit kulinarischen Regeln |
+| `server/modules/menu/smart-rotation.ts` | Claude API Rotation-Optimierung |
+| `server/modules/menu/production.ts` | Produktionslisten-Generierung |
+| `server/modules/menu/shopping.ts` | Einkaufskonsolidierung |
+| `server/modules/menu/costs.ts` | Food-Cost Analyse |
+| `server/modules/menu/public-menu.ts` | Public Menu API |
+| `server/modules/menu/buffet-cards.ts` | Buffet-Karten Generierung |
 | `shared/constants.ts` | Meal-Slots: `soup, main1, side1a, side1b, main2, side2a, side2b, dessert` |
 
-### Rezepte & Import
+### Rezepte & Allergene — `server/modules/recipe/`
 | Datei | Beschreibung |
 |-------|-------------|
 | `client/src/pages/Recipes.tsx` | Rezept-Bibliothek mit Suche/Filter |
@@ -32,27 +38,28 @@ Menüplanung, 6-Wochen-Rotation, HACCP-Dokumentation, Rezeptverwaltung, Personal
 | `client/src/components/RecipeMediaUpload.tsx` | Foto-Upload |
 | `client/src/components/RecipeMediaGallery.tsx` | Foto-Galerie |
 | `client/src/components/IntelligentScaling.tsx` | Intelligentes Portions-Scaling |
-| `server/llm-recipe-import.ts` | Claude API Rezept-Import |
-| `server/recipe-suggestions.ts` | AI Rezept-Scoring |
-| `server/intelligent-scaling.ts` | Nicht-lineares Scaling |
-| `server/recipe-media.ts` | Foto-Upload (Multer) |
-| `server/scraper.ts` | URL-Rezept-Scraping (Cheerio, JSON-LD) |
-| `script/batch-import-gutekueche.ts` | Batch-Scraping von gutekueche.at + chefkoch.de |
-| `script/seed-ingredients.ts` | 108 Rezepte mit Zutaten befüllen |
-| `client/src/lib/recipe-images.ts` | Kategorie-spezifische Default-Bilder |
-| `shared/categorizer.ts` | Auto-Kategorisierung |
-
-### Allergene
-| Datei | Beschreibung |
-|-------|-------------|
-| `shared/allergens.ts` | 14 EU-Allergene (A-R Codes), Parser + Formatter |
 | `client/src/components/AllergenBadge.tsx` | Allergen-Badge Komponente |
 | `client/src/components/AllergenAutoDetect.tsx` | AI Allergen-Erkennung UI |
 | `client/src/components/AllergenConflictBanner.tsx` | Konflikt-Warnung |
 | `client/src/pages/AllergenOverview.tsx` | Tägliche Allergen-Matrix |
 | `client/src/pages/GuestProfiles.tsx` | Gäste-Allergenprofile |
-| `server/allergens.ts` | Allergen-Matrix Generierung |
-| `server/allergen-detection.ts` | AI Allergen-Erkennung |
+| `server/modules/recipe/index.ts` | **Barrel** — Public API des Recipe-Moduls |
+| `server/modules/recipe/llm-import.ts` | Claude API Rezept-Import |
+| `server/modules/recipe/suggestions.ts` | AI Rezept-Scoring |
+| `server/modules/recipe/scaling.ts` | Nicht-lineares Scaling |
+| `server/modules/recipe/media.ts` | Foto-Upload (Multer) |
+| `server/modules/recipe/scraper.ts` | URL-Rezept-Scraping (Cheerio, JSON-LD) |
+| `server/modules/recipe/sub-recipes.ts` | Rezept-in-Rezept Auflösung |
+| `server/modules/recipe/allergen-detection.ts` | AI Allergen-Erkennung |
+| `server/modules/recipe/allergen-matrix.ts` | Allergen-Matrix Generierung |
+| `server/modules/recipe/auto-tag.ts` | Auto-Tagging (cuisine, flavor, dish type) |
+| `server/modules/recipe/pairing-engine.ts` | Adaptive Beilagen-Bewertung |
+| `server/modules/recipe/quiz-feedback.ts` | Quiz + Feedback Handlers |
+| `shared/allergens.ts` | 14 EU-Allergene (A-R Codes), Parser + Formatter |
+| `shared/categorizer.ts` | Auto-Kategorisierung |
+| `script/batch-import-gutekueche.ts` | Batch-Scraping von gutekueche.at + chefkoch.de |
+| `script/seed-ingredients.ts` | 108 Rezepte mit Zutaten befüllen |
+| `client/src/lib/recipe-images.ts` | Kategorie-spezifische Default-Bilder |
 
 ### HACCP & Temperatur
 | Datei | Beschreibung |
@@ -91,9 +98,7 @@ Menüplanung, 6-Wochen-Rotation, HACCP-Dokumentation, Rezeptverwaltung, Personal
 | `client/src/pages/ShoppingList.tsx` | Einkaufsliste mit Lieferanten |
 | `client/src/pages/MasterIngredients.tsx` | Zutatenstammdaten mit Preisen |
 | `client/src/pages/Suppliers.tsx` | Lieferanten-Verwaltung |
-| `server/production.ts` | Produktionslisten-Generierung |
-| `server/shopping.ts` | Einkaufskonsolidierung |
-| `server/costs.ts` | Food-Cost Analyse |
+| Server-Logik in `server/modules/menu/` | `production.ts`, `shopping.ts`, `costs.ts` |
 
 ### Analytics & Reports
 | Datei | Beschreibung |
@@ -112,8 +117,7 @@ Menüplanung, 6-Wochen-Rotation, HACCP-Dokumentation, Rezeptverwaltung, Personal
 | `client/src/pages/public/DigitalSignage.tsx` | Digital Signage für Lobby (`/signage/:location`) |
 | `client/src/pages/BuffetCards.tsx` | Druckbare Buffet-Karten |
 | `client/src/pages/QRGenerator.tsx` | QR-Code Generator |
-| `server/public-menu.ts` | Public Menu API |
-| `server/buffet-cards.ts` | Buffet-Karten Generierung |
+| Server-Logik in `server/modules/menu/` | `public-menu.ts`, `buffet-cards.ts` |
 
 ### Agent Team (Küchen-Orchestrator)
 | Datei | Beschreibung |
@@ -167,8 +171,24 @@ Menüplanung, 6-Wochen-Rotation, HACCP-Dokumentation, Rezeptverwaltung, Personal
 ### Einstiegspunkte
 - **Server**: `server/index.ts` — Express App Setup, CORS, Logging, Error Handler
 - **Routes**: `server/routes/index.ts` — Orchestrator, 15 modulare Route-Dateien unter `server/routes/`
+- **Recipe Module**: `server/modules/recipe/index.ts` — Barrel für Rezepte + Allergene (11 Dateien)
+- **Menu Module**: `server/modules/menu/index.ts` — Barrel für Menüplanung + Rotation (8 Dateien)
 - **Client**: `client/src/main.tsx` — React Entry + Sentry + i18n Init
 - **Router**: `client/src/App.tsx` — Wouter Router + Auth + Layout
+
+### Server-Modul-Architektur
+```
+server/
+  modules/
+    recipe/          # Rezepte + Allergene (11 Dateien)
+      index.ts       # Public API Barrel — alle Imports über diesen Pfad
+    menu/            # Menüplanung + Rotation + Produktion (8 Dateien)
+      index.ts       # Public API Barrel — alle Imports über diesen Pfad
+  routes/            # 15 Route-Dateien (importieren aus modules/)
+  db.ts              # PostgreSQL Connection Pool
+  storage.ts         # Data Access Layer (shared)
+```
+**Cross-Domain**: `menu → recipe` (one-way). Menu-Modul importiert `resolveRecipeIngredients` + `loadAllScores` aus Recipe-Modul. Keine umgekehrte Abhängigkeit.
 
 ### Datenbank
 - **Schema**: `shared/schema.ts` — Drizzle ORM Schema (22 Tabellen + Zod Validation)
@@ -235,8 +255,10 @@ Menüplanung, 6-Wochen-Rotation, HACCP-Dokumentation, Rezeptverwaltung, Personal
 - **Client Pages**: PascalCase (`MenuPlan.tsx`, `HaccpCompliance.tsx`)
 - **Client Components**: PascalCase (`AllergenBadge.tsx`)
 - **Client Hooks**: camelCase mit `use`-Prefix (`useTranslation.ts`)
-- **Server Module**: kebab-case (`rotation-agent.ts`, `haccp-anomaly.ts`)
+- **Server Module**: kebab-case unter `server/modules/{domain}/` (`rotation-agent.ts`, `allergen-matrix.ts`)
+- **Server Sonstige**: kebab-case direkt unter `server/` (`haccp-anomaly.ts`, `analytics.ts`)
 - **Shared Module**: camelCase (`allergens.ts`, `constants.ts`)
+- **Imports aus Modulen**: Immer über Barrel `server/modules/recipe` oder `server/modules/menu`
 
 ### Allergen-Codes (EU-Verordnung 1169/2011, AT-konform)
 ```
@@ -291,7 +313,7 @@ Definiert in `shared/constants.ts` → `MEAL_SLOTS`.
 
 ## Agents & Automatisierung
 
-### Rotation-Agent v2 (`server/rotation-agent.ts`)
+### Rotation-Agent v2 (`server/modules/menu/rotation-agent.ts`)
 AI Auto-Fill für 6-Wochen-Rotation mit kulinarischen Regeln:
 - **DISH_META**: ~120 Einträge mit Metadaten (selfContained, dessertMain, preferredStarches, forbiddenStarches)
 - **Shared Rule Templates**: PANIERT, BRATEN, GULASCH, GESCHNETZELTES, FISCH, SC (selfContained), DM (dessertMain)
@@ -301,7 +323,7 @@ AI Auto-Fill für 6-Wochen-Rotation mit kulinarischen Regeln:
 
 ### Claude AI Integration
 - **API**: `@anthropic-ai/sdk` — Claude für Rezept-Import, Rotation-Optimierung, Allergen-Erkennung
-- **Module**: `server/llm-recipe-import.ts`, `server/smart-rotation.ts`, `server/allergen-detection.ts`, `server/recipe-suggestions.ts`
+- **Module**: `server/modules/recipe/llm-import.ts`, `server/modules/menu/smart-rotation.ts`, `server/modules/recipe/allergen-detection.ts`, `server/modules/recipe/suggestions.ts`
 
 ### Claude Code Agents (`.claude/agents/`)
 - `devops-expert.md` — DevOps Spezialist

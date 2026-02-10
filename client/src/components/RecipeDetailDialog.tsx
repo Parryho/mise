@@ -14,7 +14,7 @@ import { Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RECIPE_CATEGORIES } from "@shared/schema";
 import RecipeMediaGallery from "@/components/RecipeMediaGallery";
-import { getDefaultRecipeImage } from "@/lib/recipe-images";
+import { getDefaultRecipeImage, getPlaceholderImage } from "@/lib/recipe-images";
 import RecipeMediaUpload from "@/components/RecipeMediaUpload";
 
 const CATEGORIES = RECIPE_CATEGORIES;
@@ -151,6 +151,7 @@ export default function RecipeDetailDialog({ recipe, open, onOpenChange, readOnl
             loading="lazy"
             decoding="async"
             className="w-full h-full object-cover"
+            onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = getPlaceholderImage(recipe.category); }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
           <div className="absolute bottom-4 left-4 right-4">

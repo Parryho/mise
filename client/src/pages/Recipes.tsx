@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { RECIPE_CATEGORIES } from "@shared/schema";
 import RecipeDetailDialog from "@/components/RecipeDetailDialog";
-import { getDefaultRecipeImage } from "@/lib/recipe-images";
+import { getDefaultRecipeImage, getPlaceholderImage } from "@/lib/recipe-images";
 
 
 // Debounce hook
@@ -640,6 +640,7 @@ function RecipeCard({ recipe }: { recipe: Recipe }) {
             loading="lazy"
             decoding="async"
             className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = getPlaceholderImage(recipe.category); }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
           <div className="absolute bottom-2.5 left-3 right-3 text-white">

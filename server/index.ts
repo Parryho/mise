@@ -23,7 +23,7 @@ app.use(helmet({
       scriptSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      imgSrc: ["'self'", "data:", "blob:", "https://images.pexels.com", "https://images.unsplash.com"],
+      imgSrc: ["'self'", "data:", "blob:", "https://img.chefkoch-cdn.de", "https://www.gutekueche.at", "https://images.lecker.de", "https://images.pexels.com", "https://images.unsplash.com"],
       connectSrc: ["'self'"],
       frameSrc: ["'none'"],
       objectSrc: ["'none'"],

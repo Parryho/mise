@@ -28,9 +28,11 @@
 
 import { storage } from "./storage";
 import type { Recipe, RotationSlot } from "@shared/schema";
-import type { MealSlotName } from "@shared/constants";
+import { CUISINE_TYPES, type MealSlotName, type CuisineType } from "@shared/constants";
 import { loadAllScores } from "./pairing-engine";
 import { pool } from "./db";
+import { isCuisineCompatible } from "@shared/utils/cuisine-compatibility";
+import { isNeutralSideName } from "@shared/utils/neutral-sides";
 
 // ============================================================
 // Starch Groups — Kollisionsvermeidung innerhalb einer Mahlzeit
@@ -488,12 +490,27 @@ function getAdaptiveEpsilon(totalRatings: number, base = 0.2): number {
   return base + (0.5 - base) * Math.exp(-0.01 * (totalRatings - 50));
 }
 
+function toCuisineType(value: string | null | undefined): CuisineType | null {
+  if (!value) return null;
+  return value in CUISINE_TYPES ? (value as CuisineType) : null;
+}
+
+async function clearSlotIfOverwrite(
+  storageAdapter: typeof storage,
+  slot: { id: number; recipeId: number | null },
+  overwrite: boolean,
+) {
+  if (!overwrite) return;
+  if (slot.recipeId === null) return;
+  await storageAdapter.updateRotationSlot(slot.id, { recipeId: null });
+}
+
 /**
  * Pick a starch side dish respecting culinary rules:
  * forbidden starches, used IDs/groups, then preferred, then any remaining.
  */
 function pickStarchFor(
-  mainName: string,
+  mainRecipe: Recipe,
   starchPool: Recipe[],
   usedIds: Set<number>,
   usedStarchGroups: Set<string>,
@@ -502,30 +519,47 @@ function pickStarchFor(
 ): Recipe | null {
   if (starchPool.length === 0) return null;
 
-  const meta = getDishMeta(mainName);
+  if (mainRecipe.dishType === "selfContained" || mainRecipe.dishType === "dessertMain") {
+    console.log(`[rotation-agent] Skip starch for ${mainRecipe.name} (${mainRecipe.dishType})`);
+    return null;
+  }
+
+  const meta = getDishMeta(mainRecipe.name);
 
   const forbiddenNames = new Set(meta.forbiddenStarches || []);
-  const candidates = starchPool.filter(r => !forbiddenNames.has(r.name));
-
-  const withoutUsed = candidates.filter(r => {
+  const base = starchPool.filter(r => {
     if (usedIds.has(r.id)) return false;
+    if (forbiddenNames.has(r.name)) return false;
     return !usedStarchGroups.has(getStarchGroup(r));
   });
+
+  let candidates = base;
+
+  if (mainRecipe.cuisineType) {
+    const mainCuisine = toCuisineType(mainRecipe.cuisineType);
+    if (mainCuisine) {
+      candidates = base.filter(r => isCuisineCompatible(mainCuisine, toCuisineType(r.cuisineType)));
+    }
+
+    if (candidates.length === 0) {
+      candidates = base.filter(r => isNeutralSideName(r.name));
+    }
+
+    if (candidates.length === 0) {
+      candidates = base;
+    }
+  }
+
+  if (candidates.length === 0) return null;
 
   // Preferred starches first (DISH_META hard constraint)
   if (meta.preferredStarches?.length) {
     const preferredNames = new Set(meta.preferredStarches);
-    const preferred = withoutUsed.filter(r => preferredNames.has(r.name));
+    const preferred = candidates.filter(r => preferredNames.has(r.name));
     if (preferred.length > 0) return pickWeighted(preferred, scoreMap, epsilon);
   }
 
-  if (withoutUsed.length > 0) return pickWeighted(withoutUsed, scoreMap, epsilon);
-
-  // Fallback: relax starch-group constraint (still respect forbidden + usedIds)
-  const relaxed = candidates.filter(r => !usedIds.has(r.id));
-  if (relaxed.length > 0) return pickWeighted(relaxed, scoreMap, epsilon);
-
-  return pickRandom(candidates.length > 0 ? candidates : starchPool);
+  return pickWeighted(candidates, scoreMap, epsilon);
 }
 
 /**
@@ -533,7 +567,7 @@ function pickStarchFor(
  * used IDs, then preferred, then any remaining.
  */
 function pickVeggieFor(
-  mainName: string,
+  mainRecipe: Recipe,
   veggiePool: Recipe[],
   usedIds: Set<number>,
   scoreMap?: Map<number, number>,
@@ -541,20 +575,42 @@ function pickVeggieFor(
 ): Recipe | null {
   if (veggiePool.length === 0) return null;
 
-  const meta = getDishMeta(mainName);
+  if (mainRecipe.dishType === "dessertMain") {
+    console.log(`[rotation-agent] Skip veggie for ${mainRecipe.name} (dessertMain)`);
+    return null;
+  }
 
-  const available = veggiePool.filter(r => !usedIds.has(r.id));
+  const meta = getDishMeta(mainRecipe.name);
+
+  const base = veggiePool.filter(r => !usedIds.has(r.id));
+
+  let candidates = base;
+
+  if (mainRecipe.cuisineType) {
+    const mainCuisine = toCuisineType(mainRecipe.cuisineType);
+    if (mainCuisine) {
+      candidates = base.filter(r => isCuisineCompatible(mainCuisine, toCuisineType(r.cuisineType)));
+    }
+
+    if (candidates.length === 0) {
+      candidates = base.filter(r => isNeutralSideName(r.name));
+    }
+
+    if (candidates.length === 0) {
+      candidates = base;
+    }
+  }
+
+  if (candidates.length === 0) return null;
 
   // Preferred veggies first (DISH_META hard constraint)
   if (meta.preferredVeggies?.length) {
     const preferredNames = new Set(meta.preferredVeggies);
-    const preferred = available.filter(r => preferredNames.has(r.name));
+    const preferred = candidates.filter(r => preferredNames.has(r.name));
     if (preferred.length > 0) return pickWeighted(preferred, scoreMap, epsilon);
   }
 
-  if (available.length > 0) return pickWeighted(available, scoreMap, epsilon);
-
-  return pickRandom(veggiePool);
+  return pickWeighted(candidates, scoreMap, epsilon);
 }
 
 /**
@@ -778,16 +834,13 @@ export async function autoFillRotation(
 
               case "side1a": {
                 if (main1Recipe) {
-                  const meta = getDishMeta(main1Recipe.name);
-                  if (meta.selfContained || meta.dessertMain) {
-                    if (overwrite && slot.recipeId !== null) {
-                      await storage.updateRotationSlot(slot.id, { recipeId: null });
-                    }
+                  if (main1Recipe.dishType === "selfContained" || main1Recipe.dishType === "dessertMain") {
+                    await clearSlotIfOverwrite(storage, slot, overwrite);
                     skipped++;
                     continue;
                   }
                   const mainScores = starchScores.get(main1Recipe.id);
-                  picked = pickStarchFor(main1Recipe.name, pools.starch, dayUsedIds, mealUsedStarchGroups, mainScores, epsilon);
+                  picked = pickStarchFor(main1Recipe, pools.starch, dayUsedIds, mealUsedStarchGroups, mainScores, epsilon);
                   if (picked) mealUsedStarchGroups.add(getStarchGroup(picked));
                 }
                 break;
@@ -795,32 +848,26 @@ export async function autoFillRotation(
 
               case "side1b": {
                 if (main1Recipe) {
-                  const meta = getDishMeta(main1Recipe.name);
-                  if (meta.dessertMain) {
-                    if (overwrite && slot.recipeId !== null) {
-                      await storage.updateRotationSlot(slot.id, { recipeId: null });
-                    }
+                  if (main1Recipe.dishType === "dessertMain") {
+                    await clearSlotIfOverwrite(storage, slot, overwrite);
                     skipped++;
                     continue;
                   }
                   const mainScores = veggieScores.get(main1Recipe.id);
-                  picked = pickVeggieFor(main1Recipe.name, pools.veg, dayUsedIds, mainScores, epsilon);
+                  picked = pickVeggieFor(main1Recipe, pools.veg, dayUsedIds, mainScores, epsilon);
                 }
                 break;
               }
 
               case "side2a": {
                 if (main2Recipe) {
-                  const meta = getDishMeta(main2Recipe.name);
-                  if (meta.selfContained || meta.dessertMain) {
-                    if (overwrite && slot.recipeId !== null) {
-                      await storage.updateRotationSlot(slot.id, { recipeId: null });
-                    }
+                  if (main2Recipe.dishType === "selfContained" || main2Recipe.dishType === "dessertMain") {
+                    await clearSlotIfOverwrite(storage, slot, overwrite);
                     skipped++;
                     continue;
                   }
                   const mainScores = starchScores.get(main2Recipe.id);
-                  picked = pickStarchFor(main2Recipe.name, pools.starch, dayUsedIds, mealUsedStarchGroups, mainScores, epsilon);
+                  picked = pickStarchFor(main2Recipe, pools.starch, dayUsedIds, mealUsedStarchGroups, mainScores, epsilon);
                   if (picked) mealUsedStarchGroups.add(getStarchGroup(picked));
                 }
                 break;
@@ -828,16 +875,13 @@ export async function autoFillRotation(
 
               case "side2b": {
                 if (main2Recipe) {
-                  const meta = getDishMeta(main2Recipe.name);
-                  if (meta.dessertMain) {
-                    if (overwrite && slot.recipeId !== null) {
-                      await storage.updateRotationSlot(slot.id, { recipeId: null });
-                    }
+                  if (main2Recipe.dishType === "dessertMain") {
+                    await clearSlotIfOverwrite(storage, slot, overwrite);
                     skipped++;
                     continue;
                   }
                   const mainScores = veggieScores.get(main2Recipe.id);
-                  picked = pickVeggieFor(main2Recipe.name, pools.veg, dayUsedIds, mainScores, epsilon);
+                  picked = pickVeggieFor(main2Recipe, pools.veg, dayUsedIds, mainScores, epsilon);
                 }
                 break;
               }

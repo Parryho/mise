@@ -20,7 +20,8 @@
     "test:coverage": "vitest run --coverage",
     "test:ui": "vitest --ui",
     "test:e2e": "playwright test",
-    "test:e2e:headed": "playwright test --headed"
+    "test:e2e:headed": "playwright test --headed",
+    "demo:cuisine-fallback": "node script/cuisine-fallback-demo.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.73.0",

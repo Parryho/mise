@@ -608,7 +608,7 @@ Phase 2 (Tag-System) bringt bereits 80% Verbesserung. Pairing-Scores sind option
 | 13.9 | JUFA Rezeptdatenbank.xlsb Import-Script | ✅ Done | 10.02. |
 | 13.10 | Multi-Source Batch-Import (6 Seiten + URL-Validierung) | ✅ Done | 10.02. |
 
-**Ergebnis:** 151 Rezepte mit Zutaten, 102 verified, 74 auto. Multi-Source: gutekueche.at + chefkoch.de + ichkoche.at + eatsmarter.de + lecker.de + kochbar.de + kuechengoetter.de.
+**Ergebnis:** Alle 421 Rezepte haben Zutaten + Allergene. Batch-Import: 343 Rezepte (chefkoch.de: 215, gutekueche.at: 115, lecker.de: 13). Backfill: 20 Rezepte nachträglich Allergene erkannt. Multi-Source: gutekueche.at + chefkoch.de + ichkoche.at + eatsmarter.de + lecker.de + kochbar.de + kuechengoetter.de.
 
 ---
 

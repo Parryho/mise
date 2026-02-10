@@ -11,7 +11,10 @@
 |-------|--------|
 | `MASTERPLAN.md` | **Diese Datei** -- Gesamtübersicht, Phasen, Roadmap |
 | `CLAUDE.md` | Datei-Map, DB-Tabellen, Konventionen, Scripts |
+| `docs/CORE_DEFINITION.md` | Produkt-Vision, Goldene Regeln, Erfolgsdefinition |
 | `.claude/rules/design_system_rules.md` | Figma-to-Code Mapping, Tokens, Components |
+| `.claude/rules/guardrails.md` | Claude Guardrails (Core-Focus, No Feature Expansion) |
+| `.claude/rules/feature-stop.md` | Feature-Stop-Liste (Intentional Non-Goals) |
 | `docs/FIGMA_DESIGN_BRIEF.md` | 26 Figma AI Prompts für alle Screens |
 | `docs/api-contract.md` | API-Endpoints Dokumentation |
 | `docs/auth-strategy.md` | Session-basierte Auth-Architektur |
@@ -243,6 +246,17 @@ Der Markt teilt sich in teure Enterprise-Lösungen (Apicbase EUR500+/Mo, Galley 
 - [ ] 11.8: dishType-Checks in slot-assignment
 - [ ] 11.9: Production-Test mit overwrite=true
 
+### Phase 12: Domain-Modularisierung (10.02.2026)
+
+| # | Task | Status | Datum |
+|---|------|--------|-------|
+| 12.1 | Core Definition + Guardrails + Feature-Stop-Regeln | ✅ Done | 10.02. |
+| 12.2 | `server/modules/recipe/` — 11 Dateien (Rezepte + Allergene) | ✅ Done | 10.02. |
+| 12.3 | `server/modules/menu/` — 8 Dateien (Menüplanung + Rotation) | ✅ Done | 10.02. |
+| 12.4 | Barrel index.ts pro Modul (Public API) | ✅ Done | 10.02. |
+| 12.5 | Route- + Adapter- + Test-Imports aktualisiert | ✅ Done | 10.02. |
+| 12.6 | CLAUDE.md mit neuen Modul-Pfaden aktualisiert | ✅ Done | 10.02. |
+
 ---
 
 ## 4. 🔥 HÖCHSTE PRIORITÄT: Menüplan-Generator V2
@@ -260,7 +274,7 @@ Der Markt teilt sich in teure Enterprise-Lösungen (Apicbase EUR500+/Mo, Galley 
 
 #### Task 11.7: cuisine-aware Beilagen-Auswahl
 
-**Datei:** `server/rotation-agent.ts`
+**Datei:** `server/modules/menu/rotation-agent.ts`
 ```typescript
 // In pickStarchFor() ergänzen:
 async function pickStarchFor(
@@ -332,7 +346,7 @@ async function pickVeggieFor(
 
 #### Task 11.8: dishType-Checks in autoFillRotation()
 
-**Datei:** `server/rotation-agent.ts`
+**Datei:** `server/modules/menu/rotation-agent.ts`
 ```typescript
 // In autoFillRotation(), case-Statements ergänzen:
 
@@ -503,7 +517,7 @@ Phase 2 (Tag-System) bringt bereits 80% Verbesserung. Pairing-Scores sind option
 | M10 | Session-Fixation-Schutz bei Login | Security | 2h |
 | M11 | Input-Sanitization für HTML-Content (XSS bei Notizen) | Security | 3h |
 | M12 | Fehlende CORS-Allowlist für Produktion | Security | 1h |
-| M13 | Storage-Klasse zu groß (1 Datei, alle Tabellen) | Architektur | 8h |
+| M13 | Storage-Klasse zu groß (server/storage.ts, alle Tabellen) | Architektur | 8h |
 | M14 | Keine Retry-Logik für Claude API Calls | Architektur | 3h |
 
 ---
@@ -552,6 +566,7 @@ Phase 2 (Tag-System) bringt bereits 80% Verbesserung. Pairing-Scores sind option
 09.02.2026: Phase 9 (UX-Optimierung + Code Audit Start)
 10.02.2026: Phase 10 (Code Audit KRITISCH + HOCH done)
             Phase 11 (Intelligente Menüplanung Start)
+            Phase 12 (Domain-Modularisierung: recipe + menu)
 ```
 
 ### Aktuelle Priorities
@@ -580,10 +595,10 @@ Phase 2 (Tag-System) bringt bereits 80% Verbesserung. Pairing-Scores sind option
 
 ---
 
-## 12. Nächster Terminal-Befehl
+## 13. Nächster Terminal-Befehl
 ```bash
 # 🔥 JETZT: Generator anpassen (Phase 11.7-11.9)
-code server/rotation-agent.ts
+code server/modules/menu/rotation-agent.ts
 
 # Suche nach "async function pickStarchFor"
 # Füge cuisine-filtering + dishType-checks ein (siehe Abschnitt 4)

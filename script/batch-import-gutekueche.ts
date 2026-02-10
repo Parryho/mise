@@ -5,7 +5,9 @@
  * parst JSON-LD (Schema.org Recipe), und schreibt Zutaten + Schritte in die DB.
  *
  * Features:
- * - Rate Limiting (2s Pause zwischen Requests)
+ * - Resumable: persists discovered source_url so DDG is not re-queried
+ * - Prefers stored source_url over DDG search
+ * - Jittered delays to avoid rate-limiting
  * - Idempotent (überspringt Rezepte mit vorhandenen Daten)
  * - Fallback auf chefkoch.de wenn gutekueche.at kein Ergebnis liefert
  * - Detailliertes Logging
@@ -28,7 +30,8 @@ const LIMIT = (() => {
   return idx >= 0 ? parseInt(process.argv[idx + 1], 10) : 0;
 })();
 
-const DELAY_MS = 3000; // 3s between requests to avoid rate limiting
+const SEARCH_DELAY_MS = 8000; // delay after DDG search to avoid rate-limiting
+const LOOP_DELAY_MS = 2500;   // delay between recipe iterations
 const USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
 // ── Helpers ─────────────────────────────────────────────────
@@ -37,11 +40,14 @@ function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function jitter(ms: number, pct = 0.4) {
+  const d = ms * pct;
+  return Math.round(ms - d + Math.random() * (2 * d));
+}
+
 function log(msg: string) {
   console.log(`[batch-import] ${msg}`);
 }
-
-// ── Search gutekueche.at for a recipe URL ───────────────────
 
 // ── Search via DuckDuckGo HTML (bot-friendly, no JS needed) ─
 
@@ -93,7 +99,7 @@ async function searchRecipeUrl(recipeName: string): Promise<{ url: string; sourc
       continue;
     }
 
-    await sleep(1000);
+    await sleep(jitter(1000));
   }
 
   return null;
@@ -256,9 +262,10 @@ async function main() {
   log(`Rezepte ohne Zutaten oder Schritte: ${recipesNeedingData.length}`);
 
   let updated = 0;
-  let skipped = 0;
   let notFound = 0;
   let errors = 0;
+  let storedUrlHits = 0;
+  let ddgSearches = 0;
 
   for (const recipe of recipesNeedingData) {
     const needsIngredients = parseInt(recipe.ingredient_count) === 0;
@@ -266,26 +273,49 @@ async function main() {
 
     log(`── ${recipe.name} (ID ${recipe.id}) — braucht: ${needsIngredients ? "Zutaten " : ""}${needsSteps ? "Schritte" : ""}`);
 
-    // Search via Google site:gutekueche.at / site:chefkoch.de
-    const found = await searchRecipeUrl(recipe.name);
+    // A) Prefer stored source_url over DDG search
+    let found: { url: string; source: string } | null = null;
+
+    if (recipe.source_url && typeof recipe.source_url === "string" && recipe.source_url.startsWith("http")) {
+      found = {
+        url: recipe.source_url,
+        source: recipe.source_url.includes("chefkoch.de") ? "chefkoch.de" : "gutekueche.at",
+      };
+      log(`   → stored: ${found.url}`);
+      storedUrlHits++;
+    } else {
+      found = await searchRecipeUrl(recipe.name);
+      ddgSearches++;
+      // Jittered delay after DDG search
+      await sleep(jitter(SEARCH_DELAY_MS));
+    }
 
     if (!found) {
       log(`   ✗ Nicht gefunden auf gutekueche.at / chefkoch.de`);
       notFound++;
-      await sleep(DELAY_MS);
+      await sleep(jitter(LOOP_DELAY_MS));
       continue;
     }
 
     const { url, source } = found;
-    log(`   → ${source}: ${url}`);
-    await sleep(1000); // Extra delay before scraping
+    if (!recipe.source_url || !recipe.source_url.startsWith("http")) {
+      log(`   → ddg ${source}: ${url}`);
+    }
+
+    // B) Persist discovered URL so subsequent runs skip DDG
+    if (!recipe.source_url || !recipe.source_url.startsWith("http")) {
+      if (!DRY_RUN) {
+        await pool.query(`UPDATE recipes SET source_url = $1 WHERE id = $2`, [url, recipe.id]);
+        log(`   ↳ saved source_url`);
+      }
+    }
 
     // Scrape the recipe page
     const scraped = await scrapeRecipeUrl(url);
     if (!scraped || (scraped.ingredients.length === 0 && scraped.steps.length === 0)) {
       log(`   ✗ Keine Daten gescrapt`);
       errors++;
-      await sleep(DELAY_MS);
+      await sleep(jitter(LOOP_DELAY_MS));
       continue;
     }
 
@@ -293,7 +323,7 @@ async function main() {
 
     if (DRY_RUN) {
       updated++;
-      await sleep(DELAY_MS);
+      await sleep(jitter(LOOP_DELAY_MS));
       continue;
     }
 
@@ -342,7 +372,7 @@ async function main() {
       errors++;
     }
 
-    await sleep(DELAY_MS);
+    await sleep(jitter(LOOP_DELAY_MS));
   }
 
   // Summary
@@ -351,7 +381,7 @@ async function main() {
   log(`Aktualisiert: ${updated}`);
   log(`Nicht gefunden: ${notFound}`);
   log(`Fehler: ${errors}`);
-  log(`Übersprungen: ${skipped}`);
+  log(`URL aus DB: ${storedUrlHits} | DDG-Suchen: ${ddgSearches}`);
   log("=== Fertig ===");
 
   await pool.end();

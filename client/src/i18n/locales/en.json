@@ -71,7 +71,22 @@
     "guests": "Guests",
     "catering": "Catering",
     "reports": "Reports",
-    "settings": "Settings"
+    "settings": "Settings",
+    "home": "Home",
+    "planning": "Planning",
+    "quiz": "Quiz",
+    "staff": "Staff"
+  },
+  "layout": {
+    "welcome": "Welcome,",
+    "guest": "Guest",
+    "lightMode": "Light Mode",
+    "darkMode": "Dark Mode",
+    "profile": "Profile",
+    "role": "Role",
+    "language": "Language",
+    "theme": "Appearance",
+    "appSettings": "App Settings"
   },
   "auth": {
     "login": "Log in",

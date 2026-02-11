@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import i18nInstance from "@/i18n";
 
 // Translations
 export type Language = "de" | "en" | "tr" | "uk";
@@ -295,15 +296,28 @@ type TranslationSchema = typeof TRANSLATIONS.de;
 type StringKeys = { [K in keyof TranslationSchema]: TranslationSchema[K] extends string ? K : never }[keyof TranslationSchema];
 
 export const useTranslation = () => {
-  const [lang, setLang] = useState<Language>(() => {
-    const saved = localStorage.getItem("chefmate-lang");
-    return (saved as Language) || "de";
+  const [lang, setLangState] = useState<Language>(() => {
+    // Read from react-i18next's language (single source of truth)
+    const i18nLang = i18nInstance.language?.substring(0, 2);
+    if (i18nLang === "de" || i18nLang === "en" || i18nLang === "tr" || i18nLang === "uk") return i18nLang;
+    return "de";
   });
 
+  // Listen to react-i18next language changes
   useEffect(() => {
-    localStorage.setItem("chefmate-lang", lang);
-    document.documentElement.lang = lang;
-  }, [lang]);
+    const handleChange = (lng: string) => {
+      const short = lng.substring(0, 2) as Language;
+      setLangState(short);
+    };
+    i18nInstance.on("languageChanged", handleChange);
+    return () => { i18nInstance.off("languageChanged", handleChange); };
+  }, []);
+
+  const setLang = useCallback((newLang: Language) => {
+    setLangState(newLang);
+    // Sync to react-i18next so new-system components also update
+    i18nInstance.changeLanguage(newLang);
+  }, []);
 
   const t = (key: StringKeys | string): string => {
     const translations = TRANSLATIONS[lang] as Record<string, any>;

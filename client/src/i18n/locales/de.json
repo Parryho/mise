@@ -71,7 +71,22 @@
     "guests": "G\u00e4ste",
     "catering": "Catering",
     "reports": "Reports",
-    "settings": "Einstellungen"
+    "settings": "Einstellungen",
+    "home": "Home",
+    "planning": "Planung",
+    "quiz": "Quiz",
+    "staff": "Personal"
+  },
+  "layout": {
+    "welcome": "Willkommen,",
+    "guest": "Gast",
+    "lightMode": "Hellmodus",
+    "darkMode": "Dunkelmodus",
+    "profile": "Profil",
+    "role": "Rolle",
+    "language": "Sprache",
+    "theme": "Darstellung",
+    "appSettings": "App-Einstellungen"
   },
   "auth": {
     "login": "Anmelden",

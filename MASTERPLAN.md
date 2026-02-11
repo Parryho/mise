@@ -495,7 +495,7 @@ Phase 2 (Tag-System) bringt bereits 80% Verbesserung. Pairing-Scores sind option
 | R2-T16 | Rollen-basierte Sicht (Admin vs Staff) | Admin | 4h |
 | R2-T17 | User-Staff-Verknüpfung in Admin | Admin | 2h |
 | R2-T18 | API-Versionierung (/api/v1) | Mobile | 6h |
-| R2-T19 | CORS-Allowlist aus ENV | Mobile | 1h |
+| R2-T19 | ~~CORS-Allowlist aus ENV~~ | ~~Mobile~~ | ✅ 11.02. |
 
 ---
 

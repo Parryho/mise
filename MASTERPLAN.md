@@ -225,7 +225,7 @@ Der Markt teilt sich in teure Enterprise-Lösungen (Apicbase EUR500+/Mo, Galley 
 | 11.7 | rotation-agent.ts: cuisine-aware side selection | ✅ Done | 11.02. |
 | 11.8 | rotation-agent.ts: dishType-Checks (selfContained, dessertMain) | ✅ Done | 11.02. |
 | 11.9 | Test: Rotation neu generieren, Qualität prüfen | ✅ Done | 11.02. |
-| 11.10 | UI: Bulk-Tag-Editor für 235 ungetaggte Rezepte | 📋 Todo | - |
+| 11.10 | UI: Bulk-Tag-Editor für 235 ungetaggte Rezepte | ✅ Done | 11.02. |
 | 11.11 | KitcheNette Pairing-Scores Import (optional) | 📋 Later | - |
 
 **Tagging-Ergebnis (421 Rezepte):**
@@ -435,7 +435,7 @@ LIMIT 10;
 - ✅ Marillenknödel ohne Gemüse
 - ✅ Österreichische Mains nur mit österreichischen Beilagen
 
-### Phase 11.10: Bulk-Tag-Editor (📋 TODO, später)
+### Phase 11.10: Bulk-Tag-Editor (✅ Done, 11.02.2026)
 
 **Priorität:** Mittel | **Aufwand:** 4-6 Stunden
 

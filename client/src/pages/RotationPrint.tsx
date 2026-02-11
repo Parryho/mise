@@ -377,7 +377,7 @@ export default function RotationPrint() {
           </table>
 
           {/* Allergen legend */}
-          <div className="mt-3 pt-2 border-t-2 border-border text-[9px] text-muted-foreground print:text-[7pt] print:mt-2">
+          <div className="mt-3 pt-2 border-t-2 border-border text-[9px] text-muted-foreground print:text-[6pt] print:mt-1 print:pt-1 print:border-t">
             <p className="font-semibold text-foreground/70">
               {t("print.allergenDisclaimer")}{" "}
               {Object.entries(ALLERGENS).map(([code, info]) => (

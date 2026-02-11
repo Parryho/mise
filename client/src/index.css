@@ -260,27 +260,36 @@
     max-width: 100% !important;
   }
 
-  /* Wochenplan print page */
+  /* Wochenplan print page — force landscape */
   .rotation-print-page {
     break-inside: avoid;
     padding: 0 !important;
     margin: 0 !important;
+    page: rotation-landscape;
   }
 
-  /* Compact table styling — fit on A4 */
+  @page rotation-landscape {
+    size: A4 landscape;
+    margin: 4mm;
+  }
+
+  /* Compact table styling — fit on single A4 landscape */
   .rotation-print-page table {
     width: 100% !important;
-    font-size: 7pt;
-    line-height: 1.15;
+    font-size: 6.5pt;
+    line-height: 1.1;
     border-collapse: collapse;
   }
   .rotation-print-page th {
-    padding: 1px 3px !important;
-    font-size: 6.5pt;
+    padding: 0.5px 2px !important;
+    font-size: 6pt;
   }
   .rotation-print-page td {
-    padding: 0.5px 2px !important;
-    font-size: 7pt;
+    padding: 0.5px 1.5px !important;
+    font-size: 6.5pt;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
 

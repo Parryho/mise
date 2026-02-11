@@ -510,13 +510,13 @@ Phase 2 (Tag-System) bringt bereits 80% Verbesserung. Pairing-Scores sind option
 | M3 | Mehrere 500+ Zeilen Dateien (Rotation.tsx, MenuPlan.tsx) | Clean Code | 6h |
 | M4 | Kein Request-Deduplication bei Parallel-Requests | Performance | 4h |
 | M5 | Virtual Scrolling für lange Rezeptlisten fehlt | Performance | 4h |
-| M6 | Unused Dependencies im package.json | Clean Code | 1h |
+| M6 | ~~Unused Dependencies im package.json~~ | ~~Clean Code~~ | ✅ 11.02. |
 | M7 | Fehlende Index-Seite für API-Dokumentation | Architektur | 3h |
 | M8 | WebSocket-Verbindung nicht genutzt (ws installiert) | Architektur | - |
 | M9 | Keine Health-Check-Integration in Docker Compose | DevOps | 2h |
-| M10 | Session-Fixation-Schutz bei Login | Security | 2h |
-| M11 | Input-Sanitization für HTML-Content (XSS bei Notizen) | Security | 3h |
-| M12 | Fehlende CORS-Allowlist für Produktion | Security | 1h |
+| M10 | ~~Session-Fixation-Schutz bei Login~~ | ~~Security~~ | ✅ bereits impl. |
+| M11 | ~~Input-Sanitization für HTML-Content (XSS bei Notizen)~~ | ~~Security~~ | ✅ 11.02. |
+| M12 | ~~Fehlende CORS-Allowlist für Produktion~~ | ~~Security~~ | ✅ 11.02. |
 | M13 | Storage-Klasse zu groß (server/storage.ts, alle Tabellen) | Architektur | 8h |
 | M14 | Keine Retry-Logik für Claude API Calls | Architektur | 3h |
 
@@ -590,7 +590,7 @@ Phase 2 (Tag-System) bringt bereits 80% Verbesserung. Pairing-Scores sind option
 | Dessert-Mains korrekt | ✅ **0 Verstöße** (100%) | 100% |
 | Code Audit KRITISCH | ✅ 0 offen | ✅ Done |
 | Code Audit HOCH | ✅ 0 offen | ✅ Done |
-| Code Audit MITTEL | 🟡 14 offen | 0 |
+| Code Audit MITTEL | 🟡 10 offen | 0 |
 
 **Gesamtaufwand bisher: ~420h über 4 Tage (07.-10.02.2026)**
 

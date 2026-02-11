@@ -1,8 +1,49 @@
 import type { Express, Request, Response } from "express";
 import { requireAuth, requireRole, getParam, storage } from "./middleware";
-import { insertMenuPlanSchema, updateMenuPlanSchema, insertMenuPlanTemperatureSchema } from "@shared/schema";
+import { insertMenuPlanSchema, updateMenuPlanSchema, insertMenuPlanTemperatureSchema, menuPlans } from "@shared/schema";
 import { generateWeekFromRotation, getOrGenerateWeekPlan } from "../modules/menu";
 import { formatLocalDate } from "@shared/constants";
+import { db } from "../db";
+import { and, eq } from "drizzle-orm";
+
+// Cache location IDs for City/SÜD auto-sync
+let cityLocId: number | null = null;
+let suedLocId: number | null = null;
+async function getLocIds() {
+  if (cityLocId !== null) return { cityLocId, suedLocId };
+  const locs = await storage.getLocations();
+  cityLocId = locs.find(l => l.slug === "city")?.id ?? null;
+  suedLocId = locs.find(l => l.slug === "sued")?.id ?? null;
+  return { cityLocId, suedLocId };
+}
+
+/** If entry is City Lunch, find or create the matching SÜD Lunch entry */
+async function syncCityToSued(date: string, meal: string, course: string, recipeId: number | null, portions: number, rotationWeekNr?: number | null) {
+  const { cityLocId: cId, suedLocId: sId } = await getLocIds();
+  if (!cId || !sId) return;
+  // Find existing SÜD entry for same date+meal+course
+  const [existing] = await db.select().from(menuPlans).where(
+    and(eq(menuPlans.date, date), eq(menuPlans.meal, meal), eq(menuPlans.course, course), eq(menuPlans.locationId, sId))
+  );
+  if (existing) {
+    await db.update(menuPlans).set({ recipeId, portions }).where(eq(menuPlans.id, existing.id));
+  } else {
+    await db.insert(menuPlans).values({ date, meal, course, recipeId, portions, locationId: sId, rotationWeekNr: rotationWeekNr ?? null });
+  }
+}
+
+/** If deleting a City Lunch entry, also delete matching SÜD Lunch entry */
+async function deleteSuedMirror(date: string, meal: string, course: string) {
+  const { suedLocId: sId } = await getLocIds();
+  if (!sId) return;
+  await db.delete(menuPlans).where(
+    and(eq(menuPlans.date, date), eq(menuPlans.meal, meal), eq(menuPlans.course, course), eq(menuPlans.locationId, sId))
+  );
+}
+
+function isCityLunch(locationId: number | null | undefined, meal: string): boolean {
+  return meal === "lunch" && locationId === cityLocId;
+}
 
 export function registerMenuPlanRoutes(app: Express) {
 
@@ -50,6 +91,11 @@ export function registerMenuPlanRoutes(app: Express) {
     try {
       const parsed = insertMenuPlanSchema.parse(req.body);
       const created = await storage.createMenuPlan(parsed);
+      // Auto-sync City Lunch → SÜD Lunch
+      await getLocIds();
+      if (isCityLunch(parsed.locationId, parsed.meal)) {
+        await syncCityToSued(parsed.date, parsed.meal, parsed.course ?? "main", parsed.recipeId ?? null, parsed.portions ?? 1, parsed.rotationWeekNr);
+      }
       res.status(201).json(created);
     } catch (error: any) {
       res.status(400).json({ error: error.message });
@@ -62,6 +108,11 @@ export function registerMenuPlanRoutes(app: Express) {
       const parsed = updateMenuPlanSchema.parse(req.body);
       const updated = await storage.updateMenuPlan(id, parsed);
       if (!updated) return res.status(404).json({ error: "Nicht gefunden" });
+      // Auto-sync City Lunch → SÜD Lunch
+      await getLocIds();
+      if (isCityLunch(updated.locationId, updated.meal)) {
+        await syncCityToSued(updated.date, updated.meal, updated.course, updated.recipeId, updated.portions, updated.rotationWeekNr);
+      }
       res.json(updated);
     } catch (error: any) {
       res.status(400).json({ error: error.message });
@@ -70,7 +121,14 @@ export function registerMenuPlanRoutes(app: Express) {
 
   app.delete("/api/menu-plans/:id", requireAuth, async (req, res) => {
     const id = parseInt(getParam(req.params.id), 10);
+    // Check if this is a City Lunch entry before deleting
+    await getLocIds();
+    const plan = await storage.getMenuPlan(id);
     await storage.deleteMenuPlan(id);
+    // Auto-delete matching SÜD Lunch entry
+    if (plan && isCityLunch(plan.locationId, plan.meal)) {
+      await deleteSuedMirror(plan.date, plan.meal, plan.course);
+    }
     res.status(204).send();
   });
 

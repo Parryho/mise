@@ -120,6 +120,8 @@ interface DishMeta {
   forbiddenStarches?: string[];
   /** Bevorzugte Gemüsebeilagen */
   preferredVeggies?: string[];
+  /** Verbotene Gemüsebeilagen */
+  forbiddenVeggies?: string[];
 }
 
 // ── Forbidden/Preferred lists für Wiederverwendung ──
@@ -234,7 +236,7 @@ const DISH_META: Record<string, DishMeta> = {
   "Rindsgulasch": GULASCH,
   "Saftgulasch": GULASCH,
   "Fiakergulasch": GULASCH,
-  "Kalbsgulasch": GULASCH,
+  "Kalbsgulasch": { ...GULASCH, forbiddenVeggies: ["Rahmsauerkraut"] },
   "Beuschel": { preferredStarches: ["Semmelknödel", "Spätzle"] },
   "Beuscherl": { preferredStarches: ["Semmelknödel", "Spätzle"] },
   "Boeuf Stroganoff": { preferredStarches: ["Reis", "Spätzle", "Bandnudeln"] },
@@ -308,8 +310,8 @@ const DISH_META: Record<string, DishMeta> = {
   "Pasta Arrabiata": SC,
   "Pasta Pomodoro": SC,
   "Penne al Forno": SC,
-  "Lasagne": SC,
-  "Lasagne vegetarisch": SC,
+  "Lasagne": { selfContained: true, preferredVeggies: ["Tomatensauce", "Parmesan (gerieben)"] },
+  "Lasagne vegetarisch": { selfContained: true, preferredVeggies: ["Tomatensauce", "Parmesan (gerieben)"] },
   "Nudeln mit Pesto": SC,
   "Rigatoni mit Gemüseragout": SC,
   "Tortellini in Sahnesauce": SC,
@@ -341,15 +343,15 @@ const DISH_META: Record<string, DishMeta> = {
   // Aufläufe & Gratins
   "Gemüseauflauf": SC,
   "Kartoffelgratin": SC,
-  "Moussaka vegetarisch": SC,
+  "Moussaka vegetarisch": { selfContained: true, preferredVeggies: ["Basilikum (frisch)", "Joghurtdip", "Sauerrahmdip"] },
   "Zucchini-Auflauf": SC,
-  "Broccoli-Gratin": SC,
+  "Broccoli-Gratin": { selfContained: true, preferredVeggies: ["Kräuterdip", "Joghurtdip", "Sauerrahmdip"] },
   "Polenta mit Schwammerl": SC,
   "Polenta-Gemüse-Auflauf": SC,
   "Kürbis-Kartoffel-Gratin": SC,
   "Melanzani-Parmigiana": SC,
   // Curry, Eintopf, Pfannen
-  "Gemüsecurry mit Kokosmilch": SC,
+  "Gemüsecurry mit Kokosmilch": { preferredStarches: ["Reis", "Basmatireis", "Safranreis"] },
   "Kichererbsen-Curry": SC,
   "Linsen-Dal": SC,
   "Ratatouille": SC,
@@ -361,7 +363,7 @@ const DISH_META: Record<string, DishMeta> = {
   "Risotto": SC,
   "Polenta": SC,
   "Reiberdatschi": SC,
-  "Blunzengröstl": SC,
+  "Blunzengröstl": { selfContained: true, preferredVeggies: ["Sauerkraut", "Weißkrautsalat (warm)"] },
   "Tiroler Gröstl": SC,
   "Bauernschmaus": SC,
   "Erdäpfelgulasch": SC,
@@ -372,7 +374,7 @@ const DISH_META: Record<string, DishMeta> = {
   // → WEDER Stärke NOCH Gemüse
   // ══════════════════════════════════════════════════════════
   "Marillenknödel": DM,
-  "Mohnnudeln": DM,
+  "Mohnnudeln": { dessertMain: true, preferredVeggies: ["Apfelkompott", "Birnenkompott", "Apfelmus", "Staubzucker", "Kompott (gemischt)"] },
   "Topfenknödel": DM,
   "Zwetschgenknödel": DM,
   "Germknödel": DM,
@@ -600,24 +602,33 @@ function pickVeggieFor(
 ): Recipe | null {
   if (veggiePool.length === 0) return null;
 
-  // dessertMain gets no veggie (from DB field or DISH_META)
   const dbDishType = mainRecipe.dishType;
-  if (dbDishType === "dessertMain") {
-    console.log(`[rotation-agent] Skip veggie for "${mainRecipe.name}" (dishType=dessertMain)`);
-    return null;
-  }
   const meta = getDishMeta(mainRecipe.name);
-  if (meta.dessertMain) {
-    console.log(`[rotation-agent] Skip veggie for "${mainRecipe.name}" (DISH_META dessertMain)`);
-    return null;
+  const isDessertMain = dbDishType === "dessertMain" || meta.dessertMain;
+
+  // Dessert-Mains: pick from mehlspeise-garnitur items only (Kompott, Staubzucker, etc.)
+  if (isDessertMain) {
+    const garnishPool = veggiePool.filter(r =>
+      !usedIds.has(r.id) && r.tags?.includes("mehlspeise-garnitur")
+    );
+    if (meta.preferredVeggies?.length) {
+      const preferredNames = new Set(meta.preferredVeggies);
+      const preferred = garnishPool.filter(r => preferredNames.has(r.name));
+      if (preferred.length > 0) return pickWeighted(preferred, scoreMap, epsilon);
+    }
+    return garnishPool.length > 0 ? pickRandom(garnishPool) : null;
   }
 
   const ingredientKeys = mealIngredientKeys ?? new Set<string>();
+  const forbiddenVeggieNames = new Set(meta.forbiddenVeggies || []);
 
   // Cuisine-aware filtering: prefer same cuisine, fall back to untagged
   const mainCuisine = mainRecipe.cuisineType;
   const available = veggiePool.filter(r => {
     if (usedIds.has(r.id)) return false;
+    // Exclude mehlspeise-garnitur from regular mains (Staubzucker not with Schnitzel)
+    if (r.tags?.includes("mehlspeise-garnitur")) return false;
+    if (forbiddenVeggieNames.has(r.name)) return false;
     if (mainCuisine && r.cuisineType && mainCuisine !== r.cuisineType) return false;
     // Ingredient collision: no Rahmspinat when a main has Spinat
     if (hasIngredientCollision(r, ingredientKeys)) return false;
@@ -633,8 +644,10 @@ function pickVeggieFor(
 
   if (available.length > 0) return pickWeighted(available, scoreMap, epsilon);
 
-  // Fallback: ignore cuisine constraint
-  const anyAvailable = veggiePool.filter(r => !usedIds.has(r.id));
+  // Fallback: ignore cuisine constraint but keep garnitur/forbidden exclusion
+  const anyAvailable = veggiePool.filter(r =>
+    !usedIds.has(r.id) && !r.tags?.includes("mehlspeise-garnitur") && !forbiddenVeggieNames.has(r.name)
+  );
   if (anyAvailable.length > 0) return pickWeighted(anyAvailable, scoreMap, epsilon);
 
   return pickRandom(veggiePool);
@@ -723,6 +736,14 @@ export async function autoFillRotation(
       case "Sides":
         if (r.tags?.includes("stärke")) sidesStarch.push(r);
         else if (r.tags?.includes("gemüse")) sidesVeg.push(r);
+        break;
+      // Sauces/Garnishes that can serve as veggie sides
+      case "ColdSauces":
+        if (r.tags?.includes("gemüse")) sidesVeg.push(r);
+        break;
+      // Mehlspeise-Garnituren for dessert mains (Staubzucker, Kompott, etc.)
+      case "ColdDesserts":
+        if (r.tags?.includes("mehlspeise-garnitur")) sidesVeg.push(r);
         break;
     }
   }

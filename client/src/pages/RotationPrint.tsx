@@ -265,7 +265,7 @@ export default function RotationPrint() {
                     key={block.key}
                     colSpan={5 + (idx > 0 ? 1 : 0)}
                     className={cn(
-                      "text-white px-2 py-1.5 text-center font-bold border border-slate-900",
+                      "text-white px-2 py-1.5 text-center font-bold border border-slate-900 dark:border-slate-600",
                       block.locSlug === "city"
                         ? "bg-gradient-to-b from-primary to-primary/90"
                         : "bg-gradient-to-b from-primary/80 to-primary/70"
@@ -300,7 +300,7 @@ export default function RotationPrint() {
                       key={`${dayIdx}-${course}`}
                       className={cn(
                         slotIdx === 0 && "border-t-2 border-foreground/30",
-                        isMainCourse ? "bg-amber-50" : slotIdx % 2 === 0 ? "bg-background" : "bg-muted/20"
+                        isMainCourse ? "bg-amber-50 dark:bg-amber-950/40" : slotIdx % 2 === 0 ? "bg-background" : "bg-muted/20"
                       )}
                     >
                       {visibleBlocks.map((block, blockIdx) => {
@@ -356,7 +356,7 @@ export default function RotationPrint() {
                             </td>
                             <td
                               key={`a-${block.key}-${course}`}
-                              className="px-1 py-0.5 border border-border/50 text-center text-orange-600 font-medium"
+                              className="px-1 py-0.5 border border-border/50 text-center text-orange-600 dark:text-orange-400 font-medium"
                               style={{ lineHeight: "1.2", fontSize: "6pt" }}
                             >
                               {allergenText}
@@ -384,7 +384,7 @@ export default function RotationPrint() {
               {t("print.allergenDisclaimer")}{" "}
               {Object.entries(ALLERGENS).map(([code, info]) => (
                 <span key={code} className="mr-1.5">
-                  <span className="font-bold text-orange-600">{code}</span>={info.nameDE}
+                  <span className="font-bold text-orange-600 dark:text-orange-400">{code}</span>={info.nameDE}
                 </span>
               ))}
             </p>

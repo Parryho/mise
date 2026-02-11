@@ -59,13 +59,13 @@ export default function RotationPrint() {
 
   const [showBlocks, setShowBlocks] = useState<Record<string, boolean>>(() => {
     try {
-      const saved = localStorage.getItem("mise-blocks-print");
+      const saved = localStorage.getItem("mise-blocks-print-v2");
       if (saved) return JSON.parse(saved);
     } catch {}
-    return { "city-lunch": true, "city-dinner": true, "sued-lunch": false, "sued-dinner": false };
+    return { "city-lunch": true, "city-dinner": true, "sued-lunch": true, "sued-dinner": false };
   });
   useEffect(() => {
-    localStorage.setItem("mise-blocks-print", JSON.stringify(showBlocks));
+    localStorage.setItem("mise-blocks-print-v2", JSON.stringify(showBlocks));
   }, [showBlocks]);
 
   const currentKW = getISOWeek(new Date());

@@ -157,7 +157,9 @@
     "recipesLink": "Rezepte",
     "shoppingLink": "Einkauf",
     "productionLink": "Produktion",
-    "briefingLink": "Briefing"
+    "briefingLink": "Briefing",
+    "lunchShort": "M",
+    "dinnerShort": "A"
   },
   "recipes": {
     "title": "Rezepte",
@@ -233,7 +235,8 @@
       "HotSauces": "Warme Saucen",
       "Salads": "Salate",
       "HotDesserts": "Warme Dessert",
-      "ColdDesserts": "Kalte Dessert"
+      "ColdDesserts": "Kalte Dessert",
+      "MainFish": "Haupt-Fisch"
     }
   },
   "haccp": {
@@ -270,7 +273,12 @@
     "warningRecorded": "Warnung erfasst",
     "temperatureRecorded": "Temperatur erfasst",
     "more": "weitere",
-    "exportComplete": "Export abgeschlossen"
+    "exportComplete": "Export abgeschlossen",
+    "noFridges": "Keine Kühlgeräte vorhanden",
+    "noFridgesHint": "Fügen Sie oben ein Kühlgerät hinzu, um Temperaturen zu erfassen.",
+    "device": "Gerät",
+    "deviationCount": "{{count}} Abweichung(en) heute",
+    "limitInfo": "Grenze"
   },
   "menu": {
     "title": "Men\u00fcplan",
@@ -585,6 +593,32 @@
     "locations": "Standorte",
     "suppliers": "Lieferanten",
     "general": "Allgemein",
+    "systemAdmin": "System-Verwaltung",
+    "moduleVisibility": "Modul-Sichtbarkeit",
+    "appSettingsSection": "App-Einstellungen",
+    "languageDescription": "Sprache der Benutzeroberfläche",
+    "locationsTitle": "Standorte",
+    "locationsDescription": "Konfigurierte Betriebsstandorte",
+    "locationLabels": {
+      "city": "Küche City",
+      "sued": "Küche SÜD",
+      "ak": "Catering"
+    },
+    "aboutTitle": "Über mise.at",
+    "aboutDescription": "Küchenmanagement-System für Hotels und Gastronomie. Menüplanung, Rotation, HACCP, Rezeptverwaltung und mehr.",
+    "versionLabel": "Version",
+    "stackLabel": "Stack",
+    "databaseLabel": "Datenbank",
+    "adminGrid": {
+      "email": "E-Mail",
+      "emailDesc": "SMTP & Alerts",
+      "backup": "Backup",
+      "backupDesc": "Sicherung & Restore",
+      "gdpr": "DSGVO",
+      "gdprDesc": "Export & Löschung",
+      "server": "Server",
+      "serverDesc": "Monitoring & Status"
+    },
     "roles": {
       "admin": "K\u00fcchenchef (Admin)",
       "souschef": "Sous-Chef",

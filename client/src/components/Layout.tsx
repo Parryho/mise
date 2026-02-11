@@ -27,15 +27,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const showBackButton = location !== "/today" && location !== "/";
   const isSettings = location.startsWith("/settings");
 
-  const ROLE_LABELS: Record<string, string> = {
-    admin: "Küchenchef",
-    souschef: "Sous-Chef",
-    koch: "Koch",
-    fruehkoch: "Früh-Koch",
-    lehrling: "Lehrling",
-    abwasch: "Abwasch",
-    guest: "Gast",
-  };
+  const roleLabel = (role: string) => t(`settings.roles.${role}`) || role;
 
   return (
     <div className="min-h-screen bg-background flex flex-col md:max-w-2xl lg:max-w-5xl md:mx-auto overflow-hidden relative">
@@ -67,7 +59,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   </div>
                   <div>
                     <p className="text-sm font-medium">{user?.name || t("layout.guest")}</p>
-                    <p className="text-xs text-muted-foreground">{ROLE_LABELS[user?.role || "guest"] || user?.role}</p>
+                    <p className="text-xs text-muted-foreground">{roleLabel(user?.role || "guest")}</p>
                   </div>
                 </div>
               </div>

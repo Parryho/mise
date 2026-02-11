@@ -34,7 +34,7 @@ import {
   MapPin,
 } from "lucide-react";
 import { format } from "date-fns";
-import { de } from "date-fns/locale";
+import { de, enUS } from "date-fns/locale";
 import { getISOWeek } from "@shared/constants";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -77,8 +77,9 @@ interface GuestCount {
 
 export default function Today() {
   const { toast } = useToast();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
+  const dateFnsLocale = i18n.language?.startsWith("en") ? enUS : de;
   const { locations } = useLocationFilter();
   const { fridges, logs: haccpLogs } = useApp();
 
@@ -285,10 +286,10 @@ export default function Today() {
       {/* Header */}
       <div className="space-y-1">
         <p className="text-sm text-muted-foreground">
-          {format(today, "EEEE", { locale: de })}
+          {format(today, "EEEE", { locale: dateFnsLocale })}
         </p>
         <h1 className="text-2xl font-heading font-bold">
-          {format(today, "d. MMMM yyyy", { locale: de })}
+          {format(today, "d. MMMM yyyy", { locale: dateFnsLocale })}
         </h1>
         <p className="text-base text-muted-foreground">
           {greeting}, <span className="text-foreground font-medium">{firstName}</span>
@@ -319,7 +320,7 @@ export default function Today() {
                       <span className="text-2xl font-bold tabular-nums">{locTotal || "-"}</span>
                       {pax && (
                         <div className="text-[10px] text-muted-foreground mt-0.5">
-                          M: {pax.lunch} / A: {pax.dinner}
+                          {t("today.lunchShort")}: {pax.lunch} / {t("today.dinnerShort")}: {pax.dinner}
                         </div>
                       )}
                     </div>
@@ -331,7 +332,7 @@ export default function Today() {
                   </div>
                   <span className="text-2xl font-bold text-primary tabular-nums">{totalPax.total}</span>
                   <div className="text-[10px] text-primary/70 mt-0.5">
-                    M: {totalPax.lunch} / A: {totalPax.dinner}
+                    {t("today.lunchShort")}: {totalPax.lunch} / {t("today.dinnerShort")}: {totalPax.dinner}
                   </div>
                 </div>
               </div>

@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useApp, Fridge } from "@/lib/store";
-import { useTranslation } from "@/lib/i18n";
+import { useTranslation } from "@/hooks/useTranslation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,7 +43,7 @@ export default function HACCP() {
   return (
     <div className="p-4 space-y-6 pb-24">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-heading font-bold">{t("haccp")}</h1>
+        <h1 className="text-2xl font-heading font-bold">{t("haccp.title")}</h1>
         <div className="flex gap-2">
           <AddFridgeDialog />
           <Button
@@ -72,7 +72,7 @@ export default function HACCP() {
               <div className="text-2xl font-bold text-amber-700">
                 {fridges.filter(f => { const l = getLatestLog(f.id); return l?.status === "WARNING"; }).length}
               </div>
-              <div className="text-[10px] text-amber-600 font-medium">{t("warning") || "Warnung"}</div>
+              <div className="text-[10px] text-amber-600 font-medium">{t("haccp.warning")}</div>
             </CardContent>
           </Card>
           <Card className="bg-red-50 border-red-200">
@@ -80,7 +80,7 @@ export default function HACCP() {
               <div className="text-2xl font-bold text-red-700">
                 {fridges.filter(f => { const l = getLatestLog(f.id); return l?.status === "CRITICAL"; }).length}
               </div>
-              <div className="text-[10px] text-red-600 font-medium">Kritisch</div>
+              <div className="text-[10px] text-red-600 font-medium">{t("haccp.critical")}</div>
             </CardContent>
           </Card>
         </div>
@@ -96,7 +96,7 @@ export default function HACCP() {
           <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
           <div className="text-sm">
             <span className="font-semibold">
-              {todayAlerts.length} {todayAlerts.length === 1 ? "Abweichung" : "Abweichungen"} heute
+              {t("haccp.deviationCount", { count: todayAlerts.length })}
             </span>
             <div className="text-xs mt-0.5 space-y-0.5">
               {todayAlerts.slice(0, 3).map(a => {
@@ -104,11 +104,11 @@ export default function HACCP() {
                 return (
                   <div key={a.id}>
                     {fname}: <span className="font-mono font-bold">{a.temperature}°C</span>
-                    {a.status === "CRITICAL" && <span className="ml-1 text-red-600 font-bold">KRITISCH</span>}
+                    {a.status === "CRITICAL" && <span className="ml-1 text-red-600 font-bold">{t("haccp.criticalLabel")}</span>}
                   </div>
                 );
               })}
-              {todayAlerts.length > 3 && <div>+{todayAlerts.length - 3} weitere</div>}
+              {todayAlerts.length > 3 && <div>+{todayAlerts.length - 3} {t("haccp.more")}</div>}
             </div>
           </div>
         </div>
@@ -118,8 +118,8 @@ export default function HACCP() {
         {fridges.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             <ThermometerSnowflake className="h-10 w-10 mx-auto mb-3 opacity-30" />
-            <p className="font-medium text-sm">Keine Kühlgeräte vorhanden</p>
-            <p className="text-xs mt-1">Fügen Sie oben ein Kühlgerät hinzu, um Temperaturen zu erfassen.</p>
+            <p className="font-medium text-sm">{t("haccp.noFridges")}</p>
+            <p className="text-xs mt-1">{t("haccp.noFridgesHint")}</p>
           </div>
         ) : (
           fridges.map(fridge => {
@@ -136,7 +136,7 @@ export default function HACCP() {
                         <h3 className="font-heading font-bold text-lg">{fridge.name}</h3>
                         <EditFridgeDialog fridge={fridge} />
                       </div>
-                      <p className="text-xs text-muted-foreground">{t("range")}: {fridge.tempMin}°C bis {fridge.tempMax}°C</p>
+                      <p className="text-xs text-muted-foreground">{t("haccp.range")}: {fridge.tempMin}°C – {fridge.tempMax}°C</p>
                     </div>
                     <div className={`px-2 py-1 rounded text-xs font-bold flex items-center gap-1 ${
                       isCritical ? 'bg-red-100 text-red-700' :
@@ -149,7 +149,7 @@ export default function HACCP() {
                           {isCritical && <AlertTriangle className="h-4 w-4 text-red-600" />}
                         </>
                       ) : (
-                        t("noData")
+                        t("haccp.noData")
                       )}
                     </div>
                   </div>
@@ -158,8 +158,8 @@ export default function HACCP() {
                   
                   {latest && (
                      <div className="mt-3 pt-3 border-t text-[10px] text-muted-foreground flex justify-between">
-                       <span>{t("lastCheck")}: {new Date(latest.timestamp).toLocaleString()}</span>
-                       <span>{t("by")}: {latest.user}</span>
+                       <span>{t("haccp.lastCheck")}: {new Date(latest.timestamp).toLocaleString()}</span>
+                       <span>{t("haccp.by")}: {latest.user}</span>
                      </div>
                   )}
                 </CardContent>
@@ -191,13 +191,13 @@ function AddFridgeDialog() {
         tempMin: parseFloat(tempMin),
         tempMax: parseFloat(tempMax)
       });
-      toast({ title: "Kühlgerät hinzugefügt" });
+      toast({ title: t("haccp.fridgeAdded") });
       setOpen(false);
       setName("");
       setTempMin("");
       setTempMax("");
     } catch (error: any) {
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: error.message, variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -207,31 +207,31 @@ function AddFridgeDialog() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="h-8 gap-1">
-          <PlusCircle className="h-4 w-4" /> Gerät
+          <PlusCircle className="h-4 w-4" /> {t("haccp.device")}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-sm">
         <DialogHeader>
-          <DialogTitle>Kühlgerät hinzufügen</DialogTitle>
+          <DialogTitle>{t("haccp.addFridge")}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label>Name</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="z.B. Kühlschrank 1" required />
+            <Label>{t("common.name")}</Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("haccp.fridgePlaceholder")} required />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Min. Temperatur (°C)</Label>
+              <Label>{t("haccp.minTemp")}</Label>
               <Input type="number" step="0.1" value={tempMin} onChange={(e) => setTempMin(e.target.value)} placeholder="0" required />
             </div>
             <div className="space-y-2">
-              <Label>Max. Temperatur (°C)</Label>
+              <Label>{t("haccp.maxTemp")}</Label>
               <Input type="number" step="0.1" value={tempMax} onChange={(e) => setTempMax(e.target.value)} placeholder="4" required />
             </div>
           </div>
           <Button type="submit" className="w-full" disabled={saving}>
             {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-            {t("save")}
+            {t("common.save")}
           </Button>
         </form>
       </DialogContent>
@@ -259,24 +259,24 @@ function EditFridgeDialog({ fridge }: { fridge: Fridge }) {
         tempMin: parseFloat(tempMin),
         tempMax: parseFloat(tempMax)
       });
-      toast({ title: "Kühlgerät aktualisiert" });
+      toast({ title: t("haccp.fridgeUpdated") });
       setOpen(false);
     } catch (error: any) {
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: error.message, variant: "destructive" });
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!confirm("Kühlgerät und alle zugehörigen Logs wirklich löschen?")) return;
+    if (!confirm(t("haccp.deleteFridgeConfirm"))) return;
     setDeleting(true);
     try {
       await deleteFridge(fridge.id);
-      toast({ title: "Kühlgerät gelöscht" });
+      toast({ title: t("haccp.fridgeDeleted") });
       setOpen(false);
     } catch (error: any) {
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: error.message, variant: "destructive" });
     } finally {
       setDeleting(false);
     }
@@ -291,27 +291,27 @@ function EditFridgeDialog({ fridge }: { fridge: Fridge }) {
       </DialogTrigger>
       <DialogContent className="max-w-sm">
         <DialogHeader>
-          <DialogTitle>Kühlgerät bearbeiten</DialogTitle>
+          <DialogTitle>{t("haccp.editFridge")}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label>Name</Label>
+            <Label>{t("common.name")}</Label>
             <Input value={name} onChange={(e) => setName(e.target.value)} required />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Min. Temperatur (°C)</Label>
+              <Label>{t("haccp.minTemp")}</Label>
               <Input type="number" step="0.1" value={tempMin} onChange={(e) => setTempMin(e.target.value)} required />
             </div>
             <div className="space-y-2">
-              <Label>Max. Temperatur (°C)</Label>
+              <Label>{t("haccp.maxTemp")}</Label>
               <Input type="number" step="0.1" value={tempMax} onChange={(e) => setTempMax(e.target.value)} required />
             </div>
           </div>
           <div className="flex gap-2">
             <Button type="submit" className="flex-1" disabled={saving}>
               {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              {t("save")}
+              {t("common.save")}
             </Button>
             <Button type="button" variant="destructive" size="icon" onClick={handleDelete} disabled={deleting}>
               {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
@@ -364,20 +364,20 @@ function LogDialog({ fridge }: { fridge: Fridge }) {
 
       if (status === "CRITICAL") {
         toast({
-          title: "KRITISCH: Temperatur stark abweichend!",
-          description: `${val}°C für ${fridge.name} (Grenze: ${fridge.tempMin}°C – ${fridge.tempMax}°C)`,
+          title: t("haccp.criticalTempWarning"),
+          description: t("haccp.tempLimit", { temp: val, name: fridge.name, min: fridge.tempMin, max: fridge.tempMax }),
           variant: "destructive",
         });
       } else if (status === "WARNING") {
         toast({
-          title: t("warningRecorded"),
-          description: `${val}°C für ${fridge.name} (Grenze: ${fridge.tempMin}°C – ${fridge.tempMax}°C)`,
+          title: t("haccp.warningRecorded"),
+          description: t("haccp.tempLimit", { temp: val, name: fridge.name, min: fridge.tempMin, max: fridge.tempMax }),
           variant: "destructive",
         });
       } else {
         toast({
-          title: t("temperatureRecorded"),
-          description: `${val}°C für ${fridge.name} erfasst`,
+          title: t("haccp.temperatureRecorded"),
+          description: t("haccp.tempRecorded", { temp: val, name: fridge.name }),
         });
       }
 
@@ -385,7 +385,7 @@ function LogDialog({ fridge }: { fridge: Fridge }) {
       setTemp("");
     } catch (error: any) {
       toast({
-        title: "Fehler",
+        title: t("common.error"),
         description: error.message,
         variant: "destructive",
       });
@@ -398,12 +398,12 @@ function LogDialog({ fridge }: { fridge: Fridge }) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button className="w-full" variant="secondary">
-          <ThermometerSnowflake className="mr-2 h-4 w-4" /> {t("logTemperature")}
+          <ThermometerSnowflake className="mr-2 h-4 w-4" /> {t("haccp.logTemperature")}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-xs">
         <DialogHeader>
-          <DialogTitle>{t("logCheck")}: {fridge.name}</DialogTitle>
+          <DialogTitle>{t("haccp.logCheck")}: {fridge.name}</DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
@@ -419,7 +419,7 @@ function LogDialog({ fridge }: { fridge: Fridge }) {
             </div>
             {previewStatus && previewStatus !== "OK" && (
               <span className={`text-xs font-semibold mt-1 ${previewStatus === "CRITICAL" ? "text-red-600" : "text-amber-600"}`}>
-                {previewStatus === "CRITICAL" ? "KRITISCH" : "Warnung"} (Grenze: {fridge.tempMin}° – {fridge.tempMax}°)
+                {previewStatus === "CRITICAL" ? t("haccp.criticalLabel") : t("haccp.warning")} ({t("haccp.limitInfo")}: {fridge.tempMin}° – {fridge.tempMax}°)
               </span>
             )}
           </div>
@@ -442,13 +442,13 @@ function LogDialog({ fridge }: { fridge: Fridge }) {
                className="col-span-3" 
                onClick={() => setTemp("")}
              >
-               {t("clear")}
+               {t("haccp.clear")}
              </Button>
           </div>
           
           <Button type="submit" className="w-full h-12 text-lg" disabled={!temp || saving}>
             {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-            {t("saveRecord")}
+            {t("haccp.saveRecord")}
           </Button>
         </form>
       </DialogContent>

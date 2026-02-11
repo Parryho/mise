@@ -157,7 +157,9 @@
     "recipesLink": "Recipes",
     "shoppingLink": "Shopping",
     "productionLink": "Production",
-    "briefingLink": "Briefing"
+    "briefingLink": "Briefing",
+    "lunchShort": "L",
+    "dinnerShort": "D"
   },
   "recipes": {
     "title": "Recipes",
@@ -233,7 +235,8 @@
       "HotSauces": "Hot Sauces",
       "Salads": "Salads",
       "HotDesserts": "Hot Desserts",
-      "ColdDesserts": "Cold Desserts"
+      "ColdDesserts": "Cold Desserts",
+      "MainFish": "Main Fish"
     }
   },
   "haccp": {
@@ -270,7 +273,12 @@
     "warningRecorded": "Warning Recorded",
     "temperatureRecorded": "Temperature Recorded",
     "more": "more",
-    "exportComplete": "Export Complete"
+    "exportComplete": "Export Complete",
+    "noFridges": "No cooling units available",
+    "noFridgesHint": "Add a cooling unit above to start logging temperatures.",
+    "device": "Unit",
+    "deviationCount": "{{count}} deviation(s) today",
+    "limitInfo": "Limit"
   },
   "menu": {
     "title": "Menu Plan",
@@ -585,6 +593,32 @@
     "locations": "Locations",
     "suppliers": "Suppliers",
     "general": "General",
+    "systemAdmin": "System Administration",
+    "moduleVisibility": "Module Visibility",
+    "appSettingsSection": "App Settings",
+    "languageDescription": "User interface language",
+    "locationsTitle": "Locations",
+    "locationsDescription": "Configured operating locations",
+    "locationLabels": {
+      "city": "Kitchen City",
+      "sued": "Kitchen SOUTH",
+      "ak": "Catering"
+    },
+    "aboutTitle": "About mise.at",
+    "aboutDescription": "Kitchen management system for hotels and gastronomy. Menu planning, rotation, HACCP, recipe management and more.",
+    "versionLabel": "Version",
+    "stackLabel": "Stack",
+    "databaseLabel": "Database",
+    "adminGrid": {
+      "email": "Email",
+      "emailDesc": "SMTP & Alerts",
+      "backup": "Backup",
+      "backupDesc": "Backup & Restore",
+      "gdpr": "GDPR",
+      "gdprDesc": "Export & Deletion",
+      "server": "Server",
+      "serverDesc": "Monitoring & Status"
+    },
     "roles": {
       "admin": "Head Chef (Admin)",
       "souschef": "Sous Chef",

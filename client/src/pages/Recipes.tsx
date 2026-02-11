@@ -32,6 +32,7 @@ function useDebounce<T>(value: T, delay: number): T {
 export default function Recipes() {
   const { recipes, loading } = useApp();
   const { t } = useTranslation();
+  const catLabel = (id: string) => t(`recipes.categories.${id}`) || id;
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [globalSearch, setGlobalSearch] = useState("");
@@ -176,7 +177,7 @@ export default function Recipes() {
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <h1 className="text-2xl font-heading font-bold">{categoryInfo?.label}</h1>
+            <h1 className="text-2xl font-heading font-bold">{categoryInfo ? catLabel(categoryInfo.id) : ""}</h1>
             <div className="ml-auto">
               <AddRecipeDialog defaultCategory={selectedCategory} />
             </div>
@@ -257,7 +258,7 @@ export default function Recipes() {
             >
               <span className="text-4xl mb-1">{category.symbol}</span>
               <h3 className="font-heading font-bold text-sm text-center leading-tight">
-                {category.label}
+                {catLabel(category.id)}
               </h3>
               <span className="text-xs text-muted-foreground font-medium tabular-nums">
                 {t("recipes.recipeCount", { count: recipeCounts[category.id] || 0 })}
@@ -521,7 +522,7 @@ function AddRecipeDialog({ defaultCategory }: { defaultCategory?: string }) {
                       <SelectContent>
                         {RECIPE_CATEGORIES.map(cat => (
                           <SelectItem key={cat.id} value={cat.id}>
-                            {cat.symbol} {cat.label}
+                            {cat.symbol} {t(`recipes.categories.${cat.id}`) || cat.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -609,7 +610,7 @@ function AddRecipeDialog({ defaultCategory }: { defaultCategory?: string }) {
                   </SelectTrigger>
                   <SelectContent>
                     {RECIPE_CATEGORIES.map(cat => (
-                      <SelectItem key={cat.id} value={cat.id}>{cat.label}</SelectItem>
+                      <SelectItem key={cat.id} value={cat.id}>{t(`recipes.categories.${cat.id}`) || cat.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -627,7 +628,7 @@ function RecipeCard({ recipe }: { recipe: Recipe }) {
   const { t, i18n } = useTranslation();
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const categoryLabel = RECIPE_CATEGORIES.find(c => c.id === recipe.category)?.label || recipe.category;
+  const categoryLabel = t(`recipes.categories.${recipe.category}`) || RECIPE_CATEGORIES.find(c => c.id === recipe.category)?.label || recipe.category;
 
   return (
     <>

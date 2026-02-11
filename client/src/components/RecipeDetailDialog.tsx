@@ -46,7 +46,7 @@ export default function RecipeDetailDialog({ recipe, open, onOpenChange, readOnl
   const [editIngredients, setEditIngredients] = useState<Ingredient[]>([]);
   const [saving, setSaving] = useState(false);
 
-  const categoryLabel = RECIPE_CATEGORIES.find(c => c.id === recipe.category)?.label || recipe.category;
+  const categoryLabel = t(`recipes.categories.${recipe.category}`) || RECIPE_CATEGORIES.find(c => c.id === recipe.category)?.label || recipe.category;
 
   useEffect(() => {
     if (open) {
@@ -206,7 +206,7 @@ export default function RecipeDetailDialog({ recipe, open, onOpenChange, readOnl
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {RECIPE_CATEGORIES.map(cat => (
-                      <SelectItem key={cat.id} value={cat.id}>{cat.label}</SelectItem>
+                      <SelectItem key={cat.id} value={cat.id}>{t(`recipes.categories.${cat.id}`) || cat.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

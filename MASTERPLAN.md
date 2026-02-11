@@ -584,7 +584,7 @@ Phase 2 (Tag-System) bringt bereits 80% Verbesserung. Pairing-Scores sind option
 
 | Kategorie | Aktuell | Ziel |
 |-----------|---------|------|
-| Rezepte getaggt | **186/421 (44%)** | 421/421 (100%) |
+| Rezepte getaggt | ✅ **412/412 (100%)** | 412/412 (100%) |
 | Cuisine-Matches | ✅ **0 Mismatches** (100%) | >90% |
 | Self-contained korrekt | ✅ **0 Verstöße** (100%) | 100% |
 | Dessert-Mains korrekt | ✅ **0 Verstöße** (100%) | 100% |

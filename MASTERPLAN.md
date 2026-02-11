@@ -224,7 +224,7 @@ Der Markt teilt sich in teure Enterprise-Lösungen (Apicbase EUR500+/Mo, Galley 
 | 11.6 | Production Auto-Tagging: 186/421 Rezepte getaggt | ✅ Done | 10.02. |
 | 11.7 | rotation-agent.ts: cuisine-aware side selection | ✅ Done | 11.02. |
 | 11.8 | rotation-agent.ts: dishType-Checks (selfContained, dessertMain) | ✅ Done | 11.02. |
-| 11.9 | Test: Rotation neu generieren, Qualität prüfen | 📋 Todo | - |
+| 11.9 | Test: Rotation neu generieren, Qualität prüfen | ✅ Done | 11.02. |
 | 11.10 | UI: Bulk-Tag-Editor für 235 ungetaggte Rezepte | 📋 Todo | - |
 | 11.11 | KitcheNette Pairing-Scores Import (optional) | 📋 Later | - |
 
@@ -574,7 +574,7 @@ Phase 2 (Tag-System) bringt bereits 80% Verbesserung. Pairing-Scores sind option
 
 | Rang | Phase | Task | Aufwand | Impact |
 |------|-------|------|---------|--------|
-| 🔥 1 | **11.7-11.9** | **Generator cuisine-aware machen** | **2-3h** | **80%** |
+| ~~🔥 1~~ | ~~**11.7-11.9**~~ | ~~**Generator cuisine-aware machen**~~ | ~~**2-3h**~~ | ✅ **Done** |
 | 2 | M1-M14 | Code Audit MITTEL-Findings | ~45h | Qualität |
 | 3 | 11.10 | Bulk-Tag-Editor (235 Rezepte) | 4-6h | 100% Tags |
 | 4 | R2 | Offene R2-Tickets | ~16h | Admin-UX |
@@ -585,9 +585,9 @@ Phase 2 (Tag-System) bringt bereits 80% Verbesserung. Pairing-Scores sind option
 | Kategorie | Aktuell | Ziel |
 |-----------|---------|------|
 | Rezepte getaggt | **186/421 (44%)** | 421/421 (100%) |
-| Cuisine-Matches | ❓ (Generator nutzt Tags noch nicht) | >90% |
-| Self-contained korrekt | ❓ | 100% |
-| Dessert-Mains korrekt | ❓ | 100% |
+| Cuisine-Matches | ✅ **0 Mismatches** (100%) | >90% |
+| Self-contained korrekt | ✅ **0 Verstöße** (100%) | 100% |
+| Dessert-Mains korrekt | ✅ **0 Verstöße** (100%) | 100% |
 | Code Audit KRITISCH | ✅ 0 offen | ✅ Done |
 | Code Audit HOCH | ✅ 0 offen | ✅ Done |
 | Code Audit MITTEL | 🟡 14 offen | 0 |

@@ -222,8 +222,8 @@ Der Markt teilt sich in teure Enterprise-Lösungen (Apicbase EUR500+/Mo, Galley 
 | 11.4 | Konstanten: CUISINE_TYPES, FLAVOR_PROFILES, DISH_TYPES | ✅ Done | 10.02. |
 | 11.5 | Auto-Tagging Script (DE+EN Keywords, i18n-aware) | ✅ Done | 10.02. |
 | 11.6 | Production Auto-Tagging: 186/421 Rezepte getaggt | ✅ Done | 10.02. |
-| 11.7 | rotation-agent.ts: cuisine-aware side selection | ⏳ In Arbeit | 10.02. |
-| 11.8 | rotation-agent.ts: dishType-Checks (selfContained, dessertMain) | 📋 Todo | - |
+| 11.7 | rotation-agent.ts: cuisine-aware side selection | ✅ Done | 11.02. |
+| 11.8 | rotation-agent.ts: dishType-Checks (selfContained, dessertMain) | ✅ Done | 11.02. |
 | 11.9 | Test: Rotation neu generieren, Qualität prüfen | 📋 Todo | - |
 | 11.10 | UI: Bulk-Tag-Editor für 235 ungetaggte Rezepte | 📋 Todo | - |
 | 11.11 | KitcheNette Pairing-Scores Import (optional) | 📋 Later | - |

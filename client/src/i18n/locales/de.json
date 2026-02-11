@@ -1247,5 +1247,46 @@
     },
     "actionItems": "Aktionspunkte",
     "summary": "Zusammenfassung"
+  },
+  "tagEditor": {
+    "title": "Tag-Editor",
+    "taggedOf": "{{tagged}} von {{total}} getaggt",
+    "showUntaggedOnly": "Nur ungetaggte",
+    "showAll": "Alle",
+    "category": "Kategorie",
+    "allCategories": "Alle Kategorien",
+    "autoTag": "Auto-Tag",
+    "autoTagRunning": "Auto-Tagging...",
+    "saveAll": "Alle speichern",
+    "saving": "Speichern...",
+    "saveCount": "Speichern ({{count}})",
+    "recipe": "Rezept",
+    "cuisine": "Küche",
+    "flavor": "Geschmack",
+    "dishType": "Art",
+    "noSelection": "—",
+    "saveSuccess": "{{count}} Rezepte aktualisiert",
+    "saveError": "Fehler beim Speichern",
+    "autoTagSuccess": "Auto-Tag: {{cuisine}} Küche, {{flavor}} Geschmack, {{dishType}} Art",
+    "autoTagError": "Fehler beim Auto-Tagging",
+    "noRecipes": "Keine Rezepte gefunden",
+    "cuisineTypes": {
+      "austrian": "Österreichisch",
+      "italian": "Italienisch",
+      "asian": "Asiatisch",
+      "mediterranean": "Mediterran"
+    },
+    "flavorProfiles": {
+      "hearty": "Deftig",
+      "light": "Leicht",
+      "spicy": "Scharf",
+      "creamy": "Cremig",
+      "fresh": "Frisch"
+    },
+    "dishTypes": {
+      "needsSides": "Braucht Beilagen",
+      "selfContained": "Komplett",
+      "dessertMain": "Süßes Hauptgericht"
+    }
   }
 }

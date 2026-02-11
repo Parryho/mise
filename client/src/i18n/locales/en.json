@@ -1247,5 +1247,46 @@
     },
     "actionItems": "Action Items",
     "summary": "Summary"
+  },
+  "tagEditor": {
+    "title": "Tag Editor",
+    "taggedOf": "{{tagged}} of {{total}} tagged",
+    "showUntaggedOnly": "Untagged only",
+    "showAll": "All",
+    "category": "Category",
+    "allCategories": "All categories",
+    "autoTag": "Auto-Tag",
+    "autoTagRunning": "Auto-tagging...",
+    "saveAll": "Save all",
+    "saving": "Saving...",
+    "saveCount": "Save ({{count}})",
+    "recipe": "Recipe",
+    "cuisine": "Cuisine",
+    "flavor": "Flavor",
+    "dishType": "Type",
+    "noSelection": "—",
+    "saveSuccess": "{{count}} recipes updated",
+    "saveError": "Error saving",
+    "autoTagSuccess": "Auto-Tag: {{cuisine}} cuisine, {{flavor}} flavor, {{dishType}} dish type",
+    "autoTagError": "Error during auto-tagging",
+    "noRecipes": "No recipes found",
+    "cuisineTypes": {
+      "austrian": "Austrian",
+      "italian": "Italian",
+      "asian": "Asian",
+      "mediterranean": "Mediterranean"
+    },
+    "flavorProfiles": {
+      "hearty": "Hearty",
+      "light": "Light",
+      "spicy": "Spicy",
+      "creamy": "Creamy",
+      "fresh": "Fresh"
+    },
+    "dishTypes": {
+      "needsSides": "Needs sides",
+      "selfContained": "Self-contained",
+      "dessertMain": "Dessert main"
+    }
   }
 }

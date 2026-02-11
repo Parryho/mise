@@ -32,6 +32,10 @@ export interface Recipe {
   updatedAt?: string;
   // Allergen trust level: null = unknown, 'auto' = machine-detected, 'verified' = manually confirmed
   allergenStatus?: string | null;
+  // Culinary tags
+  cuisineType?: string | null;
+  flavorProfile?: string | null;
+  dishType?: string | null;
 }
 
 export interface Fridge {

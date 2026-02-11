@@ -50,6 +50,7 @@ const EmailSettings = lazy(() => import("@/pages/EmailSettings"));
 const BackupRestore = lazy(() => import("@/pages/BackupRestore"));
 const GDPRExport = lazy(() => import("@/pages/GDPRExport"));
 const AgentTeam = lazy(() => import("@/pages/AgentTeam"));
+const BulkTagEditor = lazy(() => import("@/pages/BulkTagEditor"));
 const QuizFeedback = lazy(() => import("@/pages/QuizFeedback"));
 const LearningDashboard = lazy(() => import("@/pages/analytics/LearningDashboard"));
 const MenuQuiz = lazy(() => import("@/pages/MenuQuiz"));
@@ -70,6 +71,9 @@ function AuthenticatedRoutes() {
     <Switch>
       <Route path="/">
         <Redirect to="/today" />
+      </Route>
+      <Route path="/recipes/tags">
+        <Layout><BulkTagEditor /></Layout>
       </Route>
       <Route path="/recipes/ingredients">
         <Layout><MasterIngredients /></Layout>

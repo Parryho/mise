@@ -4,7 +4,8 @@ import { insertRecipeSchema, updateRecipeSchema, insertIngredientSchema, insertS
 import { autoCategorize } from "@shared/categorizer";
 import { db } from "../db";
 import { eq } from "drizzle-orm";
-import { scrapeRecipe, resolveRecipeIngredients, wouldCreateCycle, handleAIRecipeImport, handleGetSuggestions, scaleRecipeHandler, recipeMediaUpload, handleUploadMedia, handleGetMedia, handleUpdateMedia, handleDeleteMedia, detectAllergens, getAllergensFromIngredients } from "../modules/recipe";
+import { scrapeRecipe, resolveRecipeIngredients, wouldCreateCycle, handleAIRecipeImport, handleGetSuggestions, scaleRecipeHandler, recipeMediaUpload, handleUploadMedia, handleGetMedia, handleUpdateMedia, handleDeleteMedia, detectAllergens, getAllergensFromIngredients, autoTagAllRecipes } from "../modules/recipe";
+import { z } from "zod";
 import multer from "multer";
 import { createRequire } from "module";
 const _require = createRequire(typeof __filename !== "undefined" ? __filename : import.meta.url);
@@ -424,6 +425,50 @@ export function registerRecipeRoutes(app: Express) {
     const recipeId = parseInt(getParam(req.params.id));
     const resolved = await resolveRecipeIngredients(recipeId);
     res.json(resolved);
+  });
+
+  // === BULK TAG UPDATE ===
+  const bulkTagSchema = z.object({
+    updates: z.array(z.object({
+      id: z.number().int().positive(),
+      cuisineType: z.string().nullable().optional(),
+      flavorProfile: z.string().nullable().optional(),
+      dishType: z.string().nullable().optional(),
+    })).min(1).max(500),
+  });
+
+  app.post("/api/recipes/bulk-tags", requireRole("admin", "souschef"), async (req, res) => {
+    try {
+      const { updates } = bulkTagSchema.parse(req.body);
+      let updated = 0;
+      await db.transaction(async (tx) => {
+        for (const u of updates) {
+          const set: Record<string, string | null> = {};
+          if (u.cuisineType !== undefined) set.cuisineType = u.cuisineType;
+          if (u.flavorProfile !== undefined) set.flavorProfile = u.flavorProfile;
+          if (u.dishType !== undefined) set.dishType = u.dishType;
+          if (Object.keys(set).length === 0) continue;
+          const [row] = await tx.update(recipes).set(set).where(eq(recipes.id, u.id)).returning({ id: recipes.id });
+          if (row) updated++;
+        }
+      });
+      res.json({ updated });
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors[0]?.message || "Ungültige Daten" });
+      }
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // === AUTO-TAG ALL RECIPES ===
+  app.post("/api/recipes/auto-tag", requireRole("admin", "souschef"), async (_req, res) => {
+    try {
+      const stats = await autoTagAllRecipes();
+      res.json(stats);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
   });
 
   // === AI RECIPE IMPORT + SUGGESTIONS ===

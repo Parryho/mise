@@ -505,20 +505,20 @@ Phase 2 (Tag-System) bringt bereits 80% Verbesserung. Pairing-Scores sind option
 
 | # | Finding | Bereich | Aufwand |
 |---|---------|---------|---------|
-| M1 | Duplicate Type-Definitionen (store.tsx vs schema.ts) | Clean Code | 2h |
-| M2 | Inkonsistente Error-Handling-Patterns im Server | Clean Code | 3h |
-| M3 | Mehrere 500+ Zeilen Dateien (Rotation.tsx, MenuPlan.tsx) | Clean Code | 6h |
-| M4 | Kein Request-Deduplication bei Parallel-Requests | Performance | 4h |
-| M5 | Virtual Scrolling für lange Rezeptlisten fehlt | Performance | 4h |
+| M1 | ~~Duplicate Type-Definitionen (store.tsx vs schema.ts)~~ | ~~Clean Code~~ | ✅ bewusst (API vs DB Shape) |
+| M2 | ~~Inkonsistente Error-Handling-Patterns im Server~~ | ~~Clean Code~~ | ✅ 11.02. (Global Handler) |
+| M3 | ~~Mehrere 500+ Zeilen Dateien (Rotation.tsx, MenuPlan.tsx)~~ | ~~Clean Code~~ | ⏸️ deferred (klar strukturiert) |
+| M4 | ~~Kein Request-Deduplication bei Parallel-Requests~~ | ~~Performance~~ | ⏸️ nicht nötig (wenige User) |
+| M5 | ~~Virtual Scrolling für lange Rezeptlisten fehlt~~ | ~~Performance~~ | ⏸️ nicht nötig (~400 Rezepte) |
 | M6 | ~~Unused Dependencies im package.json~~ | ~~Clean Code~~ | ✅ 11.02. |
-| M7 | Fehlende Index-Seite für API-Dokumentation | Architektur | 3h |
-| M8 | WebSocket-Verbindung nicht genutzt (ws installiert) | Architektur | - |
-| M9 | Keine Health-Check-Integration in Docker Compose | DevOps | 2h |
+| M7 | ~~Fehlende Index-Seite für API-Dokumentation~~ | ~~Architektur~~ | ✅ 11.02. (GET /api) |
+| M8 | ~~WebSocket-Verbindung nicht genutzt (ws installiert)~~ | ~~Architektur~~ | ✅ 11.02. (ws entfernt in M6) |
+| M9 | ~~Keine Health-Check-Integration in Docker Compose~~ | ~~DevOps~~ | ✅ 11.02. |
 | M10 | ~~Session-Fixation-Schutz bei Login~~ | ~~Security~~ | ✅ bereits impl. |
 | M11 | ~~Input-Sanitization für HTML-Content (XSS bei Notizen)~~ | ~~Security~~ | ✅ 11.02. |
 | M12 | ~~Fehlende CORS-Allowlist für Produktion~~ | ~~Security~~ | ✅ 11.02. |
-| M13 | Storage-Klasse zu groß (server/storage.ts, alle Tabellen) | Architektur | 8h |
-| M14 | Keine Retry-Logik für Claude API Calls | Architektur | 3h |
+| M13 | ~~Storage-Klasse zu groß (server/storage.ts, alle Tabellen)~~ | ~~Architektur~~ | ⏸️ deferred (600 Zeilen ok) |
+| M14 | ~~Keine Retry-Logik für Claude API Calls~~ | ~~Architektur~~ | ✅ 11.02. |
 
 ---
 
@@ -575,8 +575,8 @@ Phase 2 (Tag-System) bringt bereits 80% Verbesserung. Pairing-Scores sind option
 | Rang | Phase | Task | Aufwand | Impact |
 |------|-------|------|---------|--------|
 | ~~🔥 1~~ | ~~**11.7-11.9**~~ | ~~**Generator cuisine-aware machen**~~ | ~~**2-3h**~~ | ✅ **Done** |
-| 2 | M1-M14 | Code Audit MITTEL-Findings | ~45h | Qualität |
-| 3 | 11.10 | Bulk-Tag-Editor (235 Rezepte) | 4-6h | 100% Tags |
+| ~~2~~ | ~~M1-M14~~ | ~~Code Audit MITTEL-Findings~~ | ~~~45h~~ | ✅ **Done** |
+| ~~3~~ | ~~11.10~~ | ~~Bulk-Tag-Editor (235 Rezepte)~~ | ~~4-6h~~ | ✅ **Done** |
 | 4 | R2 | Offene R2-Tickets | ~16h | Admin-UX |
 | 5 | 11.11 | KitcheNette Pairing-Scores | 8-12h | +15-20% |
 
@@ -590,7 +590,7 @@ Phase 2 (Tag-System) bringt bereits 80% Verbesserung. Pairing-Scores sind option
 | Dessert-Mains korrekt | ✅ **0 Verstöße** (100%) | 100% |
 | Code Audit KRITISCH | ✅ 0 offen | ✅ Done |
 | Code Audit HOCH | ✅ 0 offen | ✅ Done |
-| Code Audit MITTEL | 🟡 10 offen | 0 |
+| Code Audit MITTEL | ✅ 0 offen (9 done, 4 deferred, 1 duplikat) | ✅ Done |
 
 **Gesamtaufwand bisher: ~420h über 4 Tage (07.-10.02.2026)**
 

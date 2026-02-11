@@ -40,5 +40,24 @@ export async function registerRoutes(
   registerSupplierRoutes(app);
   registerAgentTeamRoutes(app);
 
+  // M7: API route index
+  app.get("/api", (_req, res) => {
+    const modules = [
+      { module: "auth", prefix: "/api/auth", endpoints: ["POST /register", "POST /login", "POST /logout", "GET /me"] },
+      { module: "recipes", prefix: "/api/recipes", endpoints: ["GET /", "GET /:id", "POST /", "PUT /:id", "DELETE /:id", "POST /bulk-tags", "POST /auto-tag"] },
+      { module: "haccp", prefix: "/api/haccp", endpoints: ["GET /logs", "POST /logs", "GET /fridges", "POST /fridges"] },
+      { module: "menu-plans", prefix: "/api/menu-plans", endpoints: ["GET /week", "POST /", "PUT /:id", "DELETE /:id"] },
+      { module: "guests", prefix: "/api/guests", endpoints: ["GET /counts", "POST /counts", "GET /export"] },
+      { module: "catering", prefix: "/api/catering", endpoints: ["GET /events", "POST /events", "PUT /events/:id", "DELETE /events/:id"] },
+      { module: "schedule", prefix: "/api/schedule", endpoints: ["GET /entries", "POST /entries", "GET /staff", "GET /shift-types"] },
+      { module: "rotation", prefix: "/api/rotation", endpoints: ["GET /templates", "POST /templates", "GET /slots/:templateId", "POST /generate"] },
+      { module: "tasks", prefix: "/api/tasks", endpoints: ["GET /", "POST /", "PATCH /:id/status", "DELETE /:id"] },
+      { module: "analytics", prefix: "/api/analytics", endpoints: ["GET /food-cost", "GET /popular-dishes", "GET /pax-trends"] },
+      { module: "admin", prefix: "/api/admin", endpoints: ["GET /users", "PUT /users/:id", "POST /users/create", "DELETE /users/:id"] },
+      { module: "suppliers", prefix: "/api/suppliers", endpoints: ["GET /", "POST /", "PUT /:id", "DELETE /:id"] },
+    ];
+    res.json({ version: "1.0", modules });
+  });
+
   return httpServer;
 }

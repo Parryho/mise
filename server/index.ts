@@ -118,7 +118,6 @@ app.use((req, res, next) => {
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
-    const message = err.message || "Interner Serverfehler";
 
     const serverLog = createLogger("express");
     serverLog.error("Internal Server Error", { error: err.message, stack: err.stack, status });
@@ -126,6 +125,11 @@ app.use((req, res, next) => {
     if (res.headersSent) {
       return next(err);
     }
+
+    // Don't leak internal error details in production
+    const message = status < 500
+      ? (err.message || "Anfragefehler")
+      : (isDev ? err.message : "Interner Serverfehler");
 
     return res.status(status).json({ error: message });
   });

@@ -428,7 +428,8 @@ async function generateAISummary(
     .map(a => `[${a.priority}] ${a.title}: ${a.detail}`)
     .join("\n");
 
-  const message = await client.messages.create({
+  const { withRetry } = await import("./lib/retry");
+  const message = await withRetry(() => client.messages.create({
     model: "claude-haiku-4-5-20251001",
     max_tokens: 500,
     messages: [{
@@ -443,7 +444,7 @@ ${actionSummary || "Keine"}
 
 Gib eine kurze Zusammenfassung mit den wichtigsten Handlungsempfehlungen.`,
     }],
-  });
+  }));
 
   const content = message.content[0];
   if (content.type === "text") return content.text;

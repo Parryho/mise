@@ -336,12 +336,13 @@ ${recipeLines.join("\n")}
 
 Analysiere die Rotation und schlage konkrete Tausch-Vorschläge vor. Antworte nur mit dem JSON-Objekt.`;
 
-  const message = await anthropic.messages.create({
+  const { withRetry } = await import("../../lib/retry");
+  const message = await withRetry(() => anthropic.messages.create({
     model: "claude-sonnet-4-20250514",
     max_tokens: 4096,
     messages: [{ role: "user", content: userPrompt }],
     system: systemPrompt,
-  });
+  }));
 
   // Extract text from response
   const responseText =

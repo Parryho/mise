@@ -211,7 +211,8 @@ CONFIDENCE-WERT:
     throw new Error("Entweder Text oder ein Bild muss angegeben werden.");
   }
 
-  const response = await anthropic.messages.create({
+  const { withRetry } = await import("../../lib/retry");
+  const response = await withRetry(() => anthropic.messages.create({
     model: "claude-sonnet-4-20250514",
     max_tokens: 4096,
     system: systemPrompt,
@@ -221,7 +222,7 @@ CONFIDENCE-WERT:
         content: userContent,
       },
     ],
-  });
+  }));
 
   // Extract text from response
   const textBlock = response.content.find(block => block.type === "text");

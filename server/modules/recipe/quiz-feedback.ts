@@ -348,11 +348,12 @@ Antworte NUR mit einem JSON-Array von Regeln:
   }
 ]`;
 
-    const message = await anthropic.messages.create({
+    const { withRetry } = await import("../../lib/retry");
+    const message = await withRetry(() => anthropic.messages.create({
       model: "claude-sonnet-4-5-20250929",
       max_tokens: 2000,
       messages: [{ role: "user", content: prompt }],
-    });
+    }));
 
     const text = message.content[0].type === "text" ? message.content[0].text : "";
 
@@ -480,11 +481,12 @@ export async function handleAIResearch(req: Request, res: Response) {
       try {
         const { default: Anthropic } = await import("@anthropic-ai/sdk");
         const anthropic = new Anthropic({ apiKey: anthropicKey });
-        const message = await anthropic.messages.create({
+        const { withRetry } = await import("../../lib/retry");
+        const message = await withRetry(() => anthropic.messages.create({
           model: "claude-haiku-4-5-20251001",
           max_tokens: 500,
           messages: [{ role: "user", content: prompt }],
-        });
+        }));
         const text = message.content[0].type === "text" ? message.content[0].text : "";
         const parsed = parseAIResponse(text);
         if (parsed) return res.json(parsed);

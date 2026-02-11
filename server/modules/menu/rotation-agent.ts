@@ -435,6 +435,41 @@ function getDishMeta(name: string): DishMeta {
   return {};
 }
 
+// ============================================================
+// Ingredient Collision Detection
+// Prevents same-ingredient pairings (e.g. Rahmspinat + Spinatstrudel)
+// ============================================================
+const INGREDIENT_KEYWORDS = [
+  "spinat", "brokkoli", "broccoli", "karotte", "kürbis", "zucchini",
+  "paprika", "pilz", "champignon", "schwammerl", "lauch", "sellerie",
+  "kohlrabi", "fenchel", "spargel", "mangold", "mais", "erbse",
+  "bohne", "linse", "kichererbse", "tomate", "melanzani", "aubergine",
+  "rübe", "pastinake", "topinambur", "kraut",
+] as const;
+
+// Synonyms that should be treated as the same ingredient
+const INGREDIENT_SYNONYMS: Record<string, string> = {
+  broccoli: "brokkoli",
+  aubergine: "melanzani",
+};
+
+function extractIngredientKeys(recipeName: string): Set<string> {
+  const lower = recipeName.toLowerCase();
+  const keys = new Set<string>();
+  for (const kw of INGREDIENT_KEYWORDS) {
+    if (lower.includes(kw)) {
+      keys.add(INGREDIENT_SYNONYMS[kw] || kw);
+    }
+  }
+  return keys;
+}
+
+function hasIngredientCollision(side: Recipe, mainKeys: Set<string>): boolean {
+  if (mainKeys.size === 0) return false;
+  const sideKeys = Array.from(extractIngredientKeys(side.name));
+  return sideKeys.some(key => mainKeys.has(key));
+}
+
 function shuffle<T>(arr: T[]): T[] {
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -499,6 +534,7 @@ function pickStarchFor(
   usedStarchGroups: Set<string>,
   scoreMap?: Map<number, number>,
   epsilon = 0.2,
+  mealIngredientKeys?: Set<string>,
 ): Recipe | null {
   if (starchPool.length === 0) return null;
 
@@ -516,6 +552,7 @@ function pickStarchFor(
   }
 
   const forbiddenNames = new Set(meta.forbiddenStarches || []);
+  const ingredientKeys = mealIngredientKeys ?? new Set<string>();
 
   // Cuisine-aware filtering: prefer same cuisine, fall back to untagged
   const mainCuisine = mainRecipe.cuisineType;
@@ -523,6 +560,8 @@ function pickStarchFor(
     if (forbiddenNames.has(r.name)) return false;
     // If both have cuisine tags, they must match
     if (mainCuisine && r.cuisineType && mainCuisine !== r.cuisineType) return false;
+    // Ingredient collision: no Spinat-side when a main has Spinat
+    if (hasIngredientCollision(r, ingredientKeys)) return false;
     return true;
   });
 
@@ -557,6 +596,7 @@ function pickVeggieFor(
   usedIds: Set<number>,
   scoreMap?: Map<number, number>,
   epsilon = 0.2,
+  mealIngredientKeys?: Set<string>,
 ): Recipe | null {
   if (veggiePool.length === 0) return null;
 
@@ -572,11 +612,15 @@ function pickVeggieFor(
     return null;
   }
 
+  const ingredientKeys = mealIngredientKeys ?? new Set<string>();
+
   // Cuisine-aware filtering: prefer same cuisine, fall back to untagged
   const mainCuisine = mainRecipe.cuisineType;
   const available = veggiePool.filter(r => {
     if (usedIds.has(r.id)) return false;
     if (mainCuisine && r.cuisineType && mainCuisine !== r.cuisineType) return false;
+    // Ingredient collision: no Rahmspinat when a main has Spinat
+    if (hasIngredientCollision(r, ingredientKeys)) return false;
     return true;
   });
 
@@ -774,6 +818,21 @@ export async function autoFillRotation(
           let main1Recipe: Recipe | null = null;
           let main2Recipe: Recipe | null = null;
 
+          // Pre-scan: detect existing main recipes for ingredient collision detection
+          // (needed because side1a/1b are picked before main2 in slot order)
+          for (const s of sorted) {
+            if (s.recipeId && s.course === "main1") main1Recipe = recipes.find(r => r.id === s.recipeId) || null;
+            if (s.recipeId && s.course === "main2") main2Recipe = recipes.find(r => r.id === s.recipeId) || null;
+          }
+
+          // Collect ingredient keywords from ALL mains for cross-collision prevention
+          const getMealIngredientKeys = (): Set<string> => {
+            const keys = new Set<string>();
+            if (main1Recipe) extractIngredientKeys(main1Recipe.name).forEach(k => keys.add(k));
+            if (main2Recipe) extractIngredientKeys(main2Recipe.name).forEach(k => keys.add(k));
+            return keys;
+          };
+
           for (const slot of sorted) {
             // Dessert = always null (not auto-filled)
             if (slot.course === "dessert") {
@@ -826,7 +885,7 @@ export async function autoFillRotation(
               case "side1a": {
                 if (main1Recipe) {
                   const mainScores = starchScores.get(main1Recipe.id);
-                  picked = pickStarchFor(main1Recipe, pools.starch, dayUsedIds, mealUsedStarchGroups, mainScores, epsilon);
+                  picked = pickStarchFor(main1Recipe, pools.starch, dayUsedIds, mealUsedStarchGroups, mainScores, epsilon, getMealIngredientKeys());
                   if (picked) mealUsedStarchGroups.add(getStarchGroup(picked));
                 }
                 break;
@@ -835,7 +894,7 @@ export async function autoFillRotation(
               case "side1b": {
                 if (main1Recipe) {
                   const mainScores = veggieScores.get(main1Recipe.id);
-                  picked = pickVeggieFor(main1Recipe, pools.veg, dayUsedIds, mainScores, epsilon);
+                  picked = pickVeggieFor(main1Recipe, pools.veg, dayUsedIds, mainScores, epsilon, getMealIngredientKeys());
                 }
                 break;
               }
@@ -843,7 +902,7 @@ export async function autoFillRotation(
               case "side2a": {
                 if (main2Recipe) {
                   const mainScores = starchScores.get(main2Recipe.id);
-                  picked = pickStarchFor(main2Recipe, pools.starch, dayUsedIds, mealUsedStarchGroups, mainScores, epsilon);
+                  picked = pickStarchFor(main2Recipe, pools.starch, dayUsedIds, mealUsedStarchGroups, mainScores, epsilon, getMealIngredientKeys());
                   if (picked) mealUsedStarchGroups.add(getStarchGroup(picked));
                 }
                 break;
@@ -852,7 +911,7 @@ export async function autoFillRotation(
               case "side2b": {
                 if (main2Recipe) {
                   const mainScores = veggieScores.get(main2Recipe.id);
-                  picked = pickVeggieFor(main2Recipe, pools.veg, dayUsedIds, mainScores, epsilon);
+                  picked = pickVeggieFor(main2Recipe, pools.veg, dayUsedIds, mainScores, epsilon, getMealIngredientKeys());
                 }
                 break;
               }

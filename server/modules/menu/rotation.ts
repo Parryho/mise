@@ -52,18 +52,20 @@ export async function generateWeekFromRotation(
     });
   }
 
-  // Auto-copy City lunch entries to SÜD (SÜD Mittag = City Mittag)
+  // SÜD Mittag = City Mittag (immer, egal was in SÜD-Rotation steht)
   if (locBySlug["sued"]) {
-    const hasSuedLunch = plans.some(
-      p => p.locationId === locBySlug["sued"] && p.meal === "lunch"
-    );
-    if (!hasSuedLunch) {
-      const cityLunchPlans = plans.filter(
-        p => p.locationId === locBySlug["city"] && p.meal === "lunch"
-      );
-      for (const plan of cityLunchPlans) {
-        plans.push({ ...plan, locationId: locBySlug["sued"] });
+    // Alle SÜD-Lunch Einträge entfernen (werden durch City-Kopie ersetzt)
+    for (let i = plans.length - 1; i >= 0; i--) {
+      if (plans[i].locationId === locBySlug["sued"] && plans[i].meal === "lunch") {
+        plans.splice(i, 1);
       }
+    }
+    // City Lunch → SÜD Lunch kopieren
+    const cityLunchPlans = plans.filter(
+      p => p.locationId === locBySlug["city"] && p.meal === "lunch"
+    );
+    for (const plan of cityLunchPlans) {
+      plans.push({ ...plan, locationId: locBySlug["sued"] });
     }
   }
 

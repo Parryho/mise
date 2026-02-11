@@ -346,6 +346,7 @@
     "searchRecipePlaceholder": "Search recipe...",
     "noRecipeFound": "No recipe found",
     "suedAutoInfo": "SOUTH Lunch automatically uses the City Lunch menu.",
+    "mirrorCity": "= City Lunch (auto-mirrored)",
     "suedDinner": "SOUTH Dinner",
     "deleteSection": "Delete",
     "clearWeek": "Clear week {{nr}}",

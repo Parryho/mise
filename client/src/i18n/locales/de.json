@@ -346,6 +346,7 @@
     "searchRecipePlaceholder": "Rezept suchen...",
     "noRecipeFound": "Kein Rezept gefunden",
     "suedAutoInfo": "S\u00dcD Mittag \u00fcbernimmt automatisch das City Mittag-Men\u00fc.",
+    "mirrorCity": "= City Mittag (automatisch gespiegelt)",
     "suedDinner": "S\u00dcD Abend",
     "deleteSection": "L\u00f6schen",
     "clearWeek": "Woche {{nr}} leeren",

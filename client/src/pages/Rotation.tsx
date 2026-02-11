@@ -94,13 +94,13 @@ export default function Rotation() {
 
   const [showBlocks, setShowBlocks] = useState<Record<string, boolean>>(() => {
     try {
-      const saved = localStorage.getItem("mise-blocks-rotation");
+      const saved = localStorage.getItem("mise-blocks-rotation-v2");
       if (saved) return JSON.parse(saved);
     } catch {}
-    return { "city-lunch": true, "city-dinner": true, "sued-lunch": false, "sued-dinner": false };
+    return { "city-lunch": true, "city-dinner": true, "sued-lunch": true, "sued-dinner": false };
   });
   useEffect(() => {
-    localStorage.setItem("mise-blocks-rotation", JSON.stringify(showBlocks));
+    localStorage.setItem("mise-blocks-rotation-v2", JSON.stringify(showBlocks));
   }, [showBlocks]);
   const visibleColumns = allColumns.filter(c => showBlocks[c.key]);
 
@@ -457,11 +457,15 @@ export default function Rotation() {
             <thead>
               <tr className="bg-primary text-primary-foreground">
                 <th className="border-r border-white/20 px-2 py-1.5 text-left w-8 font-bold text-[10px] uppercase tracking-wider">{t("rotation.day")}</th>
-                {visibleColumns.map(col => (
+                {visibleColumns.map(col => {
+                  const isMirror = col.locationSlug === "sued" && col.meal === "lunch";
+                  return (
                   <th key={col.key} className="border-r border-white/20 last:border-r-0 px-2 py-1.5 text-left font-bold text-[10px] uppercase tracking-wider">
                     {col.label}
+                    {isMirror && <span className="block font-normal normal-case tracking-normal text-[8px] text-primary-foreground/60">= City Mittag</span>}
                   </th>
-                ))}
+                  );
+                })}
               </tr>
             </thead>
             <tbody>
@@ -470,38 +474,47 @@ export default function Rotation() {
                   <td className="border-r border-border/40 px-2 py-1 font-bold align-top bg-muted/40 text-xs">
                     {t(`weekdays.${dayKey}`)}
                   </td>
-                  {visibleColumns.map(col => (
-                    <td key={col.key} className="border-r border-border/40 last:border-r-0 px-1.5 py-1 align-top">
+                  {visibleColumns.map(col => {
+                    // SÜD Mittag = City Mittag (read-only mirror)
+                    const isMirror = col.locationSlug === "sued" && col.meal === "lunch";
+                    const effectiveLocSlug = isMirror ? "city" : col.locationSlug;
+
+                    return (
+                    <td key={col.key} className={cn("border-r border-border/40 last:border-r-0 px-1.5 py-1 align-top", isMirror && "opacity-70")}>
                       <div className="space-y-0.5">
                         {MEAL_SLOTS.map(course => {
-                          const slot = getSlot(dayIdx, col.meal, col.locationSlug, course);
+                          const slot = getSlot(dayIdx, col.meal, effectiveLocSlug, course);
                           const recipe = slot?.recipeId ? recipeMap.get(slot.recipeId) : null;
                           const isDessert = course === "dessert";
-                          const isDuplicate = slot && duplicates.has(slot.id);
+                          const isDuplicate = !isMirror && slot && duplicates.has(slot.id);
                           const isSlotEmpty = !recipe && !isDessert;
 
                           return (
                             <div key={course} className={cn(
                               "flex items-baseline gap-1 min-h-[16px] rounded-sm px-0.5",
-                              isSlotEmpty && "bg-status-warning-subtle/50"
+                              isSlotEmpty && !isMirror && "bg-status-warning-subtle/50"
                             )}>
                               <span className="text-[9px] text-muted-foreground/70 font-medium w-10 shrink-0">
                                 {t(`rotation.${course}`)}:
                               </span>
                               {isDessert && !recipe ? (
                                 <button
-                                  onClick={() => slot && openEditDialog(slot)}
-                                  className="text-left truncate cursor-pointer hover:text-primary min-w-0 flex-1"
-                                  title={`${t("rotation.dessertVariation")} (${t("rotation.clickToChange")})`}
+                                  onClick={() => !isMirror && slot && openEditDialog(slot)}
+                                  className={cn("text-left truncate min-w-0 flex-1", isMirror ? "cursor-default" : "cursor-pointer hover:text-primary")}
+                                  title={isMirror ? t("rotation.mirrorCity") : `${t("rotation.dessertVariation")} (${t("rotation.clickToChange")})`}
                                 >
                                   <span className="italic">{t("rotation.dessertVariation")}</span>
                                   <span className="ml-1 text-[9px] text-orange-600 font-medium">A,C,G</span>
                                 </button>
                               ) : recipe ? (
                                 <button
-                                  onClick={() => slot && openEditDialog(slot)}
-                                  className={`text-left hover:text-primary truncate cursor-pointer min-w-0 flex-1 ${isDuplicate ? "text-red-600" : ""}`}
-                                  title={isDuplicate ? t("rotation.duplicateTitle", { name: recipe.name }) : `${recipe.name} (${t("rotation.clickToChange")})`}
+                                  onClick={() => !isMirror && slot && openEditDialog(slot)}
+                                  className={cn(
+                                    "text-left truncate min-w-0 flex-1",
+                                    isMirror ? "cursor-default" : "cursor-pointer hover:text-primary",
+                                    isDuplicate && "text-red-600"
+                                  )}
+                                  title={isMirror ? t("rotation.mirrorCity") : isDuplicate ? t("rotation.duplicateTitle", { name: recipe.name }) : `${recipe.name} (${t("rotation.clickToChange")})`}
                                 >
                                   {isDuplicate && <AlertTriangle className="inline h-2.5 w-2.5 mr-0.5 text-red-500" />}
                                   <span className="truncate">{recipe.name}</span>
@@ -513,8 +526,8 @@ export default function Rotation() {
                                 </button>
                               ) : (
                                 <button
-                                  onClick={() => slot && openEditDialog(slot)}
-                                  className="text-amber-400 cursor-pointer hover:text-primary min-w-0 flex-1"
+                                  onClick={() => !isMirror && slot && openEditDialog(slot)}
+                                  className={cn("min-w-0 flex-1", isMirror ? "text-muted-foreground/30 cursor-default" : "text-amber-400 cursor-pointer hover:text-primary")}
                                 >
                                   —
                                 </button>
@@ -525,7 +538,8 @@ export default function Rotation() {
                         })}
                       </div>
                     </td>
-                  ))}
+                    );
+                  })}
                 </tr>
               ))}
             </tbody>

@@ -827,8 +827,9 @@ export async function autoFillRotation(
           const key = `${weekNr}-${dow}-${locSlug}-${meal}`;
           const groupSlots = slotGroups.get(key) || [];
 
-          // Sort slots: soup → main1 → side1a → side1b → main2 → side2a → side2b → dessert
-          const slotOrder: MealSlotName[] = ["soup", "main1", "side1a", "side1b", "main2", "side2a", "side2b", "dessert"];
+          // Sort slots: mains FIRST (so both are known before any side is picked),
+          // then sides. This ensures ingredient collision detection works across both mains.
+          const slotOrder: MealSlotName[] = ["soup", "main1", "main2", "side1a", "side1b", "side2a", "side2b", "dessert"];
           const sorted = [...groupSlots].sort((a, b) => {
             const ai = slotOrder.indexOf(a.course as MealSlotName);
             const bi = slotOrder.indexOf(b.course as MealSlotName);
@@ -838,13 +839,6 @@ export async function autoFillRotation(
           // Track the main dishes picked for this meal (to inform side selection)
           let main1Recipe: Recipe | null = null;
           let main2Recipe: Recipe | null = null;
-
-          // Pre-scan: detect existing main recipes for ingredient collision detection
-          // (needed because side1a/1b are picked before main2 in slot order)
-          for (const s of sorted) {
-            if (s.recipeId && s.course === "main1") main1Recipe = recipes.find(r => r.id === s.recipeId) || null;
-            if (s.recipeId && s.course === "main2") main2Recipe = recipes.find(r => r.id === s.recipeId) || null;
-          }
 
           // Collect ingredient keywords from ALL mains for cross-collision prevention
           const getMealIngredientKeys = (): Set<string> => {

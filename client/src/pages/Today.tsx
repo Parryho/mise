@@ -34,7 +34,7 @@ import {
   MapPin,
 } from "lucide-react";
 import { format } from "date-fns";
-import { de, enUS } from "date-fns/locale";
+import { de, enUS, tr, uk } from "date-fns/locale";
 import { getISOWeek } from "@shared/constants";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -79,7 +79,7 @@ export default function Today() {
   const { toast } = useToast();
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
-  const dateFnsLocale = i18n.language?.startsWith("en") ? enUS : de;
+  const dateFnsLocale = { en: enUS, tr, uk }[i18n.language?.substring(0, 2) as string] || de;
   const { locations } = useLocationFilter();
   const { fridges, logs: haccpLogs } = useApp();
 

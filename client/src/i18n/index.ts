@@ -4,6 +4,8 @@ import LanguageDetector from "i18next-browser-languagedetector";
 
 import de from "./locales/de.json";
 import en from "./locales/en.json";
+import tr from "./locales/tr.json";
+import uk from "./locales/uk.json";
 
 i18n
   .use(LanguageDetector)
@@ -12,11 +14,12 @@ i18n
     resources: {
       de: { translation: de },
       en: { translation: en },
+      tr: { translation: tr },
+      uk: { translation: uk },
     },
-    lng: "de", // default language
-    fallbackLng: "de", // fallback to German
+    fallbackLng: "de",
     interpolation: {
-      escapeValue: false, // React already handles XSS
+      escapeValue: false,
     },
     detection: {
       order: ["localStorage", "navigator"],

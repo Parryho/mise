@@ -1,7 +1,7 @@
 # MASTERPLAN mise.at
 
 > Unified Kitchen Management for Hotels & Gastronomie
-> Stand: 10. Februar 2026
+> Stand: 11. Februar 2026
 
 ---
 
@@ -567,6 +567,7 @@ Phase 2 (Tag-System) bringt bereits 80% Verbesserung. Pairing-Scores sind option
 10.02.2026: Phase 10 (Code Audit KRITISCH + HOCH done)
             Phase 11 (Intelligente Menüplanung Start)
             Phase 12 (Domain-Modularisierung: recipe + menu)
+11.02.2026: Phase 13.20 (Pexels→gutekueche.at: 0 Pexels remaining)
 ```
 
 ### Aktuelle Priorities
@@ -617,8 +618,9 @@ Phase 2 (Tag-System) bringt bereits 80% Verbesserung. Pairing-Scores sind option
 | 13.17 | Team-Review: 6 Bugs im Rezept-Bereich gefixt (MainFish, allergenStatus, snake_case, stale cache, SVG-in-DB, i18n) | ✅ Done | 10.02. |
 | 13.18 | Bild-Qualitäts-Audit: 120+ falsche/duplizierte Bilder korrigiert (Placeholder, Fallback, Chefkoch-Mismatches, Pexels-Duplikate) | ✅ Done | 10.02. |
 | 13.19 | Kategorie-Audit: 7 Rezepte umkategorisiert + 2 Duplikate entfernt (412 Rezepte, 0 Bild-Duplikate) | ✅ Done | 10.02. |
+| 13.20 | Alle 187 Pexels-Bilder durch gutekueche.at ersetzt (3-Pass: WebSearch → Scrape → JSON-LD) | ✅ Done | 11.02. |
 
-**Ergebnis:** Alle 412 Rezepte haben Zutaten + Allergene + passende Bilder. Batch-Import: 343 Rezepte (chefkoch.de: 215, gutekueche.at: 115, lecker.de: 13). Backfill: 20 Rezepte nachträglich Allergene erkannt. Multi-Source: gutekueche.at + chefkoch.de + ichkoche.at + eatsmarter.de + lecker.de + kochbar.de + kuechengoetter.de. Allergen-Detection v2: Hybrid-Matching (exactTokens für kurze Begriffe wie "ei"/"nuss"/"wein", substrings für lange spezifische Begriffe). 218 Rezepte korrigiert — massive Reduktion von False Positives (C aus "Weizenmehl", H aus "Kalbsnuss", O aus "Schweinefleisch").
+**Ergebnis:** Alle 412 Rezepte haben Zutaten + Allergene + passende Bilder (267 gutekueche.at + 145 chefkoch.de, 0 Pexels). Batch-Import: 343 Rezepte (chefkoch.de: 215, gutekueche.at: 115, lecker.de: 13). Backfill: 20 Rezepte nachträglich Allergene erkannt. Multi-Source: gutekueche.at + chefkoch.de + ichkoche.at + eatsmarter.de + lecker.de + kochbar.de + kuechengoetter.de. Allergen-Detection v2: Hybrid-Matching (exactTokens für kurze Begriffe wie "ei"/"nuss"/"wein", substrings für lange spezifische Begriffe). 218 Rezepte korrigiert — massive Reduktion von False Positives (C aus "Weizenmehl", H aus "Kalbsnuss", O aus "Schweinefleisch").
 
 ---
 

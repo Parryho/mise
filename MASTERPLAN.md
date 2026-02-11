@@ -578,7 +578,8 @@ Phase 2 (Tag-System) bringt bereits 80% Verbesserung. Pairing-Scores sind option
 | ~~2~~ | ~~M1-M14~~ | ~~Code Audit MITTEL-Findings~~ | ~~~45h~~ | ✅ **Done** |
 | ~~3~~ | ~~11.10~~ | ~~Bulk-Tag-Editor (235 Rezepte)~~ | ~~4-6h~~ | ✅ **Done** |
 | 4 | R2 | Offene R2-Tickets | ~16h | Admin-UX |
-| 5 | 11.11 | KitcheNette Pairing-Scores | 8-12h | +15-20% |
+| 5 | 14 | Rezeptdatenbank übersetzen (EN/TR/UK) | ~1h | i18n komplett |
+| 6 | 11.11 | KitcheNette Pairing-Scores | 8-12h | +15-20% |
 
 ### Metriken
 
@@ -622,9 +623,22 @@ Phase 2 (Tag-System) bringt bereits 80% Verbesserung. Pairing-Scores sind option
 
 **Ergebnis:** Alle 412 Rezepte haben Zutaten + Allergene + passende Bilder (267 gutekueche.at + 145 chefkoch.de, 0 Pexels). Batch-Import: 343 Rezepte (chefkoch.de: 215, gutekueche.at: 115, lecker.de: 13). Backfill: 20 Rezepte nachträglich Allergene erkannt. Multi-Source: gutekueche.at + chefkoch.de + ichkoche.at + eatsmarter.de + lecker.de + kochbar.de + kuechengoetter.de. Allergen-Detection v2: Hybrid-Matching (exactTokens für kurze Begriffe wie "ei"/"nuss"/"wein", substrings für lange spezifische Begriffe). 218 Rezepte korrigiert — massive Reduktion von False Positives (C aus "Weizenmehl", H aus "Kalbsnuss", O aus "Schweinefleisch").
 
+### Phase 14: Rezeptdatenbank mehrsprachig (geplant)
+
+420 Rezepte + 3.903 Zutaten übersetzen (DE → EN/TR/UK). ~276K Zeichen pro Sprache.
+
+| # | Task | Status | Aufwand |
+|---|------|--------|--------|
+| 14.1 | Architektur: `recipe_translations` Tabelle (recipe_id, lang, name, steps) + `ingredient_translations` | Offen | 30 Min |
+| 14.2 | Batch-Übersetzungs-Script (Claude Haiku, ~600K Tokens total) | Offen | 30 Min |
+| 14.3 | API: Rezepte + Zutaten nach `Accept-Language` Header / User-Sprache ausliefern | Offen | 1h |
+| 14.4 | Client: Rezeptnamen + Zutaten + Steps aus Translation lesen | Offen | 30 Min |
+
+**Kosten:** ~$0.15-0.25 (Haiku) | **Aufwand:** ~2-3h gesamt
+
 ---
 
-## 14. Nächster Terminal-Befehl
+## 15. Nächster Terminal-Befehl
 ```bash
 # 🔥 JETZT: Generator anpassen (Phase 11.7-11.9)
 code server/modules/menu/rotation-agent.ts

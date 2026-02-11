@@ -34,9 +34,10 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false, // Allow loading external images
 }));
 
-// CORS: In dev allow all origins for LAN access, in production disable
+// CORS: dev = all origins, prod = CORS_ORIGINS env (comma-separated) or disabled
+const corsOrigins = process.env.CORS_ORIGINS?.split(",").map(s => s.trim()).filter(Boolean);
 app.use(cors({
-  origin: isDev ? true : false,
+  origin: isDev ? true : (corsOrigins && corsOrigins.length > 0 ? corsOrigins : false),
   credentials: true,
 }));
 const httpServer = createServer(app);

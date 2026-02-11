@@ -1,16 +1,16 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useApp } from "@/lib/store";
 import { apiFetch, apiPost, apiPut, apiDelete } from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, ChevronLeft, ChevronRight, Trash2, ShoppingCart, Download, FileSpreadsheet, FileText, CalendarDays, Users, GripVertical, BookOpen, X, Search } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, Trash2, ShoppingCart, CalendarDays, Users, GripVertical, BookOpen, X, Search, Check, ChevronsUpDown } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { getISOWeek, MEAL_SLOT_LABELS, formatLocalDate, type MealSlotName } from "@shared/constants";
 import { RECIPE_CATEGORIES } from "@shared/schema";
 import { cn } from "@/lib/utils";
@@ -42,10 +42,6 @@ interface GuestCount {
 const MEAL_KEYS = ["lunch", "dinner"] as const;
 
 const COURSE_KEYS: MealSlotName[] = Object.keys(MEAL_SLOT_LABELS) as MealSlotName[];
-
-function formatDate(date: Date): string {
-  return formatLocalDate(date);
-}
 
 function getWeekDatesFromRange(from: string): Date[] {
   const monday = new Date(from + "T00:00:00");
@@ -208,7 +204,7 @@ export default function MenuPlan() {
   };
 
   const selectedDate = weekDates[selectedDay];
-  const selectedDateStr = selectedDate ? formatDate(selectedDate) : "";
+  const selectedDateStr = selectedDate ? formatLocalDate(selectedDate) : "";
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
@@ -271,24 +267,6 @@ export default function MenuPlan() {
             <Button variant="ghost" size="sm" className="h-8 text-xs text-primary-foreground hover:bg-white/20 gap-1 px-2" onClick={() => setShowShoppingList(true)}>
               <ShoppingCart className="h-3.5 w-3.5" /> {t("menu.shopping")}
             </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 text-xs text-primary-foreground hover:bg-white/20 gap-1 px-2">
-                  <Download className="h-3.5 w-3.5" /> {t("common.export")}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => window.open(`/api/menu-plans/export?start=${weekFrom}&end=${weekTo}&format=pdf`, '_blank')}>
-                  <Download className="h-4 w-4 mr-2" /> PDF
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => window.open(`/api/menu-plans/export?start=${weekFrom}&end=${weekTo}&format=xlsx`, '_blank')}>
-                  <FileSpreadsheet className="h-4 w-4 mr-2" /> Excel
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => window.open(`/api/menu-plans/export?start=${weekFrom}&end=${weekTo}&format=docx`, '_blank')}>
-                  <FileText className="h-4 w-4 mr-2" /> Word
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
         </div>
       </div>
@@ -491,10 +469,17 @@ function CourseCard({ date, dayName, dayNum, meal, course, courseLabel, plan, re
     );
   }
 
+  const isMainCourse = course === "main1" || course === "main2";
+  const [comboOpen, setComboOpen] = useState(false);
+
   const { setNodeRef, isOver } = useDroppable({
     id: `drop-${date}-${meal}-${course}`,
     data: { date, meal, course },
   });
+
+  const selectedRecipeName = recipeId && recipeId !== "none"
+    ? recipes.find((r: any) => String(r.id) === recipeId)?.name
+    : null;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -504,6 +489,7 @@ function CourseCard({ date, dayName, dayNum, meal, course, courseLabel, plan, re
           className={cn(
             "cursor-pointer hover:bg-muted/50 transition-all press border-border/60",
             isOver && "ring-2 ring-primary bg-primary/5",
+            isMainCourse && recipeName && "bg-amber-50/50 dark:bg-amber-950/20 border-amber-200/50 dark:border-amber-800/30",
             !recipeName && "border-dashed border-muted-foreground/20"
           )}
         >
@@ -534,17 +520,40 @@ function CourseCard({ date, dayName, dayNum, meal, course, courseLabel, plan, re
         <div className="space-y-4 py-2">
           <div className="space-y-2">
             <Label>{t("menu.recipe")}</Label>
-            <Select value={recipeId} onValueChange={setRecipeId}>
-              <SelectTrigger>
-                <SelectValue placeholder={t("menu.selectRecipe")} />
-              </SelectTrigger>
-              <SelectContent className="max-h-60">
-                <SelectItem value="none">{t("menu.noRecipe")}</SelectItem>
-                {recipes.map((r: any) => (
-                  <SelectItem key={r.id} value={String(r.id)}>{r.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={comboOpen} onOpenChange={setComboOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-full justify-between font-normal">
+                  <span className="truncate">{selectedRecipeName || t("menu.selectRecipe")}</span>
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="p-0 w-[--radix-popover-trigger-width]" align="start">
+                <Command>
+                  <CommandInput placeholder={t("menu.searchRecipePlaceholder")} />
+                  <CommandList className="max-h-60">
+                    <CommandEmpty>{t("recipes.noRecipesFound")}</CommandEmpty>
+                    <CommandItem value="__none__" onSelect={() => { setRecipeId("none"); setComboOpen(false); }}>
+                      <Check className={cn("mr-2 h-4 w-4", (!recipeId || recipeId === "none") ? "opacity-100" : "opacity-0")} />
+                      {t("menu.noRecipe")}
+                    </CommandItem>
+                    {RECIPE_CATEGORIES.map(cat => {
+                      const catRecipes = recipes.filter((r: any) => r.category === cat.id);
+                      if (catRecipes.length === 0) return null;
+                      return (
+                        <CommandGroup key={cat.id} heading={`${cat.symbol} ${cat.label}`}>
+                          {catRecipes.map((r: any) => (
+                            <CommandItem key={r.id} value={r.name} onSelect={() => { setRecipeId(String(r.id)); setComboOpen(false); }}>
+                              <Check className={cn("mr-2 h-4 w-4", recipeId === String(r.id) ? "opacity-100" : "opacity-0")} />
+                              {r.name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      );
+                    })}
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
 
           <div className="space-y-2">

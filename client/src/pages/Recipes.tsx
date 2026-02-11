@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
 import { useApp, Recipe } from "@/lib/store";
 import { apiFetch } from "@/lib/api";
-import { ALLERGENS, AllergenCode, useTranslation } from "@/lib/i18n";
+import { ALLERGENS, AllergenCode } from "@/lib/i18n";
+import { useTranslation } from "@/hooks/useTranslation";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -27,8 +28,6 @@ function useDebounce<T>(value: T, delay: number): T {
   return debouncedValue;
 }
 
-// Use shared categories
-const CATEGORIES = RECIPE_CATEGORIES;
 
 export default function Recipes() {
   const { recipes, loading } = useApp();
@@ -72,7 +71,7 @@ export default function Recipes() {
     return matchesCategory && matchesSearch;
   });
 
-  const recipeCounts = CATEGORIES.reduce((acc, cat) => {
+  const recipeCounts = RECIPE_CATEGORIES.reduce((acc, cat) => {
     acc[cat.id] = recipes.filter(r => r.category === cat.id).length;
     return acc;
   }, {} as Record<string, number>);
@@ -100,13 +99,13 @@ export default function Recipes() {
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <h1 className="text-2xl font-heading font-bold">Suchergebnisse</h1>
+            <h1 className="text-2xl font-heading font-bold">{t("recipes.searchResults")}</h1>
           </div>
           <div className="flex gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder={searchIngredients ? "Zutat suchen..." : t("searchRecipes")}
+                placeholder={searchIngredients ? t("recipes.searchIngredient") : t("recipes.searchRecipes")}
                 className="pl-9 bg-secondary/50 border-0"
                 value={globalSearch}
                 onChange={(e) => setGlobalSearch(e.target.value)}
@@ -129,7 +128,7 @@ export default function Recipes() {
               size="icon"
               className="shrink-0 h-10 w-10"
               onClick={() => setSearchIngredients(!searchIngredients)}
-              title="Zutat-Suche"
+              title={t("recipes.ingredientSearch")}
             >
               <UtensilsCrossed className="h-4 w-4" />
             </Button>
@@ -143,13 +142,13 @@ export default function Recipes() {
         ) : globalSearchResults.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             <Search className="h-12 w-12 mx-auto mb-4 opacity-30" />
-            <p className="font-medium">Keine Rezepte gefunden</p>
-            <p className="text-sm mt-1">Versuchen Sie einen anderen Suchbegriff</p>
+            <p className="font-medium">{t("recipes.noRecipesFound")}</p>
+            <p className="text-sm mt-1">{t("recipes.tryDifferentSearch")}</p>
           </div>
         ) : (
           <>
             <p className="text-sm text-muted-foreground tabular-nums">
-              {globalSearchResults.length} Rezept{globalSearchResults.length !== 1 ? 'e' : ''} gefunden
+              {t("recipes.recipesFound", { count: globalSearchResults.length })}
             </p>
             <div className="grid gap-3 md:grid-cols-2">
               {globalSearchResults.map(recipe => (
@@ -163,7 +162,7 @@ export default function Recipes() {
   }
 
   if (selectedCategory) {
-    const categoryInfo = CATEGORIES.find(c => c.id === selectedCategory);
+    const categoryInfo = RECIPE_CATEGORIES.find(c => c.id === selectedCategory);
     return (
       <div className="p-4 space-y-4 pb-24">
         <div className="sticky top-0 bg-background/95 backdrop-blur z-10 pb-2 space-y-3">
@@ -185,8 +184,8 @@ export default function Recipes() {
           <div className="relative">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input 
-              placeholder={t("searchRecipes")}
-              className="pl-9 bg-secondary/50 border-0" 
+              placeholder={t("recipes.searchRecipes")}
+              className="pl-9 bg-secondary/50 border-0"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               data-testid="input-search-recipes"
@@ -198,11 +197,11 @@ export default function Recipes() {
           {filteredRecipes.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <Search className="h-12 w-12 mx-auto mb-4 opacity-30" />
-              <p className="font-medium">Keine Rezepte gefunden</p>
+              <p className="font-medium">{t("recipes.noRecipesFound")}</p>
               {search ? (
-                <p className="text-sm mt-1">Versuchen Sie einen anderen Suchbegriff oder wechseln Sie die Kategorie</p>
+                <p className="text-sm mt-1">{t("recipes.tryDifferentSearchOrCategory")}</p>
               ) : (
-                <p className="text-sm mt-1">In dieser Kategorie sind noch keine Rezepte vorhanden</p>
+                <p className="text-sm mt-1">{t("recipes.noCategoryRecipes")}</p>
               )}
             </div>
           ) : (
@@ -216,59 +215,63 @@ export default function Recipes() {
   }
 
   return (
-    <div className="p-4 space-y-4 pb-24">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-heading font-bold">{t("recipes")}</h1>
-        <AddRecipeDialog />
-      </div>
-
-      {/* Global Search */}
-      <div className="flex gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-          <Input
-            placeholder={searchIngredients ? "Zutat suchen..." : "Rezept suchen..."}
-            className="pl-10 h-12 text-base bg-secondary/50 border-border"
-            value={globalSearch}
-            onChange={(e) => setGlobalSearch(e.target.value)}
-            data-testid="input-global-search-main"
-          />
+    <div className="pb-24">
+      <div className="bg-primary text-primary-foreground px-4 pt-4 pb-3">
+        <div className="flex items-center justify-between mb-2">
+          <h1 className="font-heading text-xl font-bold uppercase tracking-wide">{t("recipes.title")}</h1>
+          <AddRecipeDialog />
         </div>
-        <Button
-          variant={searchIngredients ? "default" : "outline"}
-          size="icon"
-          className="shrink-0 h-12 w-12"
-          onClick={() => setSearchIngredients(!searchIngredients)}
-          title="Zutat-Suche"
-        >
-          <UtensilsCrossed className="h-5 w-5" />
-        </Button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-        {CATEGORIES.map((category) => (
-          <button
-            key={category.id}
-            onClick={() => setSelectedCategory(category.id)}
-            className="flex flex-col items-center justify-center gap-1.5 p-5 rounded-xl border border-border bg-card hover:border-primary/40 hover:bg-primary/5 elevation-0 press transition-all duration-200"
-            data-testid={`category-${category.id.toLowerCase()}`}
+      <div className="p-4 space-y-4">
+        {/* Global Search */}
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+            <Input
+              placeholder={searchIngredients ? t("recipes.searchIngredient") : t("recipes.searchRecipes")}
+              className="pl-10 h-12 text-base bg-secondary/50 border-border"
+              value={globalSearch}
+              onChange={(e) => setGlobalSearch(e.target.value)}
+              data-testid="input-global-search-main"
+            />
+          </div>
+          <Button
+            variant={searchIngredients ? "default" : "outline"}
+            size="icon"
+            className="shrink-0 h-12 w-12"
+            onClick={() => setSearchIngredients(!searchIngredients)}
+            title={t("recipes.ingredientSearch")}
           >
-            <span className="text-4xl mb-1">{category.symbol}</span>
-            <h3 className="font-heading font-bold text-sm text-center leading-tight">
-              {category.label}
-            </h3>
-            <span className="text-xs text-muted-foreground font-medium tabular-nums">
-              {recipeCounts[category.id] || 0} Rezepte
-            </span>
-          </button>
-        ))}
+            <UtensilsCrossed className="h-5 w-5" />
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+          {RECIPE_CATEGORIES.map((category) => (
+            <button
+              key={category.id}
+              onClick={() => setSelectedCategory(category.id)}
+              className="flex flex-col items-center justify-center gap-1.5 p-5 rounded-xl border border-border bg-card hover:border-primary/40 hover:bg-primary/5 elevation-0 press transition-all duration-200"
+              data-testid={`category-${category.id.toLowerCase()}`}
+            >
+              <span className="text-4xl mb-1">{category.symbol}</span>
+              <h3 className="font-heading font-bold text-sm text-center leading-tight">
+                {category.label}
+              </h3>
+              <span className="text-xs text-muted-foreground font-medium tabular-nums">
+                {t("recipes.recipeCount", { count: recipeCounts[category.id] || 0 })}
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
 }
 
 function AddRecipeDialog({ defaultCategory }: { defaultCategory?: string }) {
-  const { t, tCat } = useTranslation();
+  const { t } = useTranslation();
   const { addRecipe, importRecipe } = useApp();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
@@ -298,11 +301,11 @@ function AddRecipeDialog({ defaultCategory }: { defaultCategory?: string }) {
         allergens: [],
         ingredientsList: []
       });
-      toast({ title: t("save"), description: "Rezept erstellt" });
+      toast({ title: t("common.save"), description: t("recipes.recipeCreated") });
       setOpen(false);
       setName("");
     } catch (error: any) {
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: error.message, variant: "destructive" });
     }
   };
 
@@ -314,14 +317,14 @@ function AddRecipeDialog({ defaultCategory }: { defaultCategory?: string }) {
     try {
       const recipe = await importRecipe(importUrl);
       toast({
-        title: "Import erfolgreich!",
-        description: `"${recipe.name}" wurde importiert.`
+        title: t("recipes.importSuccess"),
+        description: t("recipes.importSuccessDesc", { name: recipe.name })
       });
       setOpen(false);
       setImportUrl("");
     } catch (error: any) {
       toast({
-        title: "Import fehlgeschlagen",
+        title: t("recipes.importFailed"),
         description: error.message,
         variant: "destructive"
       });
@@ -363,7 +366,7 @@ function AddRecipeDialog({ defaultCategory }: { defaultCategory?: string }) {
       );
       setOcrCategory(detectedCat);
     } catch (error: any) {
-      toast({ title: "OCR fehlgeschlagen", description: error.message, variant: "destructive" });
+      toast({ title: t("recipes.ocrFailed"), description: error.message, variant: "destructive" });
     } finally {
       setOcrProcessing(false);
     }
@@ -384,12 +387,12 @@ function AddRecipeDialog({ defaultCategory }: { defaultCategory?: string }) {
         allergens: [],
         ingredientsList: ocrParsed.ingredients || []
       });
-      toast({ title: "Rezept gespeichert", description: `"${ocrParsed.name}" wurde erstellt.` });
+      toast({ title: t("recipes.recipeSaved"), description: t("recipes.recipeSavedDesc", { name: ocrParsed.name }) });
       setOpen(false);
       setOcrText("");
       setOcrParsed(null);
     } catch (error: any) {
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: error.message, variant: "destructive" });
     }
   };
 
@@ -397,29 +400,29 @@ function AddRecipeDialog({ defaultCategory }: { defaultCategory?: string }) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="h-9 gap-1.5 border-primary text-primary hover:bg-primary/10">
-          <PlusCircle className="h-4 w-4" /> Neu
+          <PlusCircle className="h-4 w-4" /> {t("common.new")}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md max-h-[85vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>{t("addRecipe")}</DialogTitle>
+          <DialogTitle>{t("recipes.addRecipe")}</DialogTitle>
         </DialogHeader>
 
         <Tabs defaultValue="import" className="w-full flex-1 overflow-hidden flex flex-col">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="import" className="gap-1 text-xs">
-              <Link2 className="h-3.5 w-3.5" /> Import
+              <Link2 className="h-3.5 w-3.5" /> {t("common.import")}
             </TabsTrigger>
             <TabsTrigger value="ocr" className="gap-1 text-xs">
-              <Camera className="h-3.5 w-3.5" /> Foto/PDF
+              <Camera className="h-3.5 w-3.5" /> {t("recipes.photoOrPdf")}
             </TabsTrigger>
-            <TabsTrigger value="manual" className="text-xs">Manuell</TabsTrigger>
+            <TabsTrigger value="manual" className="text-xs">{t("common.manual")}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="import" className="mt-4">
             <form onSubmit={handleImport} className="space-y-4">
               <div className="space-y-2">
-                <Label>Rezept-URL</Label>
+                <Label>{t("recipes.recipeUrl")}</Label>
                 <Input
                   type="url"
                   value={importUrl}
@@ -428,12 +431,12 @@ function AddRecipeDialog({ defaultCategory }: { defaultCategory?: string }) {
                   required
                 />
                 <p className="text-xs text-muted-foreground">
-                  Unterstützt: Chefkoch.de, Gutekueche.at, Ichkoche.at, Kochrezepte.at und viele mehr
+                  {t("recipes.supportedSites")}
                 </p>
               </div>
               <Button type="submit" className="w-full" disabled={importing || !importUrl}>
                 {importing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Link2 className="h-4 w-4 mr-2" />}
-                {importing ? "Importiere..." : "Rezept importieren"}
+                {importing ? t("recipes.importing") : t("recipes.importRecipe")}
               </Button>
             </form>
           </TabsContent>
@@ -443,7 +446,7 @@ function AddRecipeDialog({ defaultCategory }: { defaultCategory?: string }) {
               {!ocrParsed && !ocrProcessing && (
                 <div className="space-y-3">
                   <div className="space-y-2">
-                    <Label>Foto aufnehmen oder auswählen</Label>
+                    <Label>{t("recipes.takePhotoOrSelect")}</Label>
                     <div className="flex gap-2">
                       <label className="flex-1 cursor-pointer">
                         <input
@@ -458,7 +461,7 @@ function AddRecipeDialog({ defaultCategory }: { defaultCategory?: string }) {
                         />
                         <div className="flex items-center justify-center gap-2 border-2 border-dashed rounded-lg p-4 hover:border-primary transition-colors">
                           <Camera className="h-5 w-5 text-muted-foreground" />
-                          <span className="text-sm text-muted-foreground">Kamera / Bild</span>
+                          <span className="text-sm text-muted-foreground">{t("recipes.cameraOrImage")}</span>
                         </div>
                       </label>
                       <label className="flex-1 cursor-pointer">
@@ -479,7 +482,7 @@ function AddRecipeDialog({ defaultCategory }: { defaultCategory?: string }) {
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Fotografieren Sie ein Rezept oder laden Sie ein PDF hoch. Der Text wird automatisch erkannt und in ein Rezept umgewandelt.
+                    {t("recipes.ocrDescription")}
                   </p>
                 </div>
               )}
@@ -487,7 +490,7 @@ function AddRecipeDialog({ defaultCategory }: { defaultCategory?: string }) {
               {ocrProcessing && (
                 <div className="text-center py-8 space-y-3">
                   <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-                  <p className="text-sm text-muted-foreground">Text wird erkannt...</p>
+                  <p className="text-sm text-muted-foreground">{t("recipes.recognizing")}</p>
                   {ocrProgress > 0 && (
                     <div className="w-full bg-secondary rounded-full h-2">
                       <div
@@ -502,7 +505,7 @@ function AddRecipeDialog({ defaultCategory }: { defaultCategory?: string }) {
               {ocrParsed && !ocrProcessing && (
                 <div className="space-y-3">
                   <div className="space-y-2">
-                    <Label>Erkannter Name</Label>
+                    <Label>{t("recipes.recognizedName")}</Label>
                     <Input
                       value={ocrParsed.name}
                       onChange={(e) => setOcrParsed({ ...ocrParsed, name: e.target.value })}
@@ -510,13 +513,13 @@ function AddRecipeDialog({ defaultCategory }: { defaultCategory?: string }) {
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Kategorie (automatisch erkannt)</Label>
+                    <Label>{t("recipes.categoryAutoDetected")}</Label>
                     <Select value={ocrCategory} onValueChange={setOcrCategory}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {CATEGORIES.map(cat => (
+                        {RECIPE_CATEGORIES.map(cat => (
                           <SelectItem key={cat.id} value={cat.id}>
                             {cat.symbol} {cat.label}
                           </SelectItem>
@@ -527,7 +530,7 @@ function AddRecipeDialog({ defaultCategory }: { defaultCategory?: string }) {
 
                   <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1">
-                      <Label className="text-xs">Portionen</Label>
+                      <Label className="text-xs">{t("recipes.portions")}</Label>
                       <Input
                         type="number"
                         value={ocrParsed.portions}
@@ -535,7 +538,7 @@ function AddRecipeDialog({ defaultCategory }: { defaultCategory?: string }) {
                       />
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-xs">Zeit (Min)</Label>
+                      <Label className="text-xs">{t("recipes.timeMinutes")}</Label>
                       <Input
                         type="number"
                         value={ocrParsed.prepTime}
@@ -546,7 +549,7 @@ function AddRecipeDialog({ defaultCategory }: { defaultCategory?: string }) {
 
                   {ocrParsed.ingredients.length > 0 && (
                     <div className="space-y-1">
-                      <Label className="text-xs">Erkannte Zutaten ({ocrParsed.ingredients.length})</Label>
+                      <Label className="text-xs">{t("recipes.recognizedIngredients")} ({ocrParsed.ingredients.length})</Label>
                       <div className="max-h-32 overflow-y-auto border rounded p-2 text-xs space-y-1">
                         {ocrParsed.ingredients.map((ing: any, i: number) => (
                           <div key={i} className="text-muted-foreground">
@@ -559,7 +562,7 @@ function AddRecipeDialog({ defaultCategory }: { defaultCategory?: string }) {
 
                   {ocrParsed.steps.length > 0 && (
                     <div className="space-y-1">
-                      <Label className="text-xs">Erkannte Schritte ({ocrParsed.steps.length})</Label>
+                      <Label className="text-xs">{t("recipes.recognizedSteps")} ({ocrParsed.steps.length})</Label>
                       <div className="max-h-32 overflow-y-auto border rounded p-2 text-xs space-y-1">
                         {ocrParsed.steps.map((step: string, i: number) => (
                           <div key={i} className="text-muted-foreground">
@@ -572,7 +575,7 @@ function AddRecipeDialog({ defaultCategory }: { defaultCategory?: string }) {
 
                   {ocrText && (
                     <details className="text-xs">
-                      <summary className="cursor-pointer text-muted-foreground">Rohtext anzeigen</summary>
+                      <summary className="cursor-pointer text-muted-foreground">{t("recipes.showRawText")}</summary>
                       <pre className="mt-1 p-2 bg-secondary rounded text-[10px] max-h-24 overflow-y-auto whitespace-pre-wrap">
                         {ocrText}
                       </pre>
@@ -581,10 +584,10 @@ function AddRecipeDialog({ defaultCategory }: { defaultCategory?: string }) {
 
                   <div className="flex gap-2">
                     <Button onClick={handleOcrSave} className="flex-1">
-                      Rezept speichern
+                      {t("recipes.saveRecipe")}
                     </Button>
                     <Button variant="outline" onClick={() => { setOcrParsed(null); setOcrText(""); }}>
-                      Zurück
+                      {t("common.back")}
                     </Button>
                   </div>
                 </div>
@@ -595,23 +598,23 @@ function AddRecipeDialog({ defaultCategory }: { defaultCategory?: string }) {
           <TabsContent value="manual" className="mt-4">
             <form onSubmit={handleManualSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label>{t("recipeName")}</Label>
+                <Label>{t("recipes.recipeName")}</Label>
                 <Input value={name} onChange={(e) => setName(e.target.value)} required />
               </div>
               <div className="space-y-2">
-                <Label>{t("category")}</Label>
+                <Label>{t("recipes.category")}</Label>
                 <Select value={category} onValueChange={setCategory}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {CATEGORIES.map(cat => (
+                    {RECIPE_CATEGORIES.map(cat => (
                       <SelectItem key={cat.id} value={cat.id}>{cat.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-              <Button type="submit" className="w-full">{t("save")}</Button>
+              <Button type="submit" className="w-full">{t("common.save")}</Button>
             </form>
           </TabsContent>
         </Tabs>
@@ -621,10 +624,10 @@ function AddRecipeDialog({ defaultCategory }: { defaultCategory?: string }) {
 }
 
 function RecipeCard({ recipe }: { recipe: Recipe }) {
-  const { t, lang } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const categoryLabel = CATEGORIES.find(c => c.id === recipe.category)?.label || recipe.category;
+  const categoryLabel = RECIPE_CATEGORIES.find(c => c.id === recipe.category)?.label || recipe.category;
 
   return (
     <>
@@ -657,15 +660,15 @@ function RecipeCard({ recipe }: { recipe: Recipe }) {
           </div>
           <div className="flex gap-1 flex-wrap justify-end">
             {recipe.allergens.length > 0 ? recipe.allergens.slice(0, 5).map(code => (
-              <span key={code} className="w-5 h-5 rounded-full bg-destructive/10 text-destructive text-[10px] flex items-center justify-center font-bold border border-destructive/20 font-mono" title={ALLERGENS[code as AllergenCode]?.[lang]}>
+              <span key={code} className="w-5 h-5 rounded-full bg-destructive/10 text-destructive text-[10px] flex items-center justify-center font-bold border border-destructive/20 font-mono" title={ALLERGENS[code as AllergenCode]?.[i18n.language]}>
                 {code}
               </span>
             )) : (
               <span className={`text-[10px] px-1.5 py-0.5 rounded ${
                 recipe.allergenStatus === 'verified'
-                  ? 'text-green-600 bg-green-50'
+                  ? 'text-status-success bg-status-success-subtle'
                   : 'text-muted-foreground bg-muted'
-              }`}>{recipe.allergenStatus === 'verified' ? t("noAllergens") : '?'}</span>
+              }`}>{recipe.allergenStatus === 'verified' ? t("recipes.noAllergens") : '?'}</span>
             )}
             {recipe.allergens.length > 5 && (
               <span className="w-5 h-5 rounded-full bg-muted text-muted-foreground text-[10px] flex items-center justify-center font-bold font-mono">

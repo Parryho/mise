@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Recipe, Ingredient, useApp } from "@/lib/store";
-import { ALLERGENS, AllergenCode, useTranslation } from "@/lib/i18n";
+import { ALLERGENS, AllergenCode } from "@/lib/i18n";
+import { useTranslation } from "@/hooks/useTranslation";
 import { apiFetch } from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,8 +18,6 @@ import RecipeMediaGallery from "@/components/RecipeMediaGallery";
 import { getDefaultRecipeImage, getPlaceholderImage } from "@/lib/recipe-images";
 import RecipeMediaUpload from "@/components/RecipeMediaUpload";
 
-const CATEGORIES = RECIPE_CATEGORIES;
-
 interface RecipeDetailDialogProps {
   recipe: Recipe;
   open: boolean;
@@ -28,7 +27,8 @@ interface RecipeDetailDialogProps {
 }
 
 export default function RecipeDetailDialog({ recipe, open, onOpenChange, readOnly }: RecipeDetailDialogProps) {
-  const { t, lang } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language as "de" | "en";
   const { deleteRecipe, updateRecipe } = useApp();
   const { toast } = useToast();
   const [portions, setPortions] = useState(recipe.portions);
@@ -46,7 +46,7 @@ export default function RecipeDetailDialog({ recipe, open, onOpenChange, readOnl
   const [editIngredients, setEditIngredients] = useState<Ingredient[]>([]);
   const [saving, setSaving] = useState(false);
 
-  const categoryLabel = CATEGORIES.find(c => c.id === recipe.category)?.label || recipe.category;
+  const categoryLabel = RECIPE_CATEGORIES.find(c => c.id === recipe.category)?.label || recipe.category;
 
   useEffect(() => {
     if (open) {
@@ -72,14 +72,14 @@ export default function RecipeDetailDialog({ recipe, open, onOpenChange, readOnl
   };
 
   const handleDelete = async () => {
-    if (!confirm("Rezept wirklich löschen?")) return;
+    if (!confirm(t("recipes.deleteConfirm"))) return;
     setDeleting(true);
     try {
       await deleteRecipe(recipe.id);
-      toast({ title: "Rezept gelöscht", description: `"${recipe.name}" wurde entfernt.` });
+      toast({ title: t("recipes.deleted"), description: t("recipes.deletedDesc", { name: recipe.name }) });
       onOpenChange(false);
     } catch (error: any) {
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: error.message, variant: "destructive" });
     } finally {
       setDeleting(false);
     }
@@ -108,12 +108,12 @@ export default function RecipeDetailDialog({ recipe, open, onOpenChange, readOnl
         allergens: editAllergens as any,
         ingredientsList: editIngredients
       });
-      toast({ title: "Rezept gespeichert" });
+      toast({ title: t("common.saved") });
       setEditMode(false);
       const data = await apiFetch<Ingredient[]>(`/api/recipes/${recipe.id}/ingredients`);
       setIngredients(data);
     } catch (error: any) {
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: error.message, variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -166,12 +166,12 @@ export default function RecipeDetailDialog({ recipe, open, onOpenChange, readOnl
               {!editMode && (
                 <>
                   <Button variant="outline" size="sm" className="gap-1.5" onClick={startEdit}>
-                    <Pencil className="h-3.5 w-3.5" /> Bearbeiten
+                    <Pencil className="h-3.5 w-3.5" /> {t("common.edit")}
                   </Button>
                   {recipe.sourceUrl && (
                     <Button variant="outline" size="sm" className="gap-1.5" asChild>
                       <a href={recipe.sourceUrl} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="h-3.5 w-3.5" /> Quelle
+                        <ExternalLink className="h-3.5 w-3.5" /> {t("recipes.source")}
                       </a>
                     </Button>
                   )}
@@ -185,9 +185,9 @@ export default function RecipeDetailDialog({ recipe, open, onOpenChange, readOnl
               {editMode && (
                 <>
                   <Button size="sm" className="gap-1.5" onClick={handleSave} disabled={saving}>
-                    {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null} Speichern
+                    {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null} {t("common.save")}
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => setEditMode(false)}>Abbrechen</Button>
+                  <Button variant="outline" size="sm" onClick={() => setEditMode(false)}>{t("common.cancel")}</Button>
                 </>
               )}
             </div>
@@ -196,16 +196,16 @@ export default function RecipeDetailDialog({ recipe, open, onOpenChange, readOnl
           {editMode && !readOnly ? (
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>Name</Label>
+                <Label>{t("common.name")}</Label>
                 <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
               </div>
 
               <div className="space-y-2">
-                <Label>Kategorie</Label>
+                <Label>{t("recipes.category")}</Label>
                 <Select value={editCategory} onValueChange={setEditCategory}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {CATEGORIES.map(cat => (
+                    {RECIPE_CATEGORIES.map(cat => (
                       <SelectItem key={cat.id} value={cat.id}>{cat.label}</SelectItem>
                     ))}
                   </SelectContent>
@@ -213,17 +213,17 @@ export default function RecipeDetailDialog({ recipe, open, onOpenChange, readOnl
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label>Portionen</Label>
+                  <Label>{t("recipes.portions")}</Label>
                   <Input type="number" value={editPortions} onChange={(e) => setEditPortions(e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Zeit (Min)</Label>
+                  <Label>{t("recipes.prepTime")}</Label>
                   <Input type="number" value={editPrepTime} onChange={(e) => setEditPrepTime(e.target.value)} />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label>{t("allergens")} (A-R)</Label>
+                <Label>{t("recipes.allergens")} (A-R)</Label>
                 <div className="flex flex-wrap gap-1.5">
                   {Object.values(ALLERGENS).map(alg => (
                     <Badge
@@ -240,9 +240,9 @@ export default function RecipeDetailDialog({ recipe, open, onOpenChange, readOnl
 
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <Label>{t("ingredients")}</Label>
+                  <Label>{t("recipes.ingredients")}</Label>
                   <Button type="button" size="sm" variant="outline" onClick={addIngredient}>
-                    <Plus className="h-3 w-3 mr-1" /> Zutat
+                    <Plus className="h-3 w-3 mr-1" /> {t("recipes.ingredient")}
                   </Button>
                 </div>
                 <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -254,19 +254,19 @@ export default function RecipeDetailDialog({ recipe, open, onOpenChange, readOnl
                         step="0.1"
                         value={ing.amount}
                         onChange={(e) => updateIngredient(idx, 'amount', parseFloat(e.target.value) || 0)}
-                        placeholder="Menge"
+                        placeholder={t("recipes.amount")}
                       />
                       <Input
                         className="w-16 text-sm h-10"
                         value={ing.unit}
                         onChange={(e) => updateIngredient(idx, 'unit', e.target.value)}
-                        placeholder="Einh."
+                        placeholder={t("recipes.unit")}
                       />
                       <Input
                         className="flex-1 text-sm h-10"
                         value={ing.name}
                         onChange={(e) => updateIngredient(idx, 'name', e.target.value)}
-                        placeholder="Zutat"
+                        placeholder={t("recipes.ingredient")}
                       />
                       <Button type="button" size="icon" variant="ghost" className="h-10 w-10 shrink-0" onClick={() => removeIngredient(idx)}>
                         <X className="h-4 w-4" />
@@ -277,7 +277,7 @@ export default function RecipeDetailDialog({ recipe, open, onOpenChange, readOnl
               </div>
 
               <div className="space-y-2">
-                <Label>{t("preparation")} (eine pro Zeile)</Label>
+                <Label>{t("recipes.preparation")} ({t("recipes.onePerLine")})</Label>
                 <Textarea
                   value={editSteps}
                   onChange={(e) => setEditSteps(e.target.value)}
@@ -296,7 +296,7 @@ export default function RecipeDetailDialog({ recipe, open, onOpenChange, readOnl
             <>
               <div className="flex items-center justify-between bg-secondary/30 p-3 rounded-lg border border-border">
                 <span className="font-medium text-sm flex items-center gap-2">
-                  <Users className="h-4 w-4" /> {t("portions")}
+                  <Users className="h-4 w-4" /> {t("recipes.portions")}
                 </span>
                 <div className="flex items-center gap-2 bg-background rounded-md border border-border p-1">
                   <Button size="icon" variant="ghost" className="h-9 w-9" onClick={() => setPortions(Math.max(1, portions - 1))}><Minus className="h-4 w-4" /></Button>
@@ -306,7 +306,7 @@ export default function RecipeDetailDialog({ recipe, open, onOpenChange, readOnl
               </div>
 
               <div>
-                <h3 className="text-sm font-heading font-semibold mb-2 text-muted-foreground uppercase tracking-wide">{t("allergens")}</h3>
+                <h3 className="text-sm font-heading font-semibold mb-2 text-muted-foreground uppercase tracking-wide">{t("recipes.allergens")}</h3>
                 <div className="flex flex-wrap gap-2">
                   {recipe.allergens.length > 0 ? recipe.allergens.map(code => (
                     <Badge key={code} variant="destructive" className="flex items-center gap-1 font-mono">
@@ -316,21 +316,21 @@ export default function RecipeDetailDialog({ recipe, open, onOpenChange, readOnl
                   )) : (
                     <Badge variant="outline" className={
                       recipe.allergenStatus === 'verified'
-                        ? "text-green-600 border-green-200 bg-green-50"
+                        ? "text-status-success border-status-success/20 bg-status-success-subtle"
                         : "text-muted-foreground border-border bg-muted"
                     }>
-                      {t("noAllergens")}
+                      {t("recipes.noAllergens")}
                     </Badge>
                   )}
                 </div>
                 {recipe.allergenStatus === 'auto' && (
-                  <p className="text-xs text-orange-600 flex items-center gap-1 mt-1.5">
-                    <AlertTriangle className="h-3 w-3" /> Automatisch erkannt
+                  <p className="text-xs text-status-warning flex items-center gap-1 mt-1.5">
+                    <AlertTriangle className="h-3 w-3" /> {t("recipes.autoDetected")}
                   </p>
                 )}
                 {recipe.allergenStatus === 'verified' && (
-                  <p className="text-xs text-green-600 flex items-center gap-1 mt-1.5">
-                    <CheckCircle2 className="h-3 w-3" /> Geprüft
+                  <p className="text-xs text-status-success flex items-center gap-1 mt-1.5">
+                    <CheckCircle2 className="h-3 w-3" /> {t("recipes.verified")}
                   </p>
                 )}
               </div>
@@ -349,7 +349,7 @@ export default function RecipeDetailDialog({ recipe, open, onOpenChange, readOnl
               )}
 
               <div>
-                <h3 className="text-lg font-heading font-semibold mb-3 border-b pb-1">{t("ingredients")}</h3>
+                <h3 className="text-lg font-heading font-semibold mb-3 border-b pb-1">{t("recipes.ingredients")}</h3>
                 {loadingIngredients ? (
                   <div className="flex justify-center py-4">
                     <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -375,14 +375,14 @@ export default function RecipeDetailDialog({ recipe, open, onOpenChange, readOnl
                       );
                     })}
                     {ingredients.length === 0 && !loadingIngredients && (
-                      <li className="text-muted-foreground text-center py-4">{t("noData")}</li>
+                      <li className="text-muted-foreground text-center py-4">{t("common.noData")}</li>
                     )}
                   </ul>
                 )}
               </div>
 
               <div>
-                <h3 className="text-lg font-heading font-semibold mb-3 border-b pb-1">{t("preparation")}</h3>
+                <h3 className="text-lg font-heading font-semibold mb-3 border-b pb-1">{t("recipes.preparation")}</h3>
                 <ol className="space-y-3">
                   {recipe.steps.map((step, idx) => (
                     <li key={idx} className="flex gap-3">
@@ -393,7 +393,7 @@ export default function RecipeDetailDialog({ recipe, open, onOpenChange, readOnl
                     </li>
                   ))}
                   {recipe.steps.length === 0 && (
-                    <li className="text-muted-foreground text-center py-2">{t("noData")}</li>
+                    <li className="text-muted-foreground text-center py-2">{t("common.noData")}</li>
                   )}
                 </ol>
               </div>

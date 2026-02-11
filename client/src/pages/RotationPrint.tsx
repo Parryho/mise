@@ -32,8 +32,6 @@ function uiIndexToDbDow(uiIdx: number): number {
   return uiIdx === 6 ? 0 : uiIdx + 1;
 }
 
-const SLOT_KEYS = ["soup", "main1", "side1a", "side1b", "main2", "side2a", "side2b", "dessert"] as const;
-
 interface BlockDef {
   key: string;
   locSlug: string;

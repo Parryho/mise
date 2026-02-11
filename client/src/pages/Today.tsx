@@ -49,20 +49,21 @@ interface Task {
   date: string;
 }
 
-interface MenuPlanItem {
+interface RotationSlot {
   id: number;
-  date: string;
+  templateId: number;
+  weekNr: number;
+  dayOfWeek: number;
   meal: string;
+  locationSlug: string;
   course: string;
   recipeId: number | null;
-  portions: number;
-  notes: string | null;
-  locationId: number | null;
-  recipe?: {
-    id: number;
-    name: string;
-    category: string;
-  };
+}
+
+interface Recipe {
+  id: number;
+  name: string;
+  category: string;
 }
 
 interface GuestCount {
@@ -73,14 +74,6 @@ interface GuestCount {
   count: number;
 }
 
-const COURSE_ICONS: Record<string, React.ReactNode> = {
-  soup: <Soup className="h-4 w-4 text-amber-600" />,
-  main1: <UtensilsCrossed className="h-4 w-4 text-red-600" />,
-  main2: <UtensilsCrossed className="h-4 w-4 text-green-600" />,
-  dessert: <CakeSlice className="h-4 w-4 text-pink-500" />,
-};
-
-const COURSE_KEYS = ["soup", "main1", "side1a", "side1b", "main2", "side2a", "side2b", "dessert"] as const;
 
 export default function Today() {
   const { toast } = useToast();
@@ -90,7 +83,7 @@ export default function Today() {
   const { fridges, logs: haccpLogs } = useApp();
 
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [menuItems, setMenuItems] = useState<MenuPlanItem[]>([]);
+  const [menuSlots, setMenuSlots] = useState<(RotationSlot & { recipe?: Recipe })[]>([]);
   const [guestCounts, setGuestCounts] = useState<GuestCount[]>([]);
   const [loading, setLoading] = useState(true);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -123,32 +116,28 @@ export default function Today() {
     }
   };
 
-  const fetchMenuPlan = async () => {
+  const fetchMenuFromRotation = async () => {
     try {
-      const year = today.getFullYear();
-      const week = getISOWeek(today);
-      // Use week endpoint to ensure plans are generated from current rotation
-      const [weekRes, recipesRes, locsRes] = await Promise.all([
-        fetch(`/api/menu-plans/week?year=${year}&week=${week}`),
+      const [tmplRes, recipesRes] = await Promise.all([
+        fetch("/api/rotation-templates/ensure-default", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
         fetch("/api/recipes"),
-        fetch("/api/locations"),
       ]);
-      if (!weekRes.ok) throw new Error(t("today.errorLoadingMenu"));
-      const weekData = await weekRes.json();
-      const recipes = await recipesRes.json();
-      const locs = await locsRes.json();
+      if (!tmplRes.ok) throw new Error(t("today.errorLoadingMenu"));
+      const tmpl = await tmplRes.json();
+      const recipes: Recipe[] = await recipesRes.json();
+      const recipeMap = new Map(recipes.map(r => [r.id, r]));
 
-      const recipeMap = new Map(recipes.map((r: any) => [r.id, r]));
-      const cityLoc = locs.find((l: any) => l.slug === "city");
-      const cityLocId = cityLoc?.id ?? null;
+      const kw = getISOWeek(today);
+      const rotWeek = ((kw - 1) % (tmpl.weekCount || 6)) + 1;
 
-      // Filter for today + city + lunch, attach recipe data
-      return (weekData.plans || [])
-        .filter((p: any) => p.date === dateStr && p.meal === "lunch" && p.locationId === cityLocId)
-        .map((p: any) => ({
-          ...p,
-          recipe: p.recipeId ? recipeMap.get(p.recipeId) : null,
-        }));
+      const slotsRes = await fetch(`/api/rotation-slots/${tmpl.id}?weekNr=${rotWeek}`);
+      if (!slotsRes.ok) throw new Error(t("today.errorLoadingMenu"));
+      const allSlots: RotationSlot[] = await slotsRes.json();
+
+      const todayDow = today.getDay(); // 0=Sun, 1=Mon, ...
+      return allSlots
+        .filter(s => s.dayOfWeek === todayDow && s.meal === "lunch" && s.locationSlug === "city")
+        .map(s => ({ ...s, recipe: s.recipeId ? recipeMap.get(s.recipeId) : undefined }));
     } catch {
       return [];
     }
@@ -166,10 +155,10 @@ export default function Today() {
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([fetchTasks(), fetchMenuPlan(), fetchGuestCounts()])
-      .then(([tasksData, menuData, guestData]) => {
+    Promise.all([fetchTasks(), fetchMenuFromRotation(), fetchGuestCounts()])
+      .then(([tasksData, slotsData, guestData]) => {
         setTasks(tasksData);
-        setMenuItems(menuData);
+        setMenuSlots(slotsData);
         setGuestCounts(guestData);
       })
       .finally(() => setLoading(false));
@@ -246,16 +235,23 @@ export default function Today() {
     return { totalFridges, measured, alerts };
   }, [haccpLogs, fridges]);
 
-  const cityLunchItems = useMemo(() => {
-    return [...menuItems]
-      .filter(item => item.recipe)
-      .sort((a, b) => {
-        const order = ["soup", "main1", "side1a", "side1b", "main2", "side2a", "side2b", "dessert"];
-        return order.indexOf(a.course) - order.indexOf(b.course);
-      });
-  }, [menuItems]);
+  const menuGroups = useMemo(() => {
+    const slotMap = new Map<string, typeof menuSlots[0]>();
+    for (const s of menuSlots) slotMap.set(s.course, s);
 
-  const hasMenu = cityLunchItems.length > 0;
+    const soup = slotMap.get("soup");
+    const main1 = slotMap.get("main1");
+    const side1a = slotMap.get("side1a");
+    const side1b = slotMap.get("side1b");
+    const main2 = slotMap.get("main2");
+    const side2a = slotMap.get("side2a");
+    const side2b = slotMap.get("side2b");
+    const dessert = slotMap.get("dessert");
+
+    return { soup, main1, side1a, side1b, main2, side2a, side2b, dessert };
+  }, [menuSlots]);
+
+  const hasMenu = menuSlots.some(s => s.recipe || s.course === "dessert");
 
   const paxByLocation = useMemo(() => {
     const result: Record<number, { lunch: number; dinner: number }> = {};
@@ -366,16 +362,48 @@ export default function Today() {
         </CardHeader>
         <CardContent className="px-4 pb-4">
           {hasMenu ? (
-            <div className="grid gap-1.5">
-              {cityLunchItems.map(item => (
-                <div key={item.id} className="flex items-center gap-2 text-sm py-1">
-                  {COURSE_ICONS[item.course] || <span className="w-4" />}
-                  <span className="text-muted-foreground text-xs min-w-[60px]">
-                    {t(`courses.${item.course}`) || item.course}
-                  </span>
-                  <span className="font-medium truncate">{item.recipe?.name}</span>
+            <div className="space-y-3">
+              {/* Suppe */}
+              {menuGroups.soup?.recipe && (
+                <div className="flex items-center gap-2 text-sm">
+                  <Soup className="h-4 w-4 text-amber-600 shrink-0" />
+                  <span className="font-medium">{menuGroups.soup.recipe.name}</span>
                 </div>
-              ))}
+              )}
+
+              {/* Menü 1 */}
+              {menuGroups.main1?.recipe && (
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2 text-sm">
+                    <UtensilsCrossed className="h-4 w-4 text-red-600 shrink-0" />
+                    <span className="font-medium">{menuGroups.main1.recipe.name}</span>
+                  </div>
+                  <div className="ml-6 text-xs text-muted-foreground">
+                    {[menuGroups.side1a, menuGroups.side1b].filter(s => s?.recipe).map(s => s!.recipe!.name).join(", ")}
+                  </div>
+                </div>
+              )}
+
+              {/* Menü 2 */}
+              {menuGroups.main2?.recipe && (
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2 text-sm">
+                    <UtensilsCrossed className="h-4 w-4 text-green-600 shrink-0" />
+                    <span className="font-medium">{menuGroups.main2.recipe.name}</span>
+                  </div>
+                  <div className="ml-6 text-xs text-muted-foreground">
+                    {[menuGroups.side2a, menuGroups.side2b].filter(s => s?.recipe).map(s => s!.recipe!.name).join(", ")}
+                  </div>
+                </div>
+              )}
+
+              {/* Dessert */}
+              <div className="flex items-center gap-2 text-sm">
+                <CakeSlice className="h-4 w-4 text-pink-500 shrink-0" />
+                <span className="font-medium">
+                  {menuGroups.dessert?.recipe ? menuGroups.dessert.recipe.name : <span className="italic text-muted-foreground">{t("rotation.dessertVariation")}</span>}
+                </span>
+              </div>
             </div>
           ) : (
             <div className="text-center py-4">

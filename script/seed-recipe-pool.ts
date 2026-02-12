@@ -62,7 +62,7 @@ const SOUPS: SeedRecipe[] = [
   { name: "Brotsuppe", category: "CreamSoups", tags: [] },
   { name: "Steirische Wurzelsuppe", category: "ClearSoups", tags: [] },
   { name: "Saure Suppe (Steirisch)", category: "ClearSoups", tags: [] },
-  { name: "Altwiener Suppentopf", category: "CreamSoups", tags: [] },
+  { name: "Altwiener Suppentopf", category: "ClearSoups", tags: [] },
   { name: "Kalbsknochensuppe", category: "ClearSoups", tags: [] },
   { name: "Flädlesuppe", category: "ClearSoups", tags: [] },
   { name: "Markklößchensuppe", category: "ClearSoups", tags: [] },
@@ -72,14 +72,14 @@ const SOUPS: SeedRecipe[] = [
   { name: "Bohnensuppe", category: "CreamSoups", tags: [] },
   { name: "Erbsensuppe", category: "CreamSoups", tags: [] },
   { name: "Minestrone", category: "CreamSoups", tags: [] },
-  { name: "Gulaschsuppe", category: "CreamSoups", tags: [] },
+  { name: "Gulaschsuppe", category: "ClearSoups", tags: [] },
   { name: "Serbische Bohnensuppe", category: "CreamSoups", tags: [] },
   { name: "Kichererbsensuppe", category: "CreamSoups", tags: [] },
   { name: "Ribollita", category: "CreamSoups", tags: [] },
   { name: "Kartoffelgulaschsuppe", category: "CreamSoups", tags: [] },
   { name: "Rote-Linsen-Suppe", category: "CreamSoups", tags: [] },
   // Internationale & Saisonale → mixed
-  { name: "Französische Zwiebelsuppe", category: "CreamSoups", tags: [] },
+  { name: "Französische Zwiebelsuppe", category: "ClearSoups", tags: [] },
   { name: "Gazpacho", category: "CreamSoups", tags: [], season: "summer" },
   { name: "Kalte Gurkensuppe", category: "CreamSoups", tags: [], season: "summer" },
   { name: "Thai-Kokossuppe", category: "CreamSoups", tags: [] },
@@ -184,7 +184,7 @@ const MAINS_VEGAN: SeedRecipe[] = [
   // Teigwaren (15)
   { name: "Käsespätzle", category: "MainVegan", tags: [] },
   { name: "Krautfleckerl", category: "MainVegan", tags: [] },
-  { name: "Schinkenfleckerl", category: "MainVegan", tags: [] },
+  { name: "Schinkenfleckerl", category: "MainMeat", tags: [] },
   { name: "Spinatspätzle mit Käsesauce", category: "MainVegan", tags: [] },
   { name: "Pasta Arrabiata", category: "MainVegan", tags: [] },
   { name: "Pasta Pomodoro", category: "MainVegan", tags: [] },
@@ -202,7 +202,7 @@ const MAINS_VEGAN: SeedRecipe[] = [
   { name: "Krautstrudel", category: "MainVegan", tags: [] },
   { name: "Spinatstrudel", category: "MainVegan", tags: [] },
   { name: "Kürbis-Feta-Strudel", category: "MainVegan", tags: [] },
-  { name: "Quiche Lorraine", category: "MainVegan", tags: [] },
+  { name: "Quiche Lorraine", category: "MainMeat", tags: [] },
   { name: "Gemüsequiche", category: "MainVegan", tags: [] },
   { name: "Zwiebelkuchen", category: "MainVegan", tags: [] },
   { name: "Lauchquiche", category: "MainVegan", tags: [] },
@@ -211,11 +211,11 @@ const MAINS_VEGAN: SeedRecipe[] = [
   // Knödel & Nockerl (8)
   { name: "Spinatknödel", category: "MainVegan", tags: [] },
   { name: "Kaspressknödel", category: "MainVegan", tags: [] },
-  { name: "Topfenknödel", category: "MainVegan", tags: [] },
-  { name: "Marillenknödel", category: "MainVegan", tags: [] },
-  { name: "Zwetschgenknödel", category: "MainVegan", tags: [] },
-  { name: "Mohnnudeln", category: "MainVegan", tags: [] },
-  { name: "Germknödel", category: "MainVegan", tags: [] },
+  { name: "Topfenknödel", category: "HotDesserts", tags: [] },
+  { name: "Marillenknödel", category: "HotDesserts", tags: [] },
+  { name: "Zwetschgenknödel", category: "HotDesserts", tags: [] },
+  { name: "Mohnnudeln", category: "HotDesserts", tags: [] },
+  { name: "Germknödel", category: "HotDesserts", tags: [] },
   { name: "Serviettenknödel mit Schwammerlsauce", category: "MainVegan", tags: [] },
   // Aufläufe & Gratins (8)
   { name: "Gemüseauflauf", category: "MainVegan", tags: [] },
@@ -256,7 +256,7 @@ const MAINS_VEGAN: SeedRecipe[] = [
   { name: "Melanzani-Parmigiana", category: "MainVegan", tags: [] },
   // Sonstiges (4)
   { name: "Eierspeise / Bauernomelett", category: "MainVegan", tags: [] },
-  { name: "Kaiserschmarrn", category: "MainVegan", tags: [] },
+  { name: "Kaiserschmarrn", category: "HotDesserts", tags: [] },
   { name: "Palatschinken gefüllt", category: "MainVegan", tags: [] },
   { name: "Knödel mit Ei", category: "MainVegan", tags: [] },
 ];
@@ -384,19 +384,19 @@ const SIDES_VEG: SeedRecipe[] = [
   { name: "Eierschwammerl", category: "Sides", tags: ["gemüse"] },
   { name: "Steinpilze", category: "Sides", tags: ["gemüse"], season: "autumn" },
   { name: "Pilzmischung", category: "Sides", tags: ["gemüse"] },
-  // Salate (warm/als Beilage) (6)
-  { name: "Vogerlsalat", category: "Sides", tags: ["gemüse"] },
-  { name: "Blattsalat", category: "Sides", tags: ["gemüse"] },
-  { name: "Gurkensalat", category: "Sides", tags: ["gemüse"] },
-  { name: "Tomatensalat", category: "Sides", tags: ["gemüse"] },
-  { name: "Gemischter Salat", category: "Sides", tags: ["gemüse"] },
+  // Salate (als Beilage — Kategorie Salads für Salatbar, aber gemüse-Tag für Rotation)
+  { name: "Vogerlsalat", category: "Salads", tags: ["gemüse"] },
+  { name: "Blattsalat", category: "Salads", tags: ["gemüse"] },
+  { name: "Gurkensalat", category: "Salads", tags: ["gemüse"] },
+  { name: "Tomatensalat", category: "Salads", tags: ["gemüse"] },
+  { name: "Gemischter Salat", category: "Salads", tags: ["gemüse"] },
   { name: "Krautsalat", category: "Sides", tags: ["gemüse"] },
-  // Klassisch-österreichische Gemüse (5)
-  { name: "Preiselbeeren (Kompott)", category: "Sides", tags: ["gemüse"] },
-  { name: "Apfelkren", category: "Sides", tags: ["gemüse"] },
-  { name: "Semmelkren", category: "Sides", tags: ["gemüse"] },
-  { name: "Schnittlauchsauce", category: "Sides", tags: ["gemüse"] },
-  { name: "Kräuterdip / Kräuterrahm", category: "Sides", tags: ["gemüse"] },
+  // Klassisch-österreichische Saucen & Beilagen (5)
+  { name: "Preiselbeeren (Kompott)", category: "ColdSauces", tags: ["gemüse"] },
+  { name: "Apfelkren", category: "ColdSauces", tags: ["gemüse"] },
+  { name: "Semmelkren", category: "ColdSauces", tags: ["gemüse"] },
+  { name: "Schnittlauchsauce", category: "ColdSauces", tags: ["gemüse"] },
+  { name: "Kräuterdip / Kräuterrahm", category: "ColdSauces", tags: ["gemüse"] },
 ];
 
 // ════════════════════════════════════════════════════════════
@@ -404,21 +404,24 @@ const SIDES_VEG: SeedRecipe[] = [
 // Für dessert_main wie Marillenknödel, Mohnnudeln etc.
 // ════════════════════════════════════════════════════════════
 const GARNISHES: SeedRecipe[] = [
-  { name: "Butterbrösel", category: "Sides", tags: ["mehlspeise-garnitur"] },
-  { name: "Staubzucker", category: "Sides", tags: ["mehlspeise-garnitur"] },
-  { name: "Vanillesauce", category: "Sides", tags: ["mehlspeise-garnitur"] },
-  { name: "Zwetschgenröster", category: "Sides", tags: ["mehlspeise-garnitur"] },
-  { name: "Kompott (gemischt)", category: "Sides", tags: ["mehlspeise-garnitur"] },
-  { name: "Marillenröster", category: "Sides", tags: ["mehlspeise-garnitur"] },
-  { name: "Zimtzucker", category: "Sides", tags: ["mehlspeise-garnitur"] },
-  { name: "Mohnbutter", category: "Sides", tags: ["mehlspeise-garnitur"] },
-  { name: "Nussbrösel", category: "Sides", tags: ["mehlspeise-garnitur"] },
-  { name: "Preiselbeerkompott", category: "Sides", tags: ["mehlspeise-garnitur"] },
-  { name: "Warme Schokoladensauce", category: "Sides", tags: ["mehlspeise-garnitur"] },
-  { name: "Fruchtcoulis", category: "Sides", tags: ["mehlspeise-garnitur"] },
-  { name: "Vanilleeis", category: "Sides", tags: ["mehlspeise-garnitur"] },
-  { name: "Schlagobers", category: "Sides", tags: ["mehlspeise-garnitur"] },
-  { name: "Topfencreme", category: "Sides", tags: ["mehlspeise-garnitur"] },
+  // Hot garnishes → HotDesserts
+  { name: "Butterbrösel", category: "HotDesserts", tags: ["mehlspeise-garnitur"] },
+  { name: "Zwetschgenröster", category: "HotDesserts", tags: ["mehlspeise-garnitur"] },
+  { name: "Marillenröster", category: "HotDesserts", tags: ["mehlspeise-garnitur"] },
+  // Cold garnishes → ColdDesserts
+  { name: "Staubzucker", category: "ColdDesserts", tags: ["mehlspeise-garnitur"] },
+  { name: "Kompott (gemischt)", category: "ColdDesserts", tags: ["mehlspeise-garnitur"] },
+  { name: "Zimtzucker", category: "ColdDesserts", tags: ["mehlspeise-garnitur"] },
+  { name: "Nussbrösel", category: "ColdDesserts", tags: ["mehlspeise-garnitur"] },
+  { name: "Vanilleeis", category: "ColdDesserts", tags: ["mehlspeise-garnitur"] },
+  { name: "Schlagobers", category: "ColdDesserts", tags: ["mehlspeise-garnitur"] },
+  { name: "Topfencreme", category: "ColdDesserts", tags: ["mehlspeise-garnitur"] },
+  { name: "Preiselbeerkompott", category: "ColdDesserts", tags: ["mehlspeise-garnitur"] },
+  // Sauces → HotSauces / ColdSauces
+  { name: "Vanillesauce", category: "HotSauces", tags: ["mehlspeise-garnitur"] },
+  { name: "Mohnbutter", category: "HotSauces", tags: ["mehlspeise-garnitur"] },
+  { name: "Warme Schokoladensauce", category: "HotSauces", tags: ["mehlspeise-garnitur"] },
+  { name: "Fruchtcoulis", category: "ColdSauces", tags: ["mehlspeise-garnitur"] },
 ];
 
 // ════════════════════════════════════════════════════════════

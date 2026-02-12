@@ -109,7 +109,7 @@ export default defineConfig({
         ],
         // Precache critical navigation routes
         navigateFallback: "/index.html",
-        navigateFallbackAllowlist: [/^\/(?!api\/|terminal).*/],
+        navigateFallbackAllowlist: [/^\/(?!api\/|terminal|auth-link).*/],
       },
       devOptions: {
         enabled: false, // Disable in dev to avoid conflicts

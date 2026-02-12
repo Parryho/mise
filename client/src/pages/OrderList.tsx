@@ -193,7 +193,7 @@ export default function OrderListPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto p-4 pb-24">
+    <div className="max-w-5xl mx-auto p-4 pb-24">
       {/* Header */}
       <div className="flex items-center justify-between mb-4 print:hidden">
         <div>
@@ -257,35 +257,32 @@ export default function OrderListPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-1">
-          {sortedItems.map((item) => (
+        <div className="columns-2 md:columns-3 lg:columns-4 gap-0 border rounded-lg bg-card overflow-hidden">
+          {sortedItems.map((item, idx) => (
             <div
               key={item.id}
-              className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
-                item.isChecked ? "bg-muted/50 opacity-60" : "bg-card"
+              className={`flex items-center gap-2 px-3 py-2.5 border-b break-inside-avoid ${
+                item.isChecked ? "bg-muted/40 opacity-60" : ""
               }`}
             >
               <Checkbox
                 checked={item.isChecked}
                 onCheckedChange={() => toggleCheck(item)}
-                className="h-6 w-6 rounded-md"
+                className="h-6 w-6 rounded-md shrink-0"
               />
               <div className="flex-1 min-w-0">
-                <p className={`text-sm font-medium ${item.isChecked ? "line-through text-muted-foreground" : ""}`}>
-                  {item.amount && <span className="text-primary font-semibold mr-1.5">{item.amount}</span>}
+                <p className={`text-sm ${item.isChecked ? "line-through text-muted-foreground" : ""}`}>
+                  {item.amount && <span className="text-primary font-semibold mr-1">{item.amount}</span>}
                   {item.name}
                 </p>
-                {item.addedByName && (
-                  <p className="text-xs text-muted-foreground">{item.addedByName}</p>
-                )}
               </div>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 shrink-0 print:hidden"
+                className="h-7 w-7 shrink-0 print:hidden opacity-0 hover:opacity-100 focus:opacity-100"
                 onClick={() => deleteItem(item.id)}
               >
-                <Trash2 className="h-4 w-4 text-muted-foreground" />
+                <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
               </Button>
             </div>
           ))}
@@ -395,11 +392,12 @@ export default function OrderListPage() {
       <style>{`
         @media print {
           body * { visibility: hidden; }
-          .max-w-2xl, .max-w-2xl * { visibility: visible; }
-          .max-w-2xl { position: absolute; left: 0; top: 0; width: 100%; padding: 10mm; }
+          .max-w-5xl, .max-w-5xl * { visibility: visible; }
+          .max-w-5xl { position: absolute; left: 0; top: 0; width: 100%; padding: 8mm; max-width: 100% !important; }
           .print\\:hidden { display: none !important; }
-          h1 { font-size: 18pt; margin-bottom: 8pt; }
-          .space-y-1 > div { break-inside: avoid; border: 1px solid #ccc; margin-bottom: 2mm; padding: 2mm 3mm; }
+          h1 { font-size: 16pt; margin-bottom: 6pt; }
+          .columns-2 { columns: 4 !important; column-rule: 1px solid #ccc; }
+          .columns-2 > div { break-inside: avoid; padding: 1.5mm 2mm; border-bottom: 1px solid #eee; font-size: 9pt; }
         }
       `}</style>
     </div>

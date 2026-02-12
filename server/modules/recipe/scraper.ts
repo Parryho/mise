@@ -170,20 +170,44 @@ function parseJsonLdRecipe(data: any): ScrapedRecipe {
   return { name, portions, prepTime, image, steps, ingredients };
 }
 
+// Known units for ingredient parsing — only these are accepted as unit.
+// Everything else is part of the ingredient name.
+const KNOWN_UNITS = new Set([
+  // Weight
+  'g', 'kg', 'dag', 'mg', 'lb', 'oz',
+  // Volume
+  'ml', 'cl', 'dl', 'l', 'liter',
+  // Spoons / cups
+  'el', 'tl', 'msp', 'tasse', 'becher', 'glas', 'schuss', 'spritzer',
+  // Pieces / portions
+  'stk', 'stück', 'stk.', 'stück(e)', 'scheibe', 'scheibe(n)', 'scheiben',
+  'blatt', 'blätter', 'stange', 'stange(n)', 'stangen', 'stängel',
+  'zehe', 'zehe(n)', 'zehen', 'knolle', 'knolle(n)',
+  // Packages
+  'pkg', 'pck', 'pck.', 'pkg.', 'packung', 'päckchen', 'dose', 'dose(n)', 'dosen',
+  'dose/n', 'fl', 'flasche', 'tube', 'glas', 'gläser', 'beutel', 'tüte',
+  // Bunches / handfuls
+  'bund', 'bd', 'handvoll', 'prise', 'prise(n)', 'prisen',
+  // Descriptive
+  'kleine', 'kleiner', 'kleines', 'kl.', 'kl',
+  'große', 'großer', 'großes', 'gr.', 'gr',
+  'mittlere', 'mittlerer', 'n.', 'etwas', 'viel', 'wenig', 'nach',
+]);
+
 function parseIngredientString(str: string): { name: string; amount: number; unit: string } {
   str = str.trim();
-  
-  // Common patterns: "100 g Mehl", "2 EL Zucker", "1/2 Tasse Milch", "½ kg Kartoffeln"
+
   // Handle unicode fractions
   str = str.replace(/½/g, '0.5').replace(/¼/g, '0.25').replace(/¾/g, '0.75').replace(/⅓/g, '0.33').replace(/⅔/g, '0.67');
-  
-  const match = str.match(/^([\d.,/\s]+)?\s*([a-zA-ZäöüÄÖÜß]+\.?)?\s*(.+)$/);
-  
-  if (match) {
-    let amount = 1;
-    if (match[1]) {
-      const amountStr = match[1].trim();
-      // Handle fractions like 1/2
+
+  // Step 1: Extract leading number (amount)
+  const amountMatch = str.match(/^([\d.,/\s]+)/);
+  let amount = 1;
+  let rest = str;
+
+  if (amountMatch) {
+    const amountStr = amountMatch[1].trim();
+    if (amountStr) {
       if (amountStr.includes('/')) {
         const parts = amountStr.split('/').map(n => parseFloat(n.replace(',', '.')));
         if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1]) && parts[1] !== 0) {
@@ -193,14 +217,28 @@ function parseIngredientString(str: string): { name: string; amount: number; uni
         amount = parseFloat(amountStr.replace(',', '.')) || 1;
       }
     }
-    
-    const unit = match[2] || 'Stück';
-    const name = match[3]?.trim() || str;
-    
-    return { name, amount, unit };
+    rest = str.slice(amountMatch[0].length).trim();
   }
 
-  return { name: str, amount: 1, unit: 'Stück' };
+  // Step 2: Check if the first word is a known unit
+  const firstWordMatch = rest.match(/^(\S+)\s+(.*)/);
+  if (firstWordMatch) {
+    const candidate = firstWordMatch[1].replace(/[.,]$/, ''); // strip trailing punctuation
+    if (KNOWN_UNITS.has(candidate.toLowerCase())) {
+      return {
+        amount,
+        unit: candidate,
+        name: firstWordMatch[2].trim() || str,
+      };
+    }
+  }
+
+  // Step 3: No known unit found — entire rest is the ingredient name
+  return {
+    amount,
+    unit: 'Stück',
+    name: rest || str,
+  };
 }
 
 function scrapeWithSelectors($: cheerio.CheerioAPI, url: string): ScrapedRecipe | null {

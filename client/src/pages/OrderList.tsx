@@ -257,33 +257,24 @@ export default function OrderListPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="columns-2 md:columns-3 lg:columns-4 gap-0 border rounded-lg bg-card overflow-hidden">
-          {sortedItems.map((item, idx) => (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 border-l border-t rounded-lg bg-card overflow-hidden">
+          {sortedItems.map((item) => (
             <div
               key={item.id}
-              className={`flex items-center gap-2 px-3 py-2.5 border-b break-inside-avoid ${
-                item.isChecked ? "bg-muted/40 opacity-60" : ""
+              onClick={() => toggleCheck(item)}
+              className={`border-r border-b px-3 py-3 min-h-[48px] flex items-center gap-2 press cursor-pointer ${
+                item.isChecked ? "bg-muted/40" : ""
               }`}
             >
               <Checkbox
                 checked={item.isChecked}
                 onCheckedChange={() => toggleCheck(item)}
-                className="h-6 w-6 rounded-md shrink-0"
+                className="h-5 w-5 rounded shrink-0"
               />
-              <div className="flex-1 min-w-0">
-                <p className={`text-sm ${item.isChecked ? "line-through text-muted-foreground" : ""}`}>
-                  {item.amount && <span className="text-primary font-semibold mr-1">{item.amount}</span>}
-                  {item.name}
-                </p>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 shrink-0 print:hidden opacity-0 hover:opacity-100 focus:opacity-100"
-                onClick={() => deleteItem(item.id)}
-              >
-                <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
-              </Button>
+              <span className={`text-sm truncate ${item.isChecked ? "line-through text-muted-foreground" : ""}`}>
+                {item.amount && <span className="text-primary font-semibold mr-1">{item.amount}</span>}
+                {item.name}
+              </span>
             </div>
           ))}
         </div>
@@ -396,8 +387,8 @@ export default function OrderListPage() {
           .max-w-5xl { position: absolute; left: 0; top: 0; width: 100%; padding: 8mm; max-width: 100% !important; }
           .print\\:hidden { display: none !important; }
           h1 { font-size: 16pt; margin-bottom: 6pt; }
-          .columns-2 { columns: 4 !important; column-rule: 1px solid #ccc; }
-          .columns-2 > div { break-inside: avoid; padding: 1.5mm 2mm; border-bottom: 1px solid #eee; font-size: 9pt; }
+          .grid { display: grid !important; grid-template-columns: repeat(4, 1fr) !important; }
+          .grid > div { padding: 1.5mm 2mm; font-size: 9pt; }
         }
       `}</style>
     </div>

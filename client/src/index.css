@@ -260,8 +260,21 @@
     max-width: 100% !important;
   }
 
+  /* When rotation-print-page is present, collapse all wrappers to avoid blank first page */
+  body:has(.rotation-print-page) {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  body:has(.rotation-print-page) > * {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    min-height: 0 !important;
+  }
+
   /* Wochenplan print page — force landscape */
   .rotation-print-page {
+    break-before: avoid;
     break-inside: avoid;
     padding: 0 !important;
     margin: 0 !important;

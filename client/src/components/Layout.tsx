@@ -37,17 +37,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           {showBackButton && (
             <button
               onClick={() => window.history.back()}
-              className="flex items-center gap-0.5 text-sm text-muted-foreground hover:text-foreground transition-colors mr-1"
+              className="flex items-center justify-center bg-muted rounded-lg p-1.5 min-h-[36px] min-w-[36px] text-foreground hover:bg-muted/70 transition-colors mr-1"
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-5 w-5" />
             </button>
           )}
 
           {/* Profile Popover */}
           <Popover>
             <PopoverTrigger asChild>
-              <button className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
-                {t("layout.welcome")} <span className="text-foreground font-medium">{user?.name || t("layout.guest")}</span>
+              <button className="text-sm text-foreground hover:text-foreground/80 transition-colors flex items-center gap-1">
+                {t("layout.welcome")} <span className="font-medium">{user?.name || t("layout.guest")}</span>
               </button>
             </PopoverTrigger>
             <PopoverContent className="w-64 p-0" align="start">
@@ -108,10 +108,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
         <div className="flex items-center gap-1">
           <Link href="/settings" className={cn(
-            "flex items-center gap-1 p-2 text-sm transition-colors rounded-md",
-            isSettings ? "text-primary" : "text-muted-foreground hover:text-foreground"
+            "flex items-center justify-center rounded-lg p-1.5 min-h-[36px] min-w-[36px] transition-colors",
+            isSettings ? "bg-primary/10 text-primary" : "bg-muted text-foreground hover:bg-muted/70"
           )}>
-            <Settings2 className="h-4 w-4" />
+            <Settings2 className="h-5 w-5" />
           </Link>
         </div>
       </div>
@@ -121,8 +121,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {children}
       </main>
 
-      {/* Bottom Navigation - Scrollable */}
-      <nav className="fixed md:absolute bottom-0 left-0 right-0 bg-card border-t border-border/50 h-[var(--nav-height)] pb-safe z-50 md:w-full md:max-w-2xl lg:max-w-5xl md:mx-auto">
+      {/* Bottom Navigation - always fixed */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50">
+        <div className="bg-card border-t border-border/50 h-[var(--nav-height)] pb-safe md:max-w-2xl lg:max-w-5xl md:mx-auto">
         <div className="flex justify-around h-full">
           {navItems.map((item) => {
             const isActive = location === item.href || (item.href !== "/" && location.startsWith(item.href));
@@ -136,6 +137,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </Link>
             );
           })}
+        </div>
         </div>
       </nav>
     </div>

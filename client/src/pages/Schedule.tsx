@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatLocalDate } from "@shared/constants";
-import { Loader2, ChevronLeft, ChevronRight, X, Trash2, Download, FileSpreadsheet, Users } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, X, Trash2, Download, FileSpreadsheet, Users, GripVertical } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
@@ -12,8 +12,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { DndContext, DragOverlay, useDraggable, useDroppable, type DragEndEvent, type DragStartEvent, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { useLocationFilter } from "@/lib/location-context";
 import { useTranslation } from "@/hooks/useTranslation";
+import { cn } from "@/lib/utils";
 import StaffView from "./ScheduleStaff";
 import ShiftTypesView from "./ScheduleShifts";
 
@@ -123,9 +125,58 @@ function ScheduleView() {
   const [shiftTypes, setShiftTypes] = useState<ShiftType[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"day" | "week" | "month">("week");
+  const [draggedItem, setDraggedItem] = useState<{ type: string; shiftTypeId?: number; label: string } | null>(null);
   const { toast } = useToast();
   const { t } = useTranslation();
   const { selectedLocationId } = useLocationFilter();
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
+  );
+
+  const handleDragStart = (event: DragStartEvent) => {
+    const data = event.active.data.current;
+    if (data) {
+      setDraggedItem({ type: data.entryType, shiftTypeId: data.shiftTypeId, label: data.label });
+    }
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { over } = event;
+    setDraggedItem(null);
+    if (!over || !draggedItem) return;
+
+    const dropData = over.data.current;
+    if (!dropData) return;
+    const { staffId, date } = dropData as { staffId: number; date: string };
+
+    const existing = getEntry(staffId, date);
+    const payload = {
+      type: draggedItem.type,
+      shiftTypeId: draggedItem.type === "shift" && draggedItem.shiftTypeId ? draggedItem.shiftTypeId : null,
+    };
+
+    try {
+      if (existing) {
+        await fetch(`/api/schedule/${existing.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        await fetch("/api/schedule", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ staffId, date, ...payload }),
+        });
+      }
+      toast({ title: t("common.saved") });
+      fetchData();
+    } catch {
+      toast({ title: t("common.error"), variant: "destructive" });
+    }
+  };
 
   const getDates = () => {
     if (viewMode === "day") return [baseDate];
@@ -192,6 +243,7 @@ function ScheduleView() {
   };
 
   return (
+    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2">
         <ToggleGroup type="single" value={viewMode} onValueChange={(v) => v && setViewMode(v as any)} size="sm" data-testid="schedule-view-toggle">
@@ -199,7 +251,7 @@ function ScheduleView() {
           <ToggleGroupItem value="week" data-testid="toggle-view-week">{t("schedule.week")}</ToggleGroupItem>
           <ToggleGroupItem value="month" data-testid="toggle-view-month">{t("schedule.month")}</ToggleGroupItem>
         </ToggleGroup>
-        
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" className="gap-1" data-testid="button-export">
@@ -233,6 +285,32 @@ function ScheduleView() {
           <ChevronRight className="h-5 w-5" />
         </Button>
       </div>
+
+      {/* Draggable palette — visible in day/week mode when staff exist */}
+      {!loading && staffList.length > 0 && viewMode !== "month" && (
+        <div className="flex gap-2 flex-wrap items-center">
+          {shiftTypes.map(st => (
+            <DraggablePaletteItem
+              key={`shift-${st.id}`}
+              id={`palette-shift-${st.id}`}
+              entryType="shift"
+              shiftTypeId={st.id}
+              label={st.name}
+              color={st.color}
+            />
+          ))}
+          {shiftTypes.length > 0 && <div className="border-l h-6 mx-0.5" />}
+          {ENTRY_TYPES.filter(et => et.key !== "shift").map(et => (
+            <DraggablePaletteItem
+              key={`type-${et.key}`}
+              id={`palette-${et.key}`}
+              entryType={et.key}
+              label={t(`schedule.entryTypes.${et.key}`)}
+              colorClass={et.color}
+            />
+          ))}
+        </div>
+      )}
 
       {loading ? (
         <div className="flex justify-center py-8">
@@ -279,9 +357,9 @@ function ScheduleView() {
                     const isToday = formatDate(new Date()) === dateStr;
                     const dayIdx = date.getDay() === 0 ? 6 : date.getDay() - 1;
                     const isWeekend = dayIdx >= 5;
-                    
+
                     return (
-                      <ScheduleCell 
+                      <DroppableScheduleCell
                         key={dateStr}
                         staffId={staff.id}
                         date={dateStr}
@@ -322,6 +400,15 @@ function ScheduleView() {
         </CardContent>
       </Card>
     </div>
+
+    <DragOverlay>
+      {draggedItem && (
+        <Badge className="shadow-lg text-xs px-3 py-1.5 pointer-events-none">
+          {draggedItem.label}
+        </Badge>
+      )}
+    </DragOverlay>
+    </DndContext>
   );
 }
 
@@ -519,7 +606,40 @@ function DayStaffRow({ staff, date, entry, shiftTypes, onSave }: {
   );
 }
 
-function ScheduleCell({ staffId, date, entry, staffColor, isToday, isWeekend, shiftTypes, onSave }: {
+function DraggablePaletteItem({ id, entryType, shiftTypeId, label, color, colorClass }: {
+  id: string;
+  entryType: string;
+  shiftTypeId?: number;
+  label: string;
+  color?: string;
+  colorClass?: string;
+}) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id,
+    data: { entryType, shiftTypeId, label },
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      className={cn(
+        "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border bg-background cursor-grab active:cursor-grabbing touch-none text-xs font-medium",
+        isDragging && "opacity-50"
+      )}
+    >
+      <GripVertical className="h-3 w-3 text-muted-foreground shrink-0" />
+      <div
+        className={cn("w-2.5 h-2.5 rounded-full shrink-0", colorClass)}
+        style={color ? { backgroundColor: color } : undefined}
+      />
+      {label}
+    </div>
+  );
+}
+
+function DroppableScheduleCell(props: {
   staffId: number;
   date: string;
   entry: ScheduleEntry | undefined;
@@ -528,6 +648,28 @@ function ScheduleCell({ staffId, date, entry, staffColor, isToday, isWeekend, sh
   isWeekend?: boolean;
   shiftTypes: ShiftType[];
   onSave: () => void;
+}) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: `drop-${props.staffId}-${props.date}`,
+    data: { staffId: props.staffId, date: props.date },
+  });
+
+  return (
+    <ScheduleCell {...props} dropRef={setNodeRef} isDropOver={isOver} />
+  );
+}
+
+function ScheduleCell({ staffId, date, entry, staffColor, isToday, isWeekend, shiftTypes, onSave, dropRef, isDropOver }: {
+  staffId: number;
+  date: string;
+  entry: ScheduleEntry | undefined;
+  staffColor: string;
+  isToday: boolean;
+  isWeekend?: boolean;
+  shiftTypes: ShiftType[];
+  onSave: () => void;
+  dropRef?: (el: HTMLElement | null) => void;
+  isDropOver?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [type, setType] = useState(entry?.type || "shift");
@@ -628,7 +770,15 @@ function ScheduleCell({ staffId, date, entry, staffColor, isToday, isWeekend, sh
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <td className={`p-1 text-center cursor-pointer hover:bg-secondary/50 active:bg-secondary/70 transition-colors border ${isToday ? 'ring-2 ring-primary ring-inset' : ''} ${bgColor()}`}>
+        <td
+          ref={dropRef}
+          className={cn(
+            "p-1 text-center cursor-pointer hover:bg-secondary/50 active:bg-secondary/70 transition-colors border",
+            isToday && "ring-2 ring-primary ring-inset",
+            isDropOver && "ring-2 ring-primary bg-primary/10",
+            bgColor()
+          )}
+        >
           <div className="min-h-[40px] flex items-center justify-center">
             {getDisplayContent()}
           </div>

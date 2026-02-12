@@ -39,6 +39,16 @@ attached_assets/*.jpg
 attached_assets/*.png
 attached_assets/*.webp
 
+# credentials & secrets
+docker/nginx/.htpasswd
+
+# logs
+*.log
+batch-import.log
+
+# backup configs
+*.bak
+
 # IDE
 .vscode/
 .idea/

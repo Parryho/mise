@@ -16,8 +16,10 @@ const isDev = process.env.NODE_ENV !== "production";
 app.set("trust proxy", 1);
 
 // Security headers (X-Content-Type-Options, X-Frame-Options, HSTS, etc.)
+// In dev mode, Vite injects inline scripts (React Refresh preamble) and uses
+// eval for HMR, so CSP must be relaxed. Production keeps strict CSP.
 app.use(helmet({
-  contentSecurityPolicy: {
+  contentSecurityPolicy: isDev ? false : {
     directives: {
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'"],

@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react";
+import i18next from "i18next";
 import { AllergenCode } from "./i18n";
 import { apiFetch, apiPost, apiPut, apiDelete } from "./api";
 
@@ -115,6 +116,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     fetchAll();
+  }, []);
+
+  // Re-fetch recipes when language changes (DB translations)
+  useEffect(() => {
+    const handler = () => { fetchRecipes(); };
+    i18next.on("languageChanged", handler);
+    return () => { i18next.off("languageChanged", handler); };
   }, []);
 
   const addRecipe = async (recipe: Omit<Recipe, 'id'> & { ingredientsList?: Ingredient[] }): Promise<Recipe> => {

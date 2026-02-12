@@ -5,6 +5,12 @@
 # claude code
 .claude/
 
+# cursor IDE
+.cursor/
+
+# agents skills (Vercel etc.)
+.agents/
+
 # dependencies
 node_modules/
 
@@ -17,6 +23,12 @@ node_modules/
 *.pem
 nul
 _ul
+
+# temporary files (audit data, one-off scripts, screenshots)
+tmp/
+
+# audit exports
+*.xlsx
 
 # debug
 npm-debug.log*

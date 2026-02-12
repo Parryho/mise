@@ -580,7 +580,7 @@ export default function Today() {
         <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
           <QuickAction href="/rotation" icon={CalendarDays} label={t("today.planningLink")} color="text-blue-600" />
           <QuickAction href="/recipes" icon={ChefHat} label={t("today.recipesLink")} color="text-primary" />
-          <QuickAction href="/shopping" icon={ShoppingCart} label={t("today.shoppingLink")} color="text-green-600" />
+          <QuickAction href="/orders" icon={ShoppingCart} label={t("today.orderLink")} color="text-green-600" />
           <QuickAction href="/production" icon={ClipboardList} label={t("today.productionLink")} color="text-amber-600" />
           <QuickAction href="/agent-team" icon={Bot} label={t("today.briefingLink")} color="text-indigo-600" />
         </div>

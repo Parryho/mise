@@ -25,12 +25,14 @@ import {
   type GuestAllergenProfile, type InsertGuestAllergenProfile,
   type AgentTeamRun, type InsertAgentTeamRun,
   type AgentTeamAction, type InsertAgentTeamAction,
+  type OrderList, type InsertOrderList,
+  type OrderItem, type InsertOrderItem,
   users, recipes, ingredients, masterIngredients, fridges, haccpLogs,
   guestCounts, cateringEvents, cateringMenuItems, staff, shiftTypes,
   scheduleEntries, menuPlans, menuPlanTemperatures, appSettings, tasks,
   taskTemplates, locations, rotationTemplates, rotationSlots, auditLogs,
   suppliers, subRecipeLinks, guestAllergenProfiles,
-  agentTeamRuns, agentTeamActions
+  agentTeamRuns, agentTeamActions, orderLists, orderItems
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, gte, lte, sql } from "drizzle-orm";
@@ -602,6 +604,55 @@ export class DatabaseStorage {
   }
   async getTeamActions(runId: number): Promise<AgentTeamAction[]> {
     return db.select().from(agentTeamActions).where(eq(agentTeamActions.runId, runId));
+  }
+
+  // === Order Lists (Bestellzettel) ===
+  async getActiveOrderList(): Promise<OrderList | undefined> {
+    const [list] = await db.select().from(orderLists)
+      .where(eq(orderLists.status, "open"))
+      .orderBy(desc(orderLists.createdAt))
+      .limit(1);
+    return list;
+  }
+  async getOrderList(id: number): Promise<OrderList | undefined> {
+    const [list] = await db.select().from(orderLists).where(eq(orderLists.id, id));
+    return list;
+  }
+  async getOrderLists(status?: string): Promise<OrderList[]> {
+    if (status) {
+      return db.select().from(orderLists).where(eq(orderLists.status, status)).orderBy(desc(orderLists.createdAt));
+    }
+    return db.select().from(orderLists).orderBy(desc(orderLists.createdAt));
+  }
+  async createOrderList(list: InsertOrderList): Promise<OrderList> {
+    const [created] = await db.insert(orderLists).values(list).returning();
+    return created;
+  }
+  async updateOrderList(id: number, data: Partial<InsertOrderList>): Promise<OrderList | undefined> {
+    const [updated] = await db.update(orderLists).set(data).where(eq(orderLists.id, id)).returning();
+    return updated;
+  }
+
+  // === Order Items ===
+  async getOrderItems(listId: number): Promise<OrderItem[]> {
+    return db.select().from(orderItems)
+      .where(eq(orderItems.listId, listId))
+      .orderBy(orderItems.isChecked, orderItems.sortOrder, orderItems.id);
+  }
+  async createOrderItem(item: InsertOrderItem): Promise<OrderItem> {
+    const [created] = await db.insert(orderItems).values(item).returning();
+    return created;
+  }
+  async createOrderItems(items: InsertOrderItem[]): Promise<OrderItem[]> {
+    if (items.length === 0) return [];
+    return db.insert(orderItems).values(items).returning();
+  }
+  async updateOrderItem(id: number, data: Partial<InsertOrderItem>): Promise<OrderItem | undefined> {
+    const [updated] = await db.update(orderItems).set(data).where(eq(orderItems.id, id)).returning();
+    return updated;
+  }
+  async deleteOrderItem(id: number): Promise<void> {
+    await db.delete(orderItems).where(eq(orderItems.id, id));
   }
 }
 

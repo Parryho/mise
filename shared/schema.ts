@@ -465,6 +465,34 @@ export const ingredientTranslations = pgTable("ingredient_translations", {
   index("idx_ingredient_translations_ingredient_lang").on(table.ingredientId, table.lang),
 ]);
 
+// === Order Lists (Bestellzettel) ===
+export const orderLists = pgTable("order_lists", {
+  id: serial("id").primaryKey(),
+  status: text("status").notNull().default("open"), // open, ordered, archived
+  createdBy: varchar("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdByName: text("created_by_name"),
+  orderedAt: timestamp("ordered_at"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => [
+  index("idx_order_lists_status").on(table.status),
+]);
+
+export const orderItems = pgTable("order_items", {
+  id: serial("id").primaryKey(),
+  listId: integer("list_id").references(() => orderLists.id, { onDelete: "cascade" }).notNull(),
+  name: text("name").notNull(),
+  amount: text("amount"), // Freitext: "2kg", "3 Stk", etc.
+  supplierId: integer("supplier_id").references(() => suppliers.id, { onDelete: "set null" }),
+  isChecked: boolean("is_checked").notNull().default(false),
+  addedBy: varchar("added_by").references(() => users.id, { onDelete: "set null" }),
+  addedByName: text("added_by_name"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => [
+  index("idx_order_items_list").on(table.listId),
+]);
+
 // ========================
 // Zod Schemas
 // ========================
@@ -531,6 +559,17 @@ export const insertIngredientTranslationSchema = createInsertSchema(ingredientTr
 export const insertQuizFeedbackSchema = createInsertSchema(quizFeedback).omit({ id: true, createdAt: true });
 export const insertPairingScoreSchema = createInsertSchema(pairingScores).omit({ id: true, lastUpdated: true });
 export const insertLearnedRuleSchema = createInsertSchema(learnedRules).omit({ id: true, createdAt: true });
+
+// Order list schemas
+export const insertOrderListSchema = createInsertSchema(orderLists).omit({ id: true, createdAt: true });
+export const insertOrderItemSchema = createInsertSchema(orderItems).omit({ id: true, createdAt: true });
+export const updateOrderItemSchema = z.object({
+  name: z.string().optional(),
+  amount: z.string().nullable().optional(),
+  supplierId: z.number().nullable().optional(),
+  isChecked: z.boolean().optional(),
+  sortOrder: z.number().optional(),
+});
 
 export const quizFeedbackBatchSchema = z.object({
   templateId: z.number(),
@@ -654,3 +693,9 @@ export type PairingScore = typeof pairingScores.$inferSelect;
 export type InsertPairingScore = z.infer<typeof insertPairingScoreSchema>;
 export type LearnedRule = typeof learnedRules.$inferSelect;
 export type InsertLearnedRule = z.infer<typeof insertLearnedRuleSchema>;
+
+// Order list types
+export type OrderList = typeof orderLists.$inferSelect;
+export type InsertOrderList = z.infer<typeof insertOrderListSchema>;
+export type OrderItem = typeof orderItems.$inferSelect;
+export type InsertOrderItem = z.infer<typeof insertOrderItemSchema>;

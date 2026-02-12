@@ -156,6 +156,7 @@
     "planningLink": "Planung",
     "recipesLink": "Rezepte",
     "shoppingLink": "Einkauf",
+    "orderLink": "Bestellen",
     "productionLink": "Produktion",
     "briefingLink": "Briefing",
     "lunchShort": "M",
@@ -1357,5 +1358,26 @@
       "selfContained": "Komplett",
       "dessertMain": "Süßes Hauptgericht"
     }
+  },
+  "orderList": {
+    "title": "Bestellzettel",
+    "open": "offen",
+    "ordered": "bestellt",
+    "archived": "archiviert",
+    "noItems": "Noch keine Artikel",
+    "addHint": "Tippe oben ein was bestellt werden muss",
+    "placeholder": "z.B. 2kg Mehl",
+    "markOrdered": "Als bestellt markieren",
+    "archive": "Frühere Bestellungen",
+    "noArchive": "Noch keine abgeschlossenen Bestellungen",
+    "scanTitle": "Zettel gescannt",
+    "scanning": "Wird gelesen...",
+    "itemsFound": "{{count}} Artikel erkannt",
+    "addAll": "Alle hinzufügen",
+    "itemsAdded": "{{count}} Artikel hinzugefügt",
+    "scanFailed": "Scan fehlgeschlagen",
+    "done": "erledigt",
+    "print": "Drucken",
+    "scan": "Zettel scannen"
   }
 }

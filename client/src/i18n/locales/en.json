@@ -156,6 +156,7 @@
     "planningLink": "Planning",
     "recipesLink": "Recipes",
     "shoppingLink": "Shopping",
+    "orderLink": "Orders",
     "productionLink": "Production",
     "briefingLink": "Briefing",
     "lunchShort": "L",
@@ -1357,5 +1358,26 @@
       "selfContained": "Self-contained",
       "dessertMain": "Dessert main"
     }
+  },
+  "orderList": {
+    "title": "Order List",
+    "open": "open",
+    "ordered": "ordered",
+    "archived": "archived",
+    "noItems": "No items yet",
+    "addHint": "Type above what needs to be ordered",
+    "placeholder": "e.g. 2kg flour",
+    "markOrdered": "Mark as ordered",
+    "archive": "Previous orders",
+    "noArchive": "No completed orders yet",
+    "scanTitle": "Note scanned",
+    "scanning": "Reading...",
+    "itemsFound": "{{count}} items found",
+    "addAll": "Add all",
+    "itemsAdded": "{{count}} items added",
+    "scanFailed": "Scan failed",
+    "done": "done",
+    "print": "Print",
+    "scan": "Scan note"
   }
 }

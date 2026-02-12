@@ -56,6 +56,8 @@ const LearningDashboard = lazy(() => import("@/pages/analytics/LearningDashboard
 const MenuQuiz = lazy(() => import("@/pages/MenuQuiz"));
 const GuestMenu = lazy(() => import("@/pages/public/GuestMenu"));
 const DigitalSignage = lazy(() => import("@/pages/public/DigitalSignage"));
+const OrderList = lazy(() => import("@/pages/OrderList"));
+const OrderBoard = lazy(() => import("@/pages/public/OrderBoard"));
 
 function PageLoader() {
   return (
@@ -183,6 +185,9 @@ function AuthenticatedRoutes() {
       <Route path="/shopping">
         <Layout><ShoppingList /></Layout>
       </Route>
+      <Route path="/orders">
+        <Layout><OrderList /></Layout>
+      </Route>
       <Route path="/catering">
         <Layout><Catering /></Layout>
       </Route>
@@ -223,6 +228,9 @@ function Router() {
       </Route>
       <Route path="/signage/:locationSlug">
         <DigitalSignage />
+      </Route>
+      <Route path="/bestellzettel">
+        <OrderBoard />
       </Route>
       {user ? (
         <Route>

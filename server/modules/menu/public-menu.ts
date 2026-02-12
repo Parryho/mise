@@ -5,7 +5,7 @@
 
 import { storage } from "../../storage";
 import { db } from "../../db";
-import { menuPlans, recipes, locations } from "@shared/schema";
+import { menuPlans, recipes, locations, recipeTranslations } from "@shared/schema";
 import { and, eq } from "drizzle-orm";
 import { ALLERGENS } from "@shared/allergens";
 import { MEAL_SLOT_LABELS, formatLocalDate, type MealSlotName } from "@shared/constants";
@@ -31,7 +31,7 @@ interface PublicMenuResponse {
   meals: PublicMeal[];
 }
 
-export async function getPublicMenu(locationSlug: string, date?: string): Promise<PublicMenuResponse | null> {
+export async function getPublicMenu(locationSlug: string, date?: string, lang: string = "de"): Promise<PublicMenuResponse | null> {
   const loc = await storage.getLocationBySlug(locationSlug);
   if (!loc) return null;
 
@@ -54,6 +54,15 @@ export async function getPublicMenu(locationSlug: string, date?: string): Promis
   const recipeIds = plans.filter(p => p.recipeId).map(p => p.recipeId!);
   const recipeMap: Record<number, { name: string; allergens: string[] }> = {};
 
+  // Build translation map if needed
+  const translationMap = new Map<number, string>();
+  if (lang !== "de" && recipeIds.length > 0) {
+    const translations = await db.select()
+      .from(recipeTranslations)
+      .where(and(eq(recipeTranslations.lang, lang)));
+    for (const t of translations) translationMap.set(t.recipeId, t.name);
+  }
+
   for (const id of recipeIds) {
     const recipe = await storage.getRecipe(id);
     if (recipe) {
@@ -62,7 +71,8 @@ export async function getPublicMenu(locationSlug: string, date?: string): Promis
       for (const ing of ings) {
         for (const a of (ing.allergens || [])) allAllergens.add(a);
       }
-      recipeMap[id] = { name: recipe.name, allergens: Array.from(allAllergens).sort() };
+      const name = translationMap.get(id) || recipe.name;
+      recipeMap[id] = { name, allergens: Array.from(allAllergens).sort() };
     }
   }
 

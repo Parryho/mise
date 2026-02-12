@@ -31,5 +31,8 @@ export { scaleIngredient, scaleRecipe, scaleRecipeHandler, scaleIngredientPrevie
 export { calculateDecayWeight, aggregatePairingScores, getScoresForMain, loadAllScores, analyzePatterns } from "./pairing-engine";
 export type { AnalyzedPattern } from "./pairing-engine";
 
+// Translations
+export { getLangFromRequest, translateRecipes, translateIngredients } from "./translations";
+
 // Quiz feedback handlers
 export { handleGetWeekCombos, handleSubmitFeedback, handleGetMyRatings, handleGetPairingScores, handleGetDashboardStats, handleGetLearnedRules, handleAIValidate, handleGameFeedback, handleAIResearch, handleGameEntry, handleGetGameEntries, getAdaptiveEpsilon } from "./quiz-feedback";

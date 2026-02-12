@@ -1,12 +1,23 @@
+/** Get current UI language for API requests */
+function getCurrentLang(): string {
+  return localStorage.getItem("mise-lang") || "de";
+}
+
 /**
  * Typed fetch wrapper with automatic error handling.
  * Checks res.ok, extracts server error message, throws on failure.
+ * Automatically sends current UI language as Accept-Language header.
  */
 export async function apiFetch<T = any>(
   url: string,
   options?: RequestInit
 ): Promise<T> {
-  const res = await fetch(url, options);
+  const lang = getCurrentLang();
+  const headers = new Headers(options?.headers);
+  if (!headers.has("Accept-Language")) {
+    headers.set("Accept-Language", lang);
+  }
+  const res = await fetch(url, { ...options, headers });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error(body.error || `Anfrage fehlgeschlagen (${res.status})`);

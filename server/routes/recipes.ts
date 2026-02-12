@@ -4,7 +4,7 @@ import { insertRecipeSchema, updateRecipeSchema, insertIngredientSchema, insertS
 import { autoCategorize } from "@shared/categorizer";
 import { db } from "../db";
 import { eq } from "drizzle-orm";
-import { scrapeRecipe, resolveRecipeIngredients, wouldCreateCycle, handleAIRecipeImport, handleGetSuggestions, scaleRecipeHandler, recipeMediaUpload, handleUploadMedia, handleGetMedia, handleUpdateMedia, handleDeleteMedia, detectAllergens, getAllergensFromIngredients, autoTagAllRecipes } from "../modules/recipe";
+import { scrapeRecipe, resolveRecipeIngredients, wouldCreateCycle, handleAIRecipeImport, handleGetSuggestions, scaleRecipeHandler, recipeMediaUpload, handleUploadMedia, handleGetMedia, handleUpdateMedia, handleDeleteMedia, detectAllergens, getAllergensFromIngredients, autoTagAllRecipes, getLangFromRequest, translateRecipes, translateIngredients } from "../modules/recipe";
 import { z } from "zod";
 import multer from "multer";
 import { createRequire } from "module";
@@ -21,18 +21,23 @@ export function registerRecipeRoutes(app: Express) {
       category: typeof category === 'string' ? category : undefined,
       searchIngredients: searchIngredients === 'true',
     };
+    const lang = getLangFromRequest(req);
     const recipes = await storage.getRecipes(filters);
-    res.json(recipes);
+    const translated = await translateRecipes(recipes, lang);
+    res.json(translated);
   });
 
   app.get("/api/recipes/:id", requireAuth, async (req, res) => {
+    const lang = getLangFromRequest(req);
     const id = parseInt(getParam(req.params.id), 10);
     const recipe = await storage.getRecipe(id);
     if (!recipe) {
       return res.status(404).json({ error: "Rezept nicht gefunden" });
     }
     const ingredients = await storage.getIngredients(id);
-    res.json({ ...recipe, ingredientsList: ingredients });
+    const [translatedRecipe] = await translateRecipes([recipe], lang);
+    const translatedIngredients = await translateIngredients(ingredients, lang);
+    res.json({ ...translatedRecipe, ingredientsList: translatedIngredients });
   });
 
   app.post("/api/recipes", requireAuth, async (req, res) => {
@@ -244,18 +249,22 @@ export function registerRecipeRoutes(app: Express) {
 
   // === INGREDIENTS ===
   app.get("/api/recipes/:id/ingredients", requireAuth, async (req, res) => {
+    const lang = getLangFromRequest(req);
     const recipeId = parseInt(getParam(req.params.id), 10);
     const ingredients = await storage.getIngredients(recipeId);
-    res.json(ingredients);
+    const translated = await translateIngredients(ingredients, lang);
+    res.json(translated);
   });
 
   // Bulk ingredients for multiple recipes (avoids N+1)
   app.get("/api/ingredients/bulk", requireAuth, async (req, res) => {
+    const lang = getLangFromRequest(req);
     const { recipeIds } = req.query;
     if (!recipeIds) return res.json([]);
     const ids = (recipeIds as string).split(",").map(id => parseInt(id, 10)).filter(id => !isNaN(id));
     const ingredients = await storage.getIngredientsByRecipeIds(ids);
-    res.json(ingredients);
+    const translated = await translateIngredients(ingredients, lang);
+    res.json(translated);
   });
 
   // === OCR PDF Extraction ===

@@ -443,6 +443,28 @@ export const auditLogs = pgTable("audit_logs", {
   index("idx_audit_logs_table_record").on(table.tableName, table.recordId),
 ]);
 
+// Recipe Translations (name, steps, prepInstructions)
+export const recipeTranslations = pgTable("recipe_translations", {
+  id: serial("id").primaryKey(),
+  recipeId: integer("recipe_id").references(() => recipes.id, { onDelete: "cascade" }).notNull(),
+  lang: text("lang").notNull(), // 'en', 'tr', 'uk'
+  name: text("name").notNull(),
+  steps: text("steps").array().notNull().default([]),
+  prepInstructions: text("prep_instructions"),
+}, (table) => [
+  index("idx_recipe_translations_recipe_lang").on(table.recipeId, table.lang),
+]);
+
+// Ingredient Translations (name only)
+export const ingredientTranslations = pgTable("ingredient_translations", {
+  id: serial("id").primaryKey(),
+  ingredientId: integer("ingredient_id").references(() => ingredients.id, { onDelete: "cascade" }).notNull(),
+  lang: text("lang").notNull(), // 'en', 'tr', 'uk'
+  name: text("name").notNull(),
+}, (table) => [
+  index("idx_ingredient_translations_ingredient_lang").on(table.ingredientId, table.lang),
+]);
+
 // ========================
 // Zod Schemas
 // ========================
@@ -500,6 +522,10 @@ export const insertAgentTeamActionSchema = createInsertSchema(agentTeamActions).
 export const insertSupplierSchema = createInsertSchema(suppliers).omit({ id: true, createdAt: true });
 export const insertSubRecipeLinkSchema = createInsertSchema(subRecipeLinks).omit({ id: true });
 export const insertGuestAllergenProfileSchema = createInsertSchema(guestAllergenProfiles).omit({ id: true, createdAt: true });
+
+// Translation schemas
+export const insertRecipeTranslationSchema = createInsertSchema(recipeTranslations).omit({ id: true });
+export const insertIngredientTranslationSchema = createInsertSchema(ingredientTranslations).omit({ id: true });
 
 // Phase 5: Quiz feedback schemas
 export const insertQuizFeedbackSchema = createInsertSchema(quizFeedback).omit({ id: true, createdAt: true });
@@ -614,6 +640,12 @@ export type SubRecipeLink = typeof subRecipeLinks.$inferSelect;
 export type InsertSubRecipeLink = z.infer<typeof insertSubRecipeLinkSchema>;
 export type GuestAllergenProfile = typeof guestAllergenProfiles.$inferSelect;
 export type InsertGuestAllergenProfile = z.infer<typeof insertGuestAllergenProfileSchema>;
+
+// Translation types
+export type RecipeTranslation = typeof recipeTranslations.$inferSelect;
+export type InsertRecipeTranslation = z.infer<typeof insertRecipeTranslationSchema>;
+export type IngredientTranslation = typeof ingredientTranslations.$inferSelect;
+export type InsertIngredientTranslation = z.infer<typeof insertIngredientTranslationSchema>;
 
 // Phase 5: Quiz feedback types
 export type QuizFeedback = typeof quizFeedback.$inferSelect;

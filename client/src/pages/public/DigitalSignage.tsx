@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Loader2, UtensilsCrossed } from "lucide-react";
 import { useParams } from "wouter";
 import { formatLocalDate } from "@shared/constants";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface PublicDish {
   course: string;
@@ -29,14 +30,16 @@ export default function DigitalSignage() {
   const params = useParams<{ locationSlug: string }>();
   const locationSlug = params.locationSlug;
   const today = formatLocalDate(new Date());
+  const { i18n } = useTranslation();
+  const lang = i18n.language || "de";
 
   const [currentMealIdx, setCurrentMealIdx] = useState(0);
   const [clock, setClock] = useState(new Date());
 
   const { data: menu, isLoading } = useQuery<PublicMenuResponse>({
-    queryKey: ["/api/public/menu", locationSlug, today],
+    queryKey: ["/api/public/menu", locationSlug, today, lang],
     queryFn: async () => {
-      const res = await fetch(`/api/public/menu/${locationSlug}/${today}`);
+      const res = await fetch(`/api/public/menu/${locationSlug}/${today}?lang=${lang}`);
       if (!res.ok) throw new Error("Menu nicht gefunden");
       return res.json();
     },

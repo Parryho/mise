@@ -54,7 +54,8 @@ export function registerPublicRoutes(app: Express) {
     try {
       const locationSlug = getParam(req.params.locationSlug);
       const date = req.params.date ? getParam(req.params.date) : undefined;
-      const menu = await getPublicMenu(locationSlug, date);
+      const lang = typeof req.query.lang === "string" ? req.query.lang : "de";
+      const menu = await getPublicMenu(locationSlug, date, lang);
       if (!menu) return res.status(404).json({ error: "Standort nicht gefunden" });
       res.json(menu);
     } catch (error: any) {

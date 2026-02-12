@@ -3,6 +3,7 @@ import { Loader2, UtensilsCrossed } from "lucide-react";
 import { useParams } from "wouter";
 import { ALLERGENS } from "@shared/allergens";
 import { formatLocalDate } from "@shared/constants";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface PublicDish {
   course: string;
@@ -29,11 +30,13 @@ export default function GuestMenu() {
   const params = useParams<{ locationSlug: string; date?: string }>();
   const locationSlug = params.locationSlug;
   const date = params.date || formatLocalDate(new Date());
+  const { i18n } = useTranslation();
+  const lang = i18n.language || "de";
 
   const { data: menu, isLoading, error } = useQuery<PublicMenuResponse>({
-    queryKey: ["/api/public/menu", locationSlug, date],
+    queryKey: ["/api/public/menu", locationSlug, date, lang],
     queryFn: async () => {
-      const res = await fetch(`/api/public/menu/${locationSlug}/${date}`);
+      const res = await fetch(`/api/public/menu/${locationSlug}/${date}?lang=${lang}`);
       if (!res.ok) throw new Error("Menu nicht gefunden");
       return res.json();
     },

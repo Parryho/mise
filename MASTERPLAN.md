@@ -579,7 +579,7 @@ Phase 2 (Tag-System) bringt bereits 80% Verbesserung. Pairing-Scores sind option
 | ~~3~~ | ~~11.10~~ | ~~Bulk-Tag-Editor (235 Rezepte)~~ | ~~4-6h~~ | ✅ **Done** |
 | 4 | R2 | Offene R2-Tickets | ~16h | Admin-UX |
 | 5 | 14 | Gäste & Catering zusammenlegen | ~3.5h | UX-Vereinfachung |
-| 6 | 15 | Rezeptdatenbank übersetzen (EN/TR/UK) | ~1h | i18n komplett |
+| ~~6~~ | ~~15~~ | ~~Rezeptdatenbank übersetzen (EN/TR/UK)~~ | ~~~1h~~ | ✅ **Done** |
 | 7 | 11.11 | KitcheNette Pairing-Scores | 8-12h | +15-20% |
 
 ### Metriken
@@ -636,18 +636,20 @@ PAX/Gästezahlen und Catering-Events in eine gemeinsame Seite "Gäste & Events" 
 
 **Impact:** Weniger Nav-Punkte, Küche sieht alle Personen-bezogenen Daten an einem Ort.
 
-### Phase 15: Rezeptdatenbank mehrsprachig (geplant)
+### Phase 15: Rezeptdatenbank mehrsprachig ✅ Done (2026-02-12)
 
-420 Rezepte + 3.903 Zutaten übersetzen (DE → EN/TR/UK). ~276K Zeichen pro Sprache.
+420 Rezepte + 3.938 Zutaten übersetzt (DE → EN/TR/UK). Google Translate + Haiku-Korrektur für AT-Spezialitäten.
 
 | # | Task | Status | Aufwand |
 |---|------|--------|--------|
-| 14.1 | Architektur: `recipe_translations` Tabelle (recipe_id, lang, name, steps) + `ingredient_translations` | Offen | 30 Min |
-| 14.2 | Batch-Übersetzungs-Script (Claude Haiku, ~600K Tokens total) | Offen | 30 Min |
-| 14.3 | API: Rezepte + Zutaten nach `Accept-Language` Header / User-Sprache ausliefern | Offen | 1h |
-| 14.4 | Client: Rezeptnamen + Zutaten + Steps aus Translation lesen | Offen | 30 Min |
+| 15.1 | Architektur: `recipe_translations` + `ingredient_translations` Tabellen | ✅ Done | 15 Min |
+| 15.2 | Batch-Übersetzungs-Script (Google Translate, gratis) | ✅ Done | 20 Min |
+| 15.3 | Übersetzung ausführen (EN/TR/UK parallel) | ✅ Done | ~25 Min |
+| 15.4 | Haiku-Korrektur österreichischer Spezialitäten (15 Rezepte, 43 Fixes) | ✅ Done | 5 Min |
+| 15.5 | API: Rezepte + Zutaten nach `Accept-Language` Header ausliefern | ✅ Done | 20 Min |
+| 15.6 | Client: `apiFetch` sendet Sprache automatisch + Public Menu mit `?lang=` | ✅ Done | 15 Min |
 
-**Kosten:** ~$0.15-0.25 (Haiku) | **Aufwand:** ~2-3h gesamt
+**Kosten:** $0 (Google Translate gratis, Haiku über Max-Abo) | **Aufwand:** ~1.5h gesamt
 
 ---
 

@@ -104,7 +104,7 @@ export class DatabaseStorage {
   }
 
   // === Recipes ===
-  async getRecipes(filters?: { q?: string; category?: string; searchIngredients?: boolean }): Promise<Recipe[]> {
+  async getRecipes(filters?: { q?: string; category?: string; searchIngredients?: boolean; noIngredients?: boolean }): Promise<Recipe[]> {
     if (filters?.searchIngredients && filters?.q && filters.q.length >= 2) {
       // Server-side ingredient search using EXISTS subquery
       const term = `%${filters.q.toLowerCase()}%`;
@@ -112,6 +112,14 @@ export class DatabaseStorage {
         sql`EXISTS (
           SELECT 1 FROM ingredients i
           WHERE i.recipe_id = ${recipes.id} AND LOWER(i.name) LIKE ${term}
+        )`
+      ).orderBy(recipes.name);
+    }
+    if (filters?.noIngredients) {
+      return db.select().from(recipes).where(
+        sql`NOT EXISTS (
+          SELECT 1 FROM ingredients i
+          WHERE i.recipe_id = ${recipes.id}
         )`
       ).orderBy(recipes.name);
     }

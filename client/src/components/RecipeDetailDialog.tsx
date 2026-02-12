@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Minus, Plus, ExternalLink, Loader2, Trash2, Pencil, X, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Minus, Plus, ExternalLink, Loader2, Trash2, Pencil, X, CheckCircle2, AlertTriangle, Link2, Download } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -45,6 +45,8 @@ export default function RecipeDetailDialog({ recipe, open, onOpenChange, readOnl
   const [editAllergens, setEditAllergens] = useState<string[]>(recipe.allergens);
   const [editIngredients, setEditIngredients] = useState<Ingredient[]>([]);
   const [saving, setSaving] = useState(false);
+  const [rescrapeUrl, setRescrapeUrl] = useState("");
+  const [rescraping, setRescraping] = useState(false);
 
   const categoryLabel = t(`recipes.categories.${recipe.category}`) || RECIPE_CATEGORIES.find(c => c.id === recipe.category)?.label || recipe.category;
 
@@ -116,6 +118,29 @@ export default function RecipeDetailDialog({ recipe, open, onOpenChange, readOnl
       toast({ title: t("common.error"), description: error.message, variant: "destructive" });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleRescrape = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!rescrapeUrl) return;
+    setRescraping(true);
+    try {
+      const updated = await apiFetch<Recipe>(`/api/recipes/${recipe.id}/rescrape`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: rescrapeUrl }),
+      });
+      toast({ title: t("recipes.importSuccess"), description: `${updated.ingredientsList?.length || 0} ${t("recipes.ingredients")}` });
+      setRescrapeUrl("");
+      // Reload ingredients
+      const data = await apiFetch<Ingredient[]>(`/api/recipes/${recipe.id}/ingredients`);
+      setIngredients(data);
+      setEditIngredients(data);
+    } catch (error: any) {
+      toast({ title: t("recipes.importFailed"), description: error.message, variant: "destructive" });
+    } finally {
+      setRescraping(false);
     }
   };
 
@@ -375,7 +400,27 @@ export default function RecipeDetailDialog({ recipe, open, onOpenChange, readOnl
                       );
                     })}
                     {ingredients.length === 0 && !loadingIngredients && (
-                      <li className="text-muted-foreground text-center py-4">{t("common.noData")}</li>
+                      <li className="text-muted-foreground text-center py-4">
+                        {!readOnly ? (
+                          <form onSubmit={handleRescrape} className="space-y-2 text-left">
+                            <p className="text-sm text-center mb-2">{t("recipes.noIngredients")}</p>
+                            <div className="flex gap-2">
+                              <Input
+                                type="url"
+                                value={rescrapeUrl}
+                                onChange={(e) => setRescrapeUrl(e.target.value)}
+                                placeholder="https://www.chefkoch.de/rezepte/..."
+                                className="flex-1 h-10 text-sm"
+                              />
+                              <Button type="submit" size="sm" className="gap-1.5 h-10 shrink-0" disabled={rescraping || !rescrapeUrl}>
+                                {rescraping ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+                                {t("recipes.fillFromUrl")}
+                              </Button>
+                            </div>
+                            <p className="text-xs text-muted-foreground">{t("recipes.supportedSites")}</p>
+                          </form>
+                        ) : t("common.noData")}
+                      </li>
                     )}
                   </ul>
                 )}

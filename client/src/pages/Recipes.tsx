@@ -37,6 +37,10 @@ export default function Recipes() {
   const [search, setSearch] = useState("");
   const [globalSearch, setGlobalSearch] = useState("");
   const [searchIngredients, setSearchIngredients] = useState(false);
+  const [showNoIngredients, setShowNoIngredients] = useState(false);
+  const [noIngredientRecipes, setNoIngredientRecipes] = useState<Recipe[]>([]);
+  const [noIngredientLoading, setNoIngredientLoading] = useState(false);
+  const [noIngRefresh, setNoIngRefresh] = useState(0);
   const [ingredientResults, setIngredientResults] = useState<Recipe[]>([]);
   const [ingredientLoading, setIngredientLoading] = useState(false);
   const debouncedGlobalSearch = useDebounce(globalSearch, 300);
@@ -55,6 +59,21 @@ export default function Recipes() {
       .finally(() => { if (!cancelled) setIngredientLoading(false); });
     return () => { cancelled = true; };
   }, [debouncedGlobalSearch, searchIngredients]);
+
+  // Fetch recipes without ingredients
+  useEffect(() => {
+    if (!showNoIngredients) {
+      setNoIngredientRecipes([]);
+      return;
+    }
+    let cancelled = false;
+    setNoIngredientLoading(true);
+    apiFetch<Recipe[]>('/api/recipes?noIngredients=true')
+      .then(data => { if (!cancelled) setNoIngredientRecipes(data); })
+      .catch(() => { if (!cancelled) setNoIngredientRecipes([]); })
+      .finally(() => { if (!cancelled) setNoIngredientLoading(false); });
+    return () => { cancelled = true; };
+  }, [showNoIngredients, noIngRefresh]);
 
   // Global search results (min 2 characters, searches across all categories)
   const globalSearchResults = useMemo(() => {
@@ -81,6 +100,52 @@ export default function Recipes() {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Show recipes without ingredients
+  if (showNoIngredients) {
+    return (
+      <div className="p-4 space-y-4 pb-24">
+        <div className="sticky top-0 bg-background/95 backdrop-blur z-10 pb-2 space-y-3">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="shrink-0"
+              onClick={() => setShowNoIngredients(false)}
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <h1 className="text-2xl font-heading font-bold">{t("recipes.withoutIngredients")}</h1>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {t("recipes.withoutIngredientsHint")}
+          </p>
+        </div>
+
+        {noIngredientLoading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : noIngredientRecipes.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            <UtensilsCrossed className="h-12 w-12 mx-auto mb-4 opacity-30" />
+            <p className="font-medium">{t("recipes.allHaveIngredients")}</p>
+          </div>
+        ) : (
+          <>
+            <p className="text-sm text-muted-foreground tabular-nums">
+              {t("recipes.recipesFound", { count: noIngredientRecipes.length })}
+            </p>
+            <div className="grid gap-3 md:grid-cols-2">
+              {noIngredientRecipes.map(recipe => (
+                <RecipeCard key={recipe.id} recipe={recipe} onDialogClose={() => setNoIngRefresh(n => n + 1)} />
+              ))}
+            </div>
+          </>
+        )}
       </div>
     );
   }
@@ -266,6 +331,16 @@ export default function Recipes() {
             </button>
           ))}
         </div>
+
+        {/* Filter: Recipes without ingredients */}
+        <Button
+          variant="outline"
+          className="w-full gap-2 h-11"
+          onClick={() => setShowNoIngredients(true)}
+        >
+          <Link2 className="h-4 w-4" />
+          {t("recipes.withoutIngredients")}
+        </Button>
       </div>
     </div>
   );
@@ -624,9 +699,14 @@ function AddRecipeDialog({ defaultCategory }: { defaultCategory?: string }) {
   );
 }
 
-function RecipeCard({ recipe }: { recipe: Recipe }) {
+function RecipeCard({ recipe, onDialogClose }: { recipe: Recipe; onDialogClose?: () => void }) {
   const { t, i18n } = useTranslation();
   const [dialogOpen, setDialogOpen] = useState(false);
+
+  const handleOpenChange = (open: boolean) => {
+    setDialogOpen(open);
+    if (!open && onDialogClose) onDialogClose();
+  };
 
   const categoryLabel = t(`recipes.categories.${recipe.category}`) || RECIPE_CATEGORIES.find(c => c.id === recipe.category)?.label || recipe.category;
 
@@ -679,7 +759,7 @@ function RecipeCard({ recipe }: { recipe: Recipe }) {
           </div>
         </CardContent>
       </Card>
-      <RecipeDetailDialog recipe={recipe} open={dialogOpen} onOpenChange={setDialogOpen} />
+      <RecipeDetailDialog recipe={recipe} open={dialogOpen} onOpenChange={handleOpenChange} />
     </>
   );
 }

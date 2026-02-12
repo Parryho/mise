@@ -15,11 +15,12 @@ export function registerRecipeRoutes(app: Express) {
 
   // === RECIPES CRUD ===
   app.get("/api/recipes", requireAuth, async (req, res) => {
-    const { q, category, searchIngredients } = req.query;
+    const { q, category, searchIngredients, noIngredients } = req.query;
     const filters = {
       q: typeof q === 'string' ? q : undefined,
       category: typeof category === 'string' ? category : undefined,
       searchIngredients: searchIngredients === 'true',
+      noIngredients: noIngredients === 'true',
     };
     const lang = getLangFromRequest(req);
     const recipes = await storage.getRecipes(filters);
@@ -162,6 +163,68 @@ export function registerRecipeRoutes(app: Express) {
       });
 
       res.status(201).json(result);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // === RESCRAPE: Fill existing recipe from URL ===
+  app.put("/api/recipes/:id/rescrape", requireAuth, async (req, res) => {
+    const id = parseInt(getParam(req.params.id), 10);
+    const { url } = req.body;
+    if (!url) {
+      return res.status(400).json({ error: "URL ist erforderlich" });
+    }
+
+    try {
+      const existing = await storage.getRecipe(id);
+      if (!existing) {
+        return res.status(404).json({ error: "Rezept nicht gefunden" });
+      }
+
+      const scraped = await scrapeRecipe(url);
+      if (!scraped) {
+        return res.status(400).json({ error: "Rezept konnte nicht von URL geladen werden" });
+      }
+
+      if (scraped.ingredients.length === 0) {
+        return res.status(400).json({ error: "Keine Zutaten gefunden" });
+      }
+
+      const recipeAllergens = getAllergensFromIngredients(scraped.ingredients);
+
+      const result = await db.transaction(async (tx) => {
+        // Delete old ingredients
+        await tx.delete(ingredients).where(eq(ingredients.recipeId, id));
+
+        // Update recipe fields
+        const [updated] = await tx.update(recipes).set({
+          steps: scraped.steps,
+          portions: scraped.portions || existing.portions,
+          prepTime: scraped.prepTime || existing.prepTime,
+          sourceUrl: url,
+          allergens: recipeAllergens,
+          allergenStatus: 'auto',
+        }).where(eq(recipes.id, id)).returning();
+
+        // Insert new ingredients
+        if (scraped.ingredients.length > 0) {
+          await tx.insert(ingredients).values(
+            scraped.ingredients.map(ing => ({
+              recipeId: id,
+              name: ing.name,
+              amount: ing.amount,
+              unit: ing.unit,
+              allergens: detectAllergens(ing.name),
+            }))
+          );
+        }
+
+        const ings = await tx.select().from(ingredients).where(eq(ingredients.recipeId, id));
+        return { ...updated, ingredientsList: ings };
+      });
+
+      res.json(result);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }

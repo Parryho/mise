@@ -276,10 +276,17 @@ export default function OrderListPage() {
                 onCheckedChange={() => toggleCheck(item)}
                 className="h-5 w-5 rounded shrink-0"
               />
-              <span className={`text-sm truncate ${item.isChecked ? "line-through text-muted-foreground" : ""}`}>
+              <span className={`text-sm truncate flex-1 ${item.isChecked ? "line-through text-muted-foreground" : ""}`}>
                 {item.amount && <span className="text-primary font-semibold mr-1">{item.amount}</span>}
                 {item.name}
               </span>
+              <button
+                className="shrink-0 h-6 w-6 flex items-center justify-center rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 hover:opacity-100 focus:opacity-100 transition-opacity print:hidden"
+                onClick={(e) => { e.stopPropagation(); deleteItem(item.id); }}
+                aria-label="Löschen"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
             </div>
           ))}
         </div>

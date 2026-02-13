@@ -21,6 +21,7 @@ interface OrderItem {
   artikelNr: string;
   name: string;
   menge: number;
+  einheit?: string; // KT, PK, ST — default: KT (Schnellerfassung default)
 }
 
 interface AgentResult {
@@ -28,6 +29,7 @@ interface AgentResult {
   cartUrl?: string;
   itemsAdded: number;
   itemsFailed: string[];
+  itemDetails: string[]; // e.g. ["1 KT Economy Weizenmehl (= 10 PK à 1kg)"]
   screenshot?: string; // base64
   error?: string;
 }
@@ -155,11 +157,12 @@ export async function screenshotSchnellerfassung(): Promise<string> {
  */
 export async function addToCart(items: OrderItem[]): Promise<AgentResult> {
   if (items.length === 0) {
-    return { success: true, itemsAdded: 0, itemsFailed: [] };
+    return { success: true, itemsAdded: 0, itemsFailed: [], itemDetails: [] };
   }
 
   const browser = await launchBrowser();
   const itemsFailed: string[] = [];
+  const itemDetails: string[] = [];
   let itemsAdded = 0;
 
   try {
@@ -169,7 +172,7 @@ export async function addToCart(items: OrderItem[]): Promise<AgentResult> {
     // Open Schnellerfassung widget via Portal
     const ok = await openSchnellerfassung(page);
     if (!ok) {
-      return { success: false, itemsAdded: 0, itemsFailed: items.map(i => i.name), error: "Schnellerfassung nicht verfügbar" };
+      return { success: false, itemsAdded: 0, itemsFailed: items.map(i => i.name), itemDetails: [], error: "Schnellerfassung nicht verfügbar" };
     }
 
     // Add each item via quickadd form
@@ -197,7 +200,13 @@ export async function addToCart(items: OrderItem[]): Promise<AgentResult> {
         const addResp = await addPromise;
 
         if (addResp) {
-          console.log(`[TG] Add response: ${addResp.status()}`);
+          const addBody = await addResp.text().catch(() => "{}");
+          try {
+            const addData = JSON.parse(addBody);
+            console.log(`[TG] Add response: ${addResp.status()} — ${addData.shorttext || ""} (${addData.default_unit || "?"})`);
+          } catch {
+            console.log(`[TG] Add response: ${addResp.status()}`);
+          }
           await page.waitForTimeout(1000);
         } else {
           console.log("[TG] No AJAX response, waiting...");
@@ -211,7 +220,9 @@ export async function addToCart(items: OrderItem[]): Promise<AgentResult> {
         }, item.artikelNr);
 
         if (added) {
-          console.log(`[TG] ✓ ${item.artikelNr} added`);
+          const unit = item.einheit || "KT";
+          console.log(`[TG] ✓ ${item.artikelNr} x${item.menge} ${unit} added`);
+          itemDetails.push(`${item.menge} ${unit} ${item.name}`);
           itemsAdded++;
         } else {
           console.error(`[TG] ✗ ${item.artikelNr} NOT in table`);
@@ -284,6 +295,7 @@ export async function addToCart(items: OrderItem[]): Promise<AgentResult> {
       cartUrl,
       itemsAdded: transferOk ? itemsAdded : 0,
       itemsFailed: transferOk ? itemsFailed : items.map(i => i.name),
+      itemDetails: transferOk ? itemDetails : [],
       screenshot: screenshot.toString("base64"),
       error: transferOk ? undefined : "Transfer in Warenkorb fehlgeschlagen",
     };
@@ -292,6 +304,7 @@ export async function addToCart(items: OrderItem[]): Promise<AgentResult> {
       success: false,
       itemsAdded,
       itemsFailed: items.map(i => i.name),
+      itemDetails,
       error: error.message,
     };
   } finally {
@@ -316,6 +329,8 @@ interface MatchResult {
   match: CatalogItem | null;
   confidence: number;
   suggestedQty: number;
+  suggestedUnit: string; // KT, PK, ST etc.
+  unitInfo: string | null; // e.g. "1 KT = 10 PK à 1 kg"
 }
 
 let catalogCache: CatalogItem[] | null = null;
@@ -382,33 +397,49 @@ async function aiMatch(
     const genAI = new GoogleGenerativeAI(googleKey);
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
-    // Build compact catalog reference (only name + artikelNr to save tokens)
-    const catalogRef = catalog.map(c => `${c.artikelNr}|${c.name}`).join("\n");
+    // Build catalog reference with unit info
+    const catalogRef = catalog.map(c => `${c.artikelNr}|${c.name}|${c.einheit}`).join("\n");
 
     const itemList = orderItems.map(i => `${i.amount || "?"} ${i.name}`).join("\n");
 
-    const prompt = `Du bist ein Küchen-Einkaufsassistent. Ordne die Bestellliste den Transgourmet-Artikeln zu.
+    const prompt = `Du bist ein Küchen-Einkaufsassistent für Transgourmet Österreich (Großhandel).
+Ordne die Bestellliste den Transgourmet-Artikeln zu.
+
+WICHTIG — Transgourmet-Einheiten:
+- Transgourmet ist ein GROSSHANDEL. Artikel werden in Großgebinden verkauft.
+- KT = Karton (z.B. 1 KT Mehl = 10 Packungen à 1kg = 10kg)
+- PK = Packung (Einzelpackung, z.B. 1 PK Mehl = 1kg)
+- ST = Stück
+- KI = Kiste
+- Die Schnellerfassung bestellt standardmäßig in KT (Karton).
+- Wenn jemand "5kg Mehl" braucht und 1 KT = 10 PK à 1kg, dann qty=1 unit=KT (ergibt 10kg, reicht).
+- Wenn jemand "2 Stk Butter" braucht und 1 KT = 10 PK, dann qty=1 unit=KT (Mindestbestellung).
+- Die Einheit im Katalog (Stk, kg, Pkg, Sack, Netz) zeigt die VERKAUFSEINHEIT — das ist was man mindestens bestellen kann.
 
 BESTELLLISTE:
 ${itemList}
 
-TRANSGOURMET-KATALOG (ArtikelNr|Name):
+TRANSGOURMET-KATALOG (ArtikelNr|Name|Einheit):
 ${catalogRef}
 
 Antworte NUR mit validem JSON:
 {
   "matches": [
-    {"orderItem": "Mehl", "artikelNr": "3386547", "confidence": 0.95, "qty": 10},
-    {"orderItem": "Butter", "artikelNr": "3865938", "confidence": 0.9, "qty": 5}
+    {"orderItem": "Mehl", "artikelNr": "3386547", "confidence": 0.95, "qty": 1, "unit": "KT", "unitInfo": "1 KT = 10 PK à 1kg"},
+    {"orderItem": "Butter", "artikelNr": "3865938", "confidence": 0.9, "qty": 2, "unit": "KT", "unitInfo": "1 KT = 10 Stk à 250g"}
   ]
 }
 
 Regeln:
 - Finde den passendsten Artikel aus dem Katalog
 - confidence 0.0-1.0
-- qty: geschätzte Bestellmenge basierend auf der Mengenangabe und Gebindegröße
+- qty: Menge in der angegebenen unit (NICHT Einzelstücke, sondern Gebinde!)
+- unit: "KT" (Karton, Standard), "PK" (Packung), "ST" (Stück) — was in der Schnellerfassung eingetragen wird
+- unitInfo: kurze Umrechnung damit der Koch versteht was bestellt wird
 - Wenn kein passender Artikel gefunden, artikelNr=null
-- Österreichische Küchenbegriffe beachten`;
+- Österreichische Küchenbegriffe beachten (Erdäpfel=Kartoffel, Topfen=Quark, Paradeiser=Tomate)
+- Im Zweifel lieber EINE Einheit zu viel als zu wenig (Großküche!)
+- Wenn die Menge unklar ist ("?" oder fehlt), nimm qty=1 unit=KT an`;
 
     const result = await model.generateContent(prompt);
     const text = result.response.text();
@@ -425,6 +456,8 @@ Regeln:
         match: catalogItem,
         confidence: m.confidence || 0,
         suggestedQty: m.qty || 1,
+        suggestedUnit: m.unit || "KT",
+        unitInfo: m.unitInfo || null,
       };
     });
   } catch (error) {
@@ -454,6 +487,8 @@ export async function matchOrderItems(
       match: match?.item || null,
       confidence: match?.score || 0,
       suggestedQty: 1,
+      suggestedUnit: "KT",
+      unitInfo: null,
     };
   });
 }

@@ -81,33 +81,33 @@ const FEATURES = [
     icon: BookOpen,
     title: "Rezeptdatenbank",
     desc: "Alle Rezepte an einem Ort. Zutaten, Zubereitungsschritte, Fotos — mit automatischer Allergen-Erkennung nach EU-Verordnung.",
-    gradient: "from-orange-500/10 to-amber-500/5",
-    color: "text-orange-500",
-    border: "group-hover:border-orange-200",
+    gradient: "from-[#CA6702]/10 to-[#CA6702]/5",
+    color: "text-[#CA6702]",
+    border: "group-hover:border-[#CA6702]/25",
   },
   {
     icon: CalendarDays,
     title: "Menüplanung",
     desc: "6-Wochen-Rotation mit intelligenter Beilagen-Zuordnung. Drag & Drop Wochenplan — die ganze Woche in wenigen Minuten.",
-    gradient: "from-emerald-500/10 to-green-500/5",
-    color: "text-emerald-500",
-    border: "group-hover:border-emerald-200",
+    gradient: "from-[#005F73]/10 to-[#005F73]/5",
+    color: "text-[#005F73]",
+    border: "group-hover:border-[#005F73]/25",
   },
   {
     icon: Shield,
     title: "Allergen-Übersicht",
     desc: "14 EU-Allergene (A–R) automatisch aus Rezepten erkannt. Tagesmatrix auf einen Blick — sofort klar, was drin ist.",
-    gradient: "from-blue-500/10 to-cyan-500/5",
-    color: "text-blue-500",
-    border: "group-hover:border-blue-200",
+    gradient: "from-[#588157]/10 to-[#588157]/5",
+    color: "text-[#588157]",
+    border: "group-hover:border-[#588157]/25",
   },
   {
     icon: Thermometer,
     title: "HACCP-Dokumentation",
     desc: "Temperatur-Logging für alle Kühlgeräte. Anomalie-Erkennung und Compliance-Reports — Audit-sicher auf Knopfdruck.",
-    gradient: "from-rose-500/10 to-pink-500/5",
-    color: "text-rose-500",
-    border: "group-hover:border-rose-200",
+    gradient: "from-[#CA6702]/10 to-[#CA6702]/5",
+    color: "text-[#CA6702]",
+    border: "group-hover:border-[#CA6702]/25",
   },
 ];
 
@@ -136,7 +136,7 @@ export default function Landing() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden selection:bg-primary/20">
+    <div className="theme-petrol min-h-screen bg-background overflow-x-hidden selection:bg-primary/20">
 
       {/* ╔══════════════════════════════════════╗
           ║              H E R O                 ║
@@ -145,9 +145,9 @@ export default function Landing() {
 
         {/* Gradient orbs */}
         <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-          <div className="absolute -top-[20%] -left-[10%] w-[65%] h-[65%] rounded-full landing-float bg-[radial-gradient(ellipse,hsla(22,90%,54%,0.14),transparent_70%)]" />
-          <div className="absolute -bottom-[10%] -right-[10%] w-[55%] h-[55%] rounded-full landing-float-reverse bg-[radial-gradient(ellipse,hsla(22,90%,54%,0.09),transparent_70%)]" />
-          <div className="absolute top-[35%] right-[15%] w-[35%] h-[35%] rounded-full landing-float bg-[radial-gradient(ellipse,hsla(142,76%,36%,0.05),transparent_70%)]" />
+          <div className="absolute -top-[20%] -left-[10%] w-[65%] h-[65%] rounded-full landing-float bg-[radial-gradient(ellipse,hsla(190,100%,23%,0.10),transparent_70%)]" />
+          <div className="absolute -bottom-[10%] -right-[10%] w-[55%] h-[55%] rounded-full landing-float-reverse bg-[radial-gradient(ellipse,hsla(190,100%,23%,0.07),transparent_70%)]" />
+          <div className="absolute top-[35%] right-[15%] w-[35%] h-[35%] rounded-full landing-float bg-[radial-gradient(ellipse,hsla(119,20%,42%,0.06),transparent_70%)]" />
         </div>
 
         {/* Subtle dot grid */}
@@ -164,7 +164,7 @@ export default function Landing() {
         <div className="relative z-10 text-center max-w-3xl mx-auto">
           <div className={cn("transition-all duration-1000 ease-out",
             ready ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-4 scale-95")}>
-            <img src="/mise-logo.png" alt="Mise Logo" className="h-20 md:h-28 mx-auto mb-8 drop-shadow-sm" />
+            <img src="/mise-logo-new.png" alt="Mise Logo" className="h-20 md:h-28 mx-auto mb-8 drop-shadow-sm" />
           </div>
 
           <div className={cn("transition-all duration-1000 ease-out",
@@ -325,7 +325,7 @@ export default function Landing() {
       <section className="py-24 md:py-32 px-6">
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-14 md:gap-20">
           <Reveal className="flex-1">
-            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 text-emerald-600 text-sm font-medium mb-6">
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#588157]/10 text-[#588157] text-sm font-medium mb-6">
               <Smartphone className="h-3.5 w-3.5" />
               Mobile-First
             </span>
@@ -342,7 +342,7 @@ export default function Landing() {
                 "Optimiert für Handy-Nutzung in der Küche",
               ].map((txt) => (
                 <li key={txt} className="flex items-start gap-3 text-foreground/80 font-sans normal-case tracking-normal">
-                  <span className="mt-1.5 flex-shrink-0 w-2 h-2 rounded-full bg-emerald-500" />
+                  <span className="mt-1.5 flex-shrink-0 w-2 h-2 rounded-full bg-[#588157]" />
                   {txt}
                 </li>
               ))}
@@ -370,10 +370,10 @@ export default function Landing() {
                   </div>
                   {/* Card rows */}
                   {[
-                    { dot: "bg-primary", w1: "w-28", w2: "w-full", w3: "w-3/4" },
-                    { dot: "bg-emerald-500", w1: "w-32", w2: "w-full", w3: "w-2/3" },
-                    { dot: "bg-blue-500", w1: "w-24", w2: "w-full", w3: "w-1/2" },
-                    { dot: "bg-rose-400", w1: "w-20", w2: "w-4/5", w3: "w-3/5" },
+                    { dot: "bg-[#005F73]", w1: "w-28", w2: "w-full", w3: "w-3/4" },
+                    { dot: "bg-[#588157]", w1: "w-32", w2: "w-full", w3: "w-2/3" },
+                    { dot: "bg-[#005F73]", w1: "w-24", w2: "w-full", w3: "w-1/2" },
+                    { dot: "bg-[#CA6702]", w1: "w-20", w2: "w-4/5", w3: "w-3/5" },
                   ].map((c, i) => (
                     <div key={i} className="rounded-lg border border-border/60 p-3 space-y-1.5">
                       <div className="flex items-center gap-2">
@@ -404,7 +404,7 @@ export default function Landing() {
           ╚══════════════════════════════════════╝ */}
       <section className="py-24 md:py-32 px-6 relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] rounded-full bg-[radial-gradient(ellipse,hsla(22,90%,54%,0.07),transparent_70%)]" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] rounded-full bg-[radial-gradient(ellipse,hsla(190,100%,23%,0.06),transparent_70%)]" />
         </div>
 
         <Reveal>
@@ -429,7 +429,7 @@ export default function Landing() {
       <footer className="py-8 px-6 border-t border-border/60">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <img src="/mise-logo.png" alt="Mise" className="h-5 opacity-70" />
+            <img src="/mise-logo-new.png" alt="Mise" className="h-5 opacity-70" />
             <span className="text-sm text-muted-foreground font-sans normal-case tracking-normal">
               &copy; {new Date().getFullYear()} mise.at
             </span>

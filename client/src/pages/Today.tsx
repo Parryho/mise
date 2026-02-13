@@ -282,7 +282,7 @@ export default function Today() {
   }
 
   return (
-    <div className="p-4 space-y-5 pb-24">
+    <div className="theme-petrol p-4 space-y-5 pb-24">
       {/* Header */}
       <div className="space-y-1">
         <p className="text-sm text-muted-foreground">

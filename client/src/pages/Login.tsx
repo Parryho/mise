@@ -34,11 +34,11 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-b from-background to-secondary/20">
+    <div className="theme-petrol min-h-screen flex items-center justify-center p-4 bg-gradient-to-b from-background to-secondary/20">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-2">
-            <img src="/mise-logo.png" alt="Mise - before Serve" className="h-20 object-contain" />
+            <img src="/mise-logo-new.png" alt="Mise - before Serve" className="h-20 object-contain" />
           </div>
           <CardDescription>{t("auth.loginDescription")}</CardDescription>
         </CardHeader>

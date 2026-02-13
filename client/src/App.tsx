@@ -23,6 +23,7 @@ const Reports = lazy(() => import("@/pages/Reports"));
 const Settings = lazy(() => import("@/pages/Settings"));
 const GuestsHub = lazy(() => import("@/pages/GuestsHub"));
 const Schedule = lazy(() => import("@/pages/Schedule"));
+const MenuPlan = lazy(() => import("@/pages/MenuPlan"));
 const Rotation = lazy(() => import("@/pages/Rotation"));
 const RotationPrint = lazy(() => import("@/pages/RotationPrint"));
 const ProductionList = lazy(() => import("@/pages/ProductionList"));
@@ -94,8 +95,8 @@ function AuthenticatedRoutes() {
       <Route path="/schedule">
         <Layout><Schedule /></Layout>
       </Route>
-      <Route path="/menu">
-        <Redirect to="/rotation" />
+      <Route path="/wochenplan">
+        <Layout><MenuPlan /></Layout>
       </Route>
       <Route path="/today">
         <Layout><Today /></Layout>

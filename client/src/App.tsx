@@ -13,6 +13,7 @@ import { Loader2 } from "lucide-react";
 
 // Static: Always needed immediately
 import Login from "@/pages/Login";
+import Landing from "@/pages/Landing";
 import Today from "@/pages/Today";
 import NotFound from "@/pages/not-found";
 
@@ -244,8 +245,11 @@ function Router() {
           <Route path="/login">
             <Login />
           </Route>
+          <Route path="/">
+            <Landing />
+          </Route>
           <Route>
-            <Redirect to="/login" />
+            <Redirect to="/" />
           </Route>
         </>
       )}

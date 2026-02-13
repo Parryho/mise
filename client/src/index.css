@@ -306,6 +306,15 @@
   }
 }
 
+/* Landing page — floating gradient orbs */
+@keyframes landing-float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-2%, 3%) scale(1.04); }
+  66% { transform: translate(1.5%, -2%) scale(0.97); }
+}
+.landing-float { animation: landing-float 20s ease-in-out infinite; }
+.landing-float-reverse { animation: landing-float 26s ease-in-out infinite reverse; }
+
 /* Mobile PWA Utilities */
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom);

@@ -34,6 +34,7 @@ Menüplanung, 6-Wochen-Rotation, HACCP-Dokumentation, Rezeptverwaltung, Personal
 | `client/src/pages/Recipes.tsx` | Rezept-Bibliothek mit Suche/Filter |
 | `client/src/pages/RecipeAIImport.tsx` | AI Rezept-Import (Text/Foto) |
 | `client/src/pages/RecipeSuggestions.tsx` | AI Rezeptvorschläge |
+| `client/src/pages/BulkTagEditor.tsx` | Bulk-Tag Editor |
 | `client/src/components/RecipeDetailDialog.tsx` | Rezept-Detail Dialog |
 | `client/src/components/RecipeMediaUpload.tsx` | Foto-Upload |
 | `client/src/components/RecipeMediaGallery.tsx` | Foto-Galerie |
@@ -55,6 +56,7 @@ Menüplanung, 6-Wochen-Rotation, HACCP-Dokumentation, Rezeptverwaltung, Personal
 | `server/modules/recipe/auto-tag.ts` | Auto-Tagging (cuisine, flavor, dish type) |
 | `server/modules/recipe/pairing-engine.ts` | Adaptive Beilagen-Bewertung |
 | `server/modules/recipe/quiz-feedback.ts` | Quiz + Feedback Handlers |
+| `server/modules/recipe/translations.ts` | Rezept-Übersetzungen (Accept-Language Header) |
 | `shared/allergens.ts` | 14 EU-Allergene (A-R Codes), Parser + Formatter |
 | `shared/categorizer.ts` | Auto-Kategorisierung |
 | `script/batch-import-gutekueche.ts` | Batch-Scraping von gutekueche.at + chefkoch.de |
@@ -110,11 +112,19 @@ Menüplanung, 6-Wochen-Rotation, HACCP-Dokumentation, Rezeptverwaltung, Personal
 | `server/analytics.ts` | Analytics Backend |
 | `server/waste-prediction.ts` | Abfall-Vorhersage |
 
+### Bestellzettel (Digitaler Küchenzettel)
+| Datei | Beschreibung |
+|-------|-------------|
+| `client/src/pages/OrderList.tsx` | Hauptseite: Quick-Add, Grid-Layout, Foto-Scan, Druckansicht |
+| `client/src/pages/public/OrderBoard.tsx` | Wandanzeige (`/bestellzettel`, ohne Auth, Auto-Refresh 60s) |
+| `server/routes/orders.ts` | API: CRUD + OCR Scan (Claude Vision) + Public Endpoint |
+
 ### Öffentliche Seiten (ohne Auth)
 | Datei | Beschreibung |
 |-------|-------------|
 | `client/src/pages/public/GuestMenu.tsx` | Gäste-Speisekarte (`/speisekarte/:location/:date`) |
 | `client/src/pages/public/DigitalSignage.tsx` | Digital Signage für Lobby (`/signage/:location`) |
+| `client/src/pages/public/OrderBoard.tsx` | Bestellzettel Wandanzeige (`/bestellzettel`) |
 | `client/src/pages/BuffetCards.tsx` | Druckbare Buffet-Karten |
 | `client/src/pages/QRGenerator.tsx` | QR-Code Generator |
 | Server-Logik in `server/modules/menu/` | `public-menu.ts`, `buffet-cards.ts` |
@@ -128,6 +138,14 @@ Menüplanung, 6-Wochen-Rotation, HACCP-Dokumentation, Rezeptverwaltung, Personal
 | `server/agent-team.ts` | Orchestrator: 4-Phasen Pipeline, Conflict Resolution, AI Synthesis |
 | `server/agent-adapters.ts` | 7 Wrapper für bestehende Agents |
 | `server/routes/agent-team.ts` | API: POST /run, GET /runs, GET /runs/:id, GET /stream/:runId (SSE) |
+
+### Kern-UI
+| Datei | Beschreibung |
+|-------|-------------|
+| `client/src/pages/Today.tsx` | Dashboard: Tagesmenü, Quick-Actions, Aufgaben |
+| `client/src/components/Layout.tsx` | App-Layout: Top-Bar, Bottom-Nav (6 Items), Back-Button |
+| `client/src/components/ErrorBoundary.tsx` | React Error Boundary |
+| `client/src/components/LocationSwitcher.tsx` | Standort-Umschalter (city/sued/ak) |
 
 ### Admin & System
 | Datei | Beschreibung |
@@ -149,8 +167,8 @@ Menüplanung, 6-Wochen-Rotation, HACCP-Dokumentation, Rezeptverwaltung, Personal
 ### Internationalisierung
 | Datei | Beschreibung |
 |-------|-------------|
-| `client/src/i18n/locales/de.json` | Deutsche Übersetzungen (627 Keys) |
-| `client/src/i18n/locales/en.json` | Englische Übersetzungen (627 Keys) |
+| `client/src/i18n/locales/de.json` | Deutsche Übersetzungen (~1270 Keys) |
+| `client/src/i18n/locales/en.json` | Englische Übersetzungen (~1270 Keys) |
 | `client/src/i18n/index.ts` | i18next Setup |
 | `client/src/hooks/useTranslation.ts` | Translation Hook |
 | `client/src/components/LanguageSwitcher.tsx` | Sprachwechsler DE/EN |
@@ -170,9 +188,9 @@ Menüplanung, 6-Wochen-Rotation, HACCP-Dokumentation, Rezeptverwaltung, Personal
 
 ### Einstiegspunkte
 - **Server**: `server/index.ts` — Express App Setup, CORS, Logging, Error Handler
-- **Routes**: `server/routes/index.ts` — Orchestrator, 15 modulare Route-Dateien unter `server/routes/`
-- **Recipe Module**: `server/modules/recipe/index.ts` — Barrel für Rezepte + Allergene (11 Dateien)
-- **Menu Module**: `server/modules/menu/index.ts` — Barrel für Menüplanung + Rotation (8 Dateien)
+- **Routes**: `server/routes/index.ts` — Orchestrator, 17 modulare Route-Dateien unter `server/routes/`
+- **Recipe Module**: `server/modules/recipe/index.ts` — Barrel für Rezepte + Allergene (13 Dateien)
+- **Menu Module**: `server/modules/menu/index.ts` — Barrel für Menüplanung + Rotation (9 Dateien)
 - **Client**: `client/src/main.tsx` — React Entry + Sentry + i18n Init
 - **Router**: `client/src/App.tsx` — Wouter Router + Auth + Layout
 
@@ -180,18 +198,19 @@ Menüplanung, 6-Wochen-Rotation, HACCP-Dokumentation, Rezeptverwaltung, Personal
 ```
 server/
   modules/
-    recipe/          # Rezepte + Allergene (11 Dateien)
+    recipe/          # Rezepte + Allergene (13 Dateien)
       index.ts       # Public API Barrel — alle Imports über diesen Pfad
-    menu/            # Menüplanung + Rotation + Produktion (8 Dateien)
+    menu/            # Menüplanung + Rotation + Produktion (9 Dateien)
       index.ts       # Public API Barrel — alle Imports über diesen Pfad
-  routes/            # 15 Route-Dateien (importieren aus modules/)
+  routes/            # 17 Route-Dateien (importieren aus modules/)
   db.ts              # PostgreSQL Connection Pool
   storage.ts         # Data Access Layer (shared)
 ```
 **Cross-Domain**: `menu → recipe` (one-way). Menu-Modul importiert `resolveRecipeIngredients` + `loadAllScores` aus Recipe-Modul. Keine umgekehrte Abhängigkeit.
 
 ### Datenbank
-- **Schema**: `shared/schema.ts` — Drizzle ORM Schema (22 Tabellen + Zod Validation)
+- **Schema**: `shared/schema.ts` — Drizzle ORM Schema (36 Tabellen + Zod Validation)
+- **Gotcha**: DB läuft im Docker (`172.18.0.3`), nicht localhost. Für `db:push`: `DATABASE_URL="postgresql://$PGUSER:$PGPASSWORD@172.18.0.3:5432/$PGDATABASE" npx drizzle-kit push`
 - **Connection**: `server/db.ts` — Pool-Management
 - **Storage**: `server/storage.ts` — Data Access Layer
 - **Config**: `drizzle.config.ts` — Drizzle Kit Konfiguration
@@ -246,6 +265,15 @@ server/
 | `push_subscriptions` | Web Push Subscriptions |
 | `recipe_media` | Rezept-Fotos |
 | `audit_logs` | Audit Trail (DSGVO) |
+| `quiz_feedback` | Beilagen-Quiz Bewertungen |
+| `pairing_scores` | Aggregierte Beilagen-Scores |
+| `learned_rules` | Gelernte Beilagen-Regeln |
+| `agent_team_runs` | Küchen-Orchestrator Läufe |
+| `agent_team_actions` | Agent-Ergebnisse pro Lauf |
+| `recipe_translations` | Rezept-Übersetzungen (EN/TR/UK) |
+| `ingredient_translations` | Zutaten-Übersetzungen (EN/TR/UK) |
+| `order_lists` | Bestellzettel (status: open/ordered/archived) |
+| `order_items` | Bestellzettel-Items (name, amount Freitext, isChecked) |
 
 ---
 
@@ -326,11 +354,13 @@ AI Auto-Fill für 6-Wochen-Rotation mit kulinarischen Regeln:
 - **Module**: `server/modules/recipe/llm-import.ts`, `server/modules/menu/smart-rotation.ts`, `server/modules/recipe/allergen-detection.ts`, `server/modules/recipe/suggestions.ts`
 
 ### Claude Code Agents (`.claude/agents/`)
+- `code-simplifier.md` — Code-Vereinfachung
 - `devops-expert.md` — DevOps Spezialist
 - `github-actions-expert.md` — CI/CD Spezialist
 - `lingodotdev-i18n.md` — i18n Spezialist
 - `monitoring-specialist.md` — Monitoring Experte
 - `test-engineer.md` — Testing Spezialist
+- `ux-optimizer.md` — UX-Optimierung
 
 ### GitHub Actions (`.github/workflows/`)
 - `ci.yml` — Lint, Typecheck, Build, Test bei jedem Push

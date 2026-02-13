@@ -85,20 +85,31 @@ async function login(page: Page): Promise<boolean> {
 /** Navigate to portal and open Schnellerfassung widget */
 async function openSchnellerfassung(page: Page): Promise<boolean> {
   // Go to portal (has all JS bundles)
+  console.log("[TG] Opening portal...");
   await page.goto(PORTAL_URL, { waitUntil: "load", timeout: 30000 });
   await page.waitForTimeout(5000);
 
   // Login if redirected
   if (page.url().includes("simplelogin")) {
+    console.log("[TG] Need to login...");
     const ok = await login(page);
-    if (!ok) return false;
+    if (!ok) { console.error("[TG] Login failed"); return false; }
     await page.goto(PORTAL_URL, { waitUntil: "load", timeout: 30000 });
+    await page.waitForTimeout(5000);
+  }
+  console.log("[TG] Portal loaded:", page.url());
+
+  // Wait for jQuery to be available (JS bundles loaded)
+  const hasJQuery = await page.evaluate(() => typeof jQuery !== "undefined");
+  console.log("[TG] jQuery loaded:", hasJQuery);
+  if (!hasJQuery) {
+    // Wait a bit more for JS to initialize
     await page.waitForTimeout(5000);
   }
 
   // Click Schnellerfassung link → loads as widget in portal
   const link = await page.$('a[href*="quickadd"]');
-  if (!link) return false;
+  if (!link) { console.error("[TG] Schnellerfassung link not found"); return false; }
   await link.click();
   await page.waitForTimeout(3000);
 
@@ -107,6 +118,7 @@ async function openSchnellerfassung(page: Page): Promise<boolean> {
     const el = document.querySelector(".quickadd");
     return el ? el.offsetParent !== null : false;
   });
+  console.log("[TG] Schnellerfassung visible:", visible);
   return visible;
 }
 
@@ -165,14 +177,31 @@ export async function addToCart(items: OrderItem[]): Promise<AgentResult> {
         const artnr = await page.$(".js-quickadd__input--artnr");
         const quant = await page.$(".js-quickadd__input--quant");
         if (!artnr || !quant) {
+          console.error("[TG] Quickadd inputs not found for", item.name);
           itemsFailed.push(item.name);
           continue;
         }
 
         await artnr.fill(item.artikelNr);
         await quant.fill(String(item.menge));
+        console.log(`[TG] Adding ${item.artikelNr} x${item.menge} (${item.name})...`);
+
+        // Wait for the AJAX response when clicking "Hinzufügen"
+        const addPromise = page.waitForResponse(
+          resp => resp.url().includes("quickadd/product"),
+          { timeout: 10000 }
+        ).catch(() => null);
+
         await page.click(".js-quickadd__btn-add");
-        await page.waitForTimeout(2000);
+        const addResp = await addPromise;
+
+        if (addResp) {
+          console.log(`[TG] Add response: ${addResp.status()}`);
+          await page.waitForTimeout(1000);
+        } else {
+          console.log("[TG] No AJAX response, waiting...");
+          await page.waitForTimeout(3000);
+        }
 
         // Check if item was added to the table
         const added = await page.evaluate((artNr) => {
@@ -181,21 +210,56 @@ export async function addToCart(items: OrderItem[]): Promise<AgentResult> {
         }, item.artikelNr);
 
         if (added) {
+          console.log(`[TG] ✓ ${item.artikelNr} added`);
           itemsAdded++;
         } else {
+          console.error(`[TG] ✗ ${item.artikelNr} NOT in table`);
           itemsFailed.push(item.name);
         }
-      } catch {
+      } catch (err: any) {
+        console.error(`[TG] Error adding ${item.name}:`, err.message);
         itemsFailed.push(item.name);
       }
     }
 
-    // Transfer all items to cart
+    // Transfer all items to cart via "Alle hinzufügen"
+    let transferOk = false;
     if (itemsAdded > 0) {
       const confirmBtn = await page.$(".js-quickadd__btn-confirm");
       if (confirmBtn) {
+        console.log("[TG] Clicking 'Alle hinzufügen'...");
+
+        // Wait for the transfer network response
+        const transferPromise = page.waitForResponse(
+          resp => resp.url().includes("quickadd/transfer"),
+          { timeout: 15000 }
+        ).catch(() => null);
+
         await confirmBtn.click();
-        await page.waitForTimeout(3000);
+        const transferResp = await transferPromise;
+
+        if (transferResp) {
+          console.log("[TG] Transfer response:", transferResp.status(), transferResp.url());
+          // Transfer redirects to /order on success
+          await page.waitForTimeout(3000);
+          transferOk = true;
+        } else {
+          console.error("[TG] No transfer response received");
+        }
+
+        // Verify: check if we're on the cart page or if cart has items
+        const currentUrl = page.url();
+        if (currentUrl.includes("/order")) {
+          // We're on the cart page — check for items
+          const cartHasItems = await page.evaluate(() => {
+            const text = document.body.innerText;
+            return !text.includes("keine Einträge") && !text.includes("leer");
+          });
+          console.log("[TG] Cart page, has items:", cartHasItems);
+          transferOk = cartHasItems;
+        }
+      } else {
+        console.error("[TG] 'Alle hinzufügen' button not found");
       }
     }
 
@@ -205,11 +269,12 @@ export async function addToCart(items: OrderItem[]): Promise<AgentResult> {
     await context.close();
 
     return {
-      success: itemsAdded > 0,
+      success: transferOk,
       cartUrl,
-      itemsAdded,
-      itemsFailed,
+      itemsAdded: transferOk ? itemsAdded : 0,
+      itemsFailed: transferOk ? itemsFailed : items.map(i => i.name),
       screenshot: screenshot.toString("base64"),
+      error: transferOk ? undefined : "Transfer in Warenkorb fehlgeschlagen",
     };
   } catch (error: any) {
     return {

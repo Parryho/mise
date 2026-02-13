@@ -13,9 +13,14 @@ import type { Request, Response } from "express";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import sharp from "sharp";
 import { db } from "../../db";
 import { recipeMedia, recipes, updateRecipeMediaSchema } from "@shared/schema";
 import { eq, asc } from "drizzle-orm";
+
+const MAX_IMAGE_WIDTH = 1920;
+const MAX_IMAGE_HEIGHT = 1920;
+const JPEG_QUALITY = 82;
 
 // Upload directory: /app/uploads/recipes in Docker, ./uploads/recipes in dev
 const UPLOAD_DIR = process.env.NODE_ENV === "production"
@@ -62,6 +67,36 @@ export const recipeMediaUpload = multer({
 });
 
 /**
+ * Resize image in-place if it exceeds max dimensions.
+ * Returns updated size and filename.
+ */
+async function optimizeImage(file: Express.Multer.File): Promise<{ size: number; filename: string }> {
+  const filePath = path.join(UPLOAD_DIR, file.filename);
+  try {
+    const metadata = await sharp(filePath).metadata();
+    const { width, height } = metadata;
+
+    // Skip if already small enough
+    if ((!width || width <= MAX_IMAGE_WIDTH) && (!height || height <= MAX_IMAGE_HEIGHT)) {
+      return { size: file.size, filename: file.filename };
+    }
+
+    // Resize and overwrite
+    const buffer = await sharp(filePath)
+      .resize(MAX_IMAGE_WIDTH, MAX_IMAGE_HEIGHT, { fit: "inside", withoutEnlargement: true })
+      .jpeg({ quality: JPEG_QUALITY, mozjpeg: true })
+      .toBuffer();
+
+    fs.writeFileSync(filePath, buffer);
+    console.log(`[recipe-media] Resized ${file.originalname}: ${width}x${height} → ${buffer.length} bytes`);
+    return { size: buffer.length, filename: file.filename };
+  } catch (err) {
+    console.warn(`[recipe-media] Could not optimize ${file.filename}:`, err);
+    return { size: file.size, filename: file.filename };
+  }
+}
+
+/**
  * POST /api/recipes/:id/media — Upload one or more images
  */
 export async function handleUploadMedia(req: Request, res: Response) {
@@ -88,12 +123,15 @@ export async function handleUploadMedia(req: Request, res: Response) {
 
     const inserted = [];
     for (const file of files) {
+      // Resize large images to max 1920x1920, convert to JPEG/WebP
+      const { size: finalSize, filename: finalFilename } = await optimizeImage(file);
+
       const [media] = await db.insert(recipeMedia).values({
         recipeId,
-        filename: file.filename,
+        filename: finalFilename,
         originalName: file.originalname,
         mimeType: file.mimetype,
-        size: file.size,
+        size: finalSize,
         sortOrder: nextOrder++,
       }).returning();
       inserted.push(media);

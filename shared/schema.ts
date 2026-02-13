@@ -185,7 +185,10 @@ export const cateringEvents = pgTable("catering_events", {
   status: text("status").notNull().default("geplant"),
   airtableId: text("airtable_id"),
   locationId: integer("location_id").references(() => locations.id, { onDelete: "set null" }),
-});
+}, (table) => [
+  index("idx_catering_events_date").on(table.date),
+  index("idx_catering_events_airtable").on(table.airtableId),
+]);
 
 // === NEW: Catering menu items ===
 export const cateringMenuItems = pgTable("catering_menu_items", {
@@ -197,7 +200,9 @@ export const cateringMenuItems = pgTable("catering_menu_items", {
   customAllergens: text("custom_allergens").array().notNull().default([]),
   sortOrder: integer("sort_order").notNull().default(0),
   notes: text("notes"),
-});
+}, (table) => [
+  index("idx_catering_menu_items_event").on(table.eventId),
+]);
 
 // Staff members
 export const staff = pgTable("staff", {
@@ -209,7 +214,9 @@ export const staff = pgTable("staff", {
   phone: text("phone"),
   userId: varchar("user_id").references(() => users.id, { onDelete: "set null" }),
   locationId: integer("location_id").references(() => locations.id, { onDelete: "set null" }),
-});
+}, (table) => [
+  index("idx_staff_user").on(table.userId),
+]);
 
 // Shift types
 export const shiftTypes = pgTable("shift_types", {
@@ -259,7 +266,9 @@ export const menuPlanTemperatures = pgTable("menu_plan_temperatures", {
   tempServing: doublePrecision("temp_serving"),
   recordedAt: timestamp("recorded_at").notNull().defaultNow(),
   recordedBy: text("recorded_by"),
-});
+}, (table) => [
+  index("idx_menu_plan_temps_menuplan").on(table.menuPlanId),
+]);
 
 // Tasks
 export const tasks = pgTable("tasks", {
@@ -271,7 +280,9 @@ export const tasks = pgTable("tasks", {
   status: text("status").notNull().default("open"),
   priority: integer("priority").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+}, (table) => [
+  index("idx_tasks_date").on(table.date),
+]);
 
 // Task Templates
 export const taskTemplates = pgTable("task_templates", {

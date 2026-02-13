@@ -13,9 +13,15 @@ import type { Request, Response } from "express";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import sharp from "sharp";
 import { db } from "../../db";
 import { documents, updateDocumentSchema } from "@shared/schema";
 import { eq, desc } from "drizzle-orm";
+
+const MAX_IMAGE_WIDTH = 1920;
+const MAX_IMAGE_HEIGHT = 1920;
+const JPEG_QUALITY = 82;
+const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 // Upload directory: /app/uploads/documents in Docker, ./uploads/documents in dev
 const UPLOAD_DIR = process.env.NODE_ENV === "production"
@@ -75,6 +81,28 @@ export const documentUpload = multer({
 
 export const MAX_UPLOAD_FILES = MAX_FILES;
 
+/** Resize uploaded image in-place if it exceeds max dimensions */
+async function optimizeDocImage(file: Express.Multer.File): Promise<number> {
+  const filePath = path.join(UPLOAD_DIR, file.filename);
+  try {
+    const metadata = await sharp(filePath).metadata();
+    if ((!metadata.width || metadata.width <= MAX_IMAGE_WIDTH) &&
+        (!metadata.height || metadata.height <= MAX_IMAGE_HEIGHT)) {
+      return file.size;
+    }
+    const buffer = await sharp(filePath)
+      .resize(MAX_IMAGE_WIDTH, MAX_IMAGE_HEIGHT, { fit: "inside", withoutEnlargement: true })
+      .jpeg({ quality: JPEG_QUALITY, mozjpeg: true })
+      .toBuffer();
+    fs.writeFileSync(filePath, buffer);
+    console.log(`[documents] Resized ${file.originalname}: ${metadata.width}x${metadata.height} → ${buffer.length} bytes`);
+    return buffer.length;
+  } catch (err) {
+    console.warn(`[documents] Could not optimize ${file.filename}:`, err);
+    return file.size;
+  }
+}
+
 /**
  * POST /api/documents/upload — Upload one or more files
  */
@@ -91,11 +119,17 @@ export async function handleUploadDocuments(req: Request, res: Response) {
 
     const inserted = [];
     for (const file of files) {
+      // Resize large images (skip non-image files)
+      let finalSize = file.size;
+      if (IMAGE_TYPES.includes(file.mimetype)) {
+        finalSize = await optimizeDocImage(file);
+      }
+
       const [doc] = await db.insert(documents).values({
         filename: file.filename,
         originalName: file.originalname,
         mimeType: file.mimetype,
-        size: file.size,
+        size: finalSize,
         category,
         description,
         uploadedBy: user?.id || null,

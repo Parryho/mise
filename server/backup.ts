@@ -34,7 +34,7 @@ function getBackupsDir(): string {
 
 // Strict filename validation: only alphanumeric, underscore, dash, dot
 // Must end with .sql.gz
-const SAFE_FILENAME_REGEX = /^[a-zA-Z0-9_\-]+\.sql\.gz$/;
+const SAFE_FILENAME_REGEX = /^[a-zA-Z0-9_\-]+\.(sql\.gz|tar\.gz)$/;
 
 function isValidFilename(filename: string): boolean {
   if (!filename || typeof filename !== "string") return false;
@@ -80,7 +80,7 @@ export function listBackups(): BackupInfo[] {
   }
 
   const files = fs.readdirSync(dir)
-    .filter(f => f.endsWith(".sql.gz") && isValidFilename(f));
+    .filter(f => (f.endsWith(".sql.gz") || f.endsWith(".tar.gz")) && isValidFilename(f));
 
   const backups: BackupInfo[] = files.map(filename => {
     const filePath = path.join(dir, filename);

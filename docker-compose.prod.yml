@@ -67,11 +67,13 @@ services:
         condition: service_healthy
     volumes:
       - ./backups:/backups
+      - recipe-uploads:/uploads/recipes:ro
+      - document-uploads:/uploads/documents:ro
     environment:
       PGUSER: ${PGUSER:-postgres}
       PGPASSWORD: ${PGPASSWORD}
       PGDATABASE: ${PGDATABASE:-mise}
-    entrypoint: "/bin/sh -c 'while true; do sleep 86400; echo \"[$(date)] Running backup...\"; pg_dump -h db -U $$PGUSER $$PGDATABASE | gzip > /backups/mise_$$(date +%Y%m%d_%H%M%S).sql.gz && echo \"[$(date)] Backup done.\"; find /backups -name \"mise_*.sql.gz\" -mtime +14 -delete && echo \"[$(date)] Old backups cleaned.\"; done'"
+    entrypoint: "/bin/sh -c 'while true; do sleep 86400; TS=$$(date +%Y%m%d_%H%M%S); echo \"[$(date)] Running DB backup...\"; pg_dump -h db -U $$PGUSER $$PGDATABASE | gzip > /backups/mise_$$TS.sql.gz && echo \"[$(date)] DB backup done.\"; echo \"[$(date)] Running file backup...\"; tar czf /backups/mise_files_$$TS.tar.gz -C /uploads . 2>/dev/null && echo \"[$(date)] File backup done.\"; find /backups -name \"mise_*.sql.gz\" -mtime +14 -delete; find /backups -name \"mise_files_*.tar.gz\" -mtime +14 -delete; echo \"[$(date)] Old backups cleaned.\"; done'"
 
   certbot:
     image: certbot/certbot

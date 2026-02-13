@@ -345,6 +345,8 @@ function loadCatalog(): CatalogItem[] {
 
 /**
  * Lokaler String-Match (ohne AI)
+ * Priorität: standalone Wort-Match > Teilstring-Match
+ * "Milch" soll "Vollmilch" (standalone) vor "Kokosmilch" (Kompositum) finden
  */
 function localMatch(itemName: string, catalog: CatalogItem[]): { item: CatalogItem; score: number } | null {
   const needle = itemName.toLowerCase().trim();
@@ -357,24 +359,43 @@ function localMatch(itemName: string, catalog: CatalogItem[]): { item: CatalogIt
     // Exact match
     if (haystack === needle) return { item: ci, score: 1.0 };
 
-    // Contains
-    if (haystack.includes(needle) || needle.includes(haystack.split(" ")[0])) {
-      const score = needle.length / haystack.length;
-      if (score > bestScore) {
-        bestScore = Math.min(score, 0.9);
-        bestMatch = ci;
+    // Standalone word match (needle appears as whole word, not inside a compound)
+    // "milch" matches "Vollmilch ESL" (word boundary) but NOT "Kokosmilch" (compound)
+    const standaloneRegex = new RegExp(`(?:^|\\s)${needle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:\\s|$)`, "i");
+    const standaloneWordRegex = new RegExp(`(?:^|\\s)\\S*${needle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i");
+
+    if (standaloneRegex.test(haystack)) {
+      // Perfect standalone: "milch" as separate word
+      const score = 0.85;
+      if (score > bestScore) { bestScore = score; bestMatch = ci; }
+    } else if (haystack.includes(needle)) {
+      // Check if needle is a suffix (Vollmilch, H-Milch) vs prefix part of compound (Kokosmilch)
+      // Suffix matches are better: the base product is what we want
+      const idx = haystack.indexOf(needle);
+      const isSuffix = idx + needle.length === haystack.length || haystack[idx + needle.length] === " ";
+      const isCompound = idx > 0 && haystack[idx - 1] !== " " && haystack[idx - 1] !== "-";
+
+      let score: number;
+      if (isSuffix && !isCompound) {
+        score = 0.75; // "milch" at end of word like "Vollmilch"
+      } else if (isSuffix && isCompound) {
+        score = 0.65; // suffix in compound: "Vollmilch" — still good
+      } else if (isCompound) {
+        score = 0.35; // embedded in compound like "Kokosmilch" — low priority
+      } else {
+        score = 0.55; // generic contains
       }
+
+      if (score > bestScore) { bestScore = score; bestMatch = ci; }
     }
 
-    // First word match (e.g. "Mehl" matches "Economy Weizenmehl T480 1kg glatt")
-    const words = needle.split(/\s+/);
-    for (const word of words) {
-      if (word.length >= 3 && haystack.includes(word)) {
-        const score = 0.5 + (word.length / haystack.length) * 0.3;
-        if (score > bestScore) {
-          bestScore = score;
-          bestMatch = ci;
-        }
+    // Multi-word: each word of needle present
+    const words = needle.split(/\s+/).filter(w => w.length >= 3);
+    if (words.length > 1) {
+      const allPresent = words.every(w => haystack.includes(w));
+      if (allPresent) {
+        const score = 0.7;
+        if (score > bestScore) { bestScore = score; bestMatch = ci; }
       }
     }
   }
@@ -439,7 +460,8 @@ Regeln:
 - Wenn kein passender Artikel gefunden, artikelNr=null
 - Österreichische Küchenbegriffe beachten (Erdäpfel=Kartoffel, Topfen=Quark, Paradeiser=Tomate)
 - Im Zweifel lieber EINE Einheit zu viel als zu wenig (Großküche!)
-- Wenn die Menge unklar ist ("?" oder fehlt), nimm qty=1 unit=KT an`;
+- Wenn die Menge unklar ist ("?" oder fehlt), nimm qty=1 unit=KT an
+- WICHTIG: Bevorzuge das BASIC-Produkt! "Milch" = Kuhmilch/Vollmilch, NICHT Kokosmilch/Kakaomilch. "Öl" = Sonnenblumenöl/Rapsöl, NICHT Sesamöl. "Mehl" = Weizenmehl, NICHT Maismehl. Das spezielle Produkt nur wenn explizit genannt.`;
 
     const result = await model.generateContent(prompt);
     const text = result.response.text();

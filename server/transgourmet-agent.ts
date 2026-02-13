@@ -89,9 +89,10 @@ async function openSchnellerfassung(page: Page): Promise<boolean> {
   await page.goto(PORTAL_URL, { waitUntil: "load", timeout: 30000 });
   await page.waitForTimeout(5000);
 
-  // Login if redirected
+  // Login if redirected (stale cookies)
   if (page.url().includes("simplelogin")) {
-    console.log("[TG] Need to login...");
+    console.log("[TG] Need to login (cookies expired)...");
+    savedCookies = null;
     const ok = await login(page);
     if (!ok) { console.error("[TG] Login failed"); return false; }
     await page.goto(PORTAL_URL, { waitUntil: "load", timeout: 30000 });
@@ -229,28 +230,45 @@ export async function addToCart(items: OrderItem[]): Promise<AgentResult> {
       if (confirmBtn) {
         console.log("[TG] Clicking 'Alle hinzufügen'...");
 
-        // Transfer click triggers: AJAX to /quickadd/transfer, then auto-navigates to /order
-        const navPromise = page.waitForNavigation({ timeout: 20000 }).catch(() => null);
-        await confirmBtn.click();
-        const navResp = await navPromise;
+        // Capture the AJAX transfer response (this is the actual success indicator)
+        const transferPromise = page.waitForResponse(
+          resp => resp.url().includes("quickadd/transfer"),
+          { timeout: 15000 }
+        ).catch(() => null);
 
-        if (navResp) {
-          console.log("[TG] Auto-navigated to:", page.url());
+        await confirmBtn.click();
+        const transferResp = await transferPromise;
+
+        if (transferResp && transferResp.status() === 200) {
+          console.log("[TG] Transfer AJAX success:", transferResp.status());
+          transferOk = true;
         } else {
-          console.log("[TG] No auto-navigation, navigating to /order manually...");
-          await page.goto(`${SHOP_URL}/order`, { waitUntil: "load", timeout: 15000 });
+          console.error("[TG] Transfer AJAX failed:", transferResp?.status() ?? "no response");
         }
 
-        // Wait for page content to render
-        await page.waitForTimeout(5000);
+        // Wait for any auto-navigation (transfer redirects to /order or /simplelogin)
+        await page.waitForTimeout(3000);
 
+        // If redirected to login, session expired — re-login and verify cart
+        if (page.url().includes("simplelogin")) {
+          console.log("[TG] Session expired after transfer, re-logging in...");
+          const relogged = await login(page);
+          if (relogged) {
+            await page.goto(`${SHOP_URL}/order`, { waitUntil: "load", timeout: 15000 });
+            await page.waitForTimeout(3000);
+          }
+        }
+
+        // Verify cart (secondary check, transfer AJAX 200 is the primary indicator)
         const cartCheck = await page.evaluate(() => {
           const text = document.body.innerText;
           const posMatch = text.match(/(\d+)\s*Position/);
-          return { hasItems: !!posMatch && parseInt(posMatch[1]) > 0, positions: posMatch ? posMatch[1] : "0", snippet: text.substring(0, 300) };
+          return { hasItems: !!posMatch && parseInt(posMatch[1]) > 0, positions: posMatch ? posMatch[1] : "0" };
         });
-        console.log("[TG] Cart check:", cartCheck.hasItems ? `${cartCheck.positions} Positionen` : "LEER");
-        transferOk = cartCheck.hasItems;
+        console.log("[TG] Cart verify:", cartCheck.hasItems ? `${cartCheck.positions} Positionen` : "empty (may need login)");
+
+        // Trust AJAX 200 even if cart page check fails (session issues)
+        if (cartCheck.hasItems) transferOk = true;
       } else {
         console.error("[TG] 'Alle hinzufügen' button not found");
       }

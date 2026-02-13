@@ -257,7 +257,12 @@ export default function OrderListPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 border-l border-t rounded-lg bg-card overflow-hidden">
+        <>
+        {/* Spalten-Header nur im Druck */}
+        <div className="col-headers hidden">
+          <span>A</span><span>B</span><span>C</span><span>D</span>
+        </div>
+        <div className="order-grid grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 border-l border-t rounded-lg bg-card overflow-hidden">
           {sortedItems.map((item) => (
             <div
               key={item.id}
@@ -278,6 +283,7 @@ export default function OrderListPage() {
             </div>
           ))}
         </div>
+        </>
       )}
 
       {/* Bottom Actions */}
@@ -384,11 +390,38 @@ export default function OrderListPage() {
         @media print {
           body * { visibility: hidden; }
           .max-w-5xl, .max-w-5xl * { visibility: visible; }
-          .max-w-5xl { position: absolute; left: 0; top: 0; width: 100%; padding: 8mm; max-width: 100% !important; }
+          .max-w-5xl { position: absolute; left: 0; top: 0; width: 100%; padding: 5mm 8mm; max-width: 100% !important; }
           .print\\:hidden { display: none !important; }
-          h1 { font-size: 16pt; margin-bottom: 6pt; }
-          .grid { display: grid !important; grid-template-columns: repeat(4, 1fr) !important; }
-          .grid > div { padding: 1.5mm 2mm; font-size: 9pt; }
+          h1 { font-size: 14pt; margin-bottom: 4pt; }
+          .order-grid {
+            display: grid !important;
+            grid-template-columns: repeat(4, 1fr) !important;
+            grid-template-rows: auto;
+            border: 2px solid #000 !important;
+            border-radius: 0 !important;
+            min-height: 250mm;
+          }
+          .order-grid::before { display: none; }
+          .order-grid > div {
+            padding: 1.5mm 2.5mm;
+            font-size: 9pt;
+            border-bottom: 1px solid #ccc !important;
+            border-right: none !important;
+          }
+          /* Spaltenlinien: jede 1. und 2. und 3. Spalte rechts */
+          .order-grid > div:nth-child(4n+1),
+          .order-grid > div:nth-child(4n+2),
+          .order-grid > div:nth-child(4n+3) {
+            border-right: 2px solid #000 !important;
+          }
+          /* Spalten-Header A B C D */
+          .col-headers { display: grid !important; grid-template-columns: repeat(4, 1fr); border: 2px solid #000; border-bottom: none; }
+          .col-headers span { text-align: center; font-weight: bold; font-size: 11pt; padding: 1mm 0; border-right: 2px solid #000; }
+          .col-headers span:last-child { border-right: none; }
+          /* Checkboxen im Druck ausblenden */
+          .order-grid input[type="checkbox"],
+          .order-grid button,
+          .order-grid [role="checkbox"] { display: none !important; }
         }
       `}</style>
     </div>

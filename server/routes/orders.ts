@@ -313,6 +313,24 @@ Regeln:
     }
   });
 
+  // === Transgourmet: Katalog durchsuchen (online search) ===
+  app.post("/api/orders/transgourmet/search", requireAuth, async (req: Request, res: Response) => {
+    const { queries } = req.body; // string[]
+    if (!queries || !Array.isArray(queries) || queries.length === 0) {
+      return res.status(400).json({ error: "Suchbegriffe erforderlich" });
+    }
+    // Limit to 5 queries per request
+    const limited = queries.slice(0, 5).map((q: string) => String(q).trim()).filter(Boolean);
+    try {
+      const { searchTransgourmet } = await import("../transgourmet-agent");
+      const results = await searchTransgourmet(limited);
+      res.json({ results });
+    } catch (error: any) {
+      console.error("Transgourmet search error:", error);
+      res.status(500).json({ error: "Suche fehlgeschlagen: " + error.message });
+    }
+  });
+
   // === Transgourmet: Screenshot (Debug) ===
   app.get("/api/orders/transgourmet/screenshot", requireAuth, async (_req: Request, res: Response) => {
     try {

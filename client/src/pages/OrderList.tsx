@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Plus, Camera, Mic, MicOff, Printer, CheckCheck, Trash2, Loader2,
-  ShoppingCart, Package, Archive, ChevronDown, ChevronUp, Truck, AlertTriangle, ExternalLink,
+  ShoppingCart, Package, Archive, ChevronDown, ChevronUp, Truck, AlertTriangle, ExternalLink, Search,
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
@@ -60,6 +60,8 @@ export default function OrderListPage() {
   const [tgMatched, setTgMatched] = useState<any[]>([]);
   const [tgUnmatched, setTgUnmatched] = useState<any[]>([]);
   const [tgResult, setTgResult] = useState<any>(null);
+  const [tgSearching, setTgSearching] = useState(false);
+  const [tgSearchResults, setTgSearchResults] = useState<Record<string, any[]>>({});
   const [isListening, setIsListening] = useState(false);
   const [voiceTranscript, setVoiceTranscript] = useState("");
   const voiceTranscriptRef = useRef("");
@@ -291,6 +293,7 @@ export default function OrderListPage() {
     setTgMatched([]);
     setTgUnmatched([]);
     setTgResult(null);
+    setTgSearchResults({});
 
     try {
       const data = await apiPost<{ matched: any[]; unmatched: any[] }>(`/api/orders/${list.id}/transgourmet/match`, {});
@@ -320,6 +323,50 @@ export default function OrderListPage() {
     } finally {
       setTgOrdering(false);
     }
+  };
+
+  // === Transgourmet: Katalog-Suche für unmatched items ===
+  const searchTransgourmetCatalog = async () => {
+    if (tgUnmatched.length === 0) return;
+    setTgSearching(true);
+    try {
+      const queries = tgUnmatched.map((u: any) => u.orderItemName);
+      const data = await apiPost<{ results: any[] }>("/api/orders/transgourmet/search", { queries });
+      const map: Record<string, any[]> = {};
+      for (const r of data.results || []) {
+        map[r.query] = r.items || [];
+      }
+      setTgSearchResults(map);
+    } catch (error: any) {
+      toast({ title: "Suche fehlgeschlagen", description: error.message, variant: "destructive" });
+    } finally {
+      setTgSearching(false);
+    }
+  };
+
+  const selectSearchResult = (unmatchedName: string, result: any) => {
+    // Move from unmatched to matched
+    setTgMatched(prev => [...prev, {
+      orderItemName: unmatchedName,
+      orderItemAmount: null,
+      match: {
+        artikelNr: result.artikelNr,
+        name: result.name,
+        preis: result.price ? parseFloat(result.price.replace(",", ".")) : 0,
+        einheit: result.unitInfo?.split(" ")[0] || "KT",
+      },
+      confidence: 0.7,
+      suggestedQty: 1,
+      suggestedUnit: result.unitInfo?.split(" ")[0] || "KT",
+      unitInfo: result.unitInfo,
+    }]);
+    setTgUnmatched(prev => prev.filter((u: any) => u.orderItemName !== unmatchedName));
+    // Remove from search results
+    setTgSearchResults(prev => {
+      const next = { ...prev };
+      delete next[unmatchedName];
+      return next;
+    });
   };
 
   // === Archiv ===
@@ -648,13 +695,55 @@ export default function OrderListPage() {
 
               {/* Nicht gematchte Items */}
               {tgUnmatched.length > 0 && (
-                <div className="p-3 rounded-lg bg-status-warning-subtle">
-                  <div className="flex items-center gap-2 mb-1">
-                    <AlertTriangle className="h-4 w-4 text-status-warning" />
-                    <p className="text-sm font-medium text-status-warning">Nicht im Katalog:</p>
+                <div className="p-3 rounded-lg bg-status-warning-subtle space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4 text-status-warning" />
+                      <p className="text-sm font-medium text-status-warning">Nicht im Katalog ({tgUnmatched.length}):</p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={searchTransgourmetCatalog}
+                      disabled={tgSearching}
+                      className="h-8 text-xs"
+                    >
+                      {tgSearching ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Search className="h-3 w-3 mr-1" />}
+                      Katalog durchsuchen
+                    </Button>
                   </div>
                   {tgUnmatched.map((u: any, idx: number) => (
-                    <p key={idx} className="text-sm text-muted-foreground">{u.orderItemName}</p>
+                    <div key={idx}>
+                      <p className="text-sm text-muted-foreground font-medium">{u.orderItemName}</p>
+                      {/* Search results for this item */}
+                      {tgSearchResults[u.orderItemName] && (
+                        <div className="ml-2 mt-1 space-y-1">
+                          {tgSearchResults[u.orderItemName].length === 0 ? (
+                            <p className="text-xs text-muted-foreground italic">Keine Ergebnisse bei Transgourmet</p>
+                          ) : (
+                            tgSearchResults[u.orderItemName].slice(0, 5).map((r: any, ri: number) => (
+                              <button
+                                key={ri}
+                                onClick={() => selectSearchResult(u.orderItemName, r)}
+                                className="w-full text-left p-2 rounded border bg-background hover:bg-muted/60 press text-xs flex items-center gap-2"
+                              >
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-medium truncate">{r.name || `Art. ${r.artikelNr}`}</p>
+                                  <p className="text-muted-foreground">
+                                    Art. {r.artikelNr}
+                                    {r.price && ` · EUR ${r.price}`}
+                                    {r.unitInfo && ` · ${r.unitInfo}`}
+                                  </p>
+                                </div>
+                                <Badge variant={r.lagernd ? "default" : "secondary"} className="shrink-0 text-[10px] h-5">
+                                  {r.lagernd ? "Lagernd" : "Vorbestell"}
+                                </Badge>
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
               )}

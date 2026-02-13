@@ -489,6 +489,136 @@ Regeln:
 }
 
 /**
+ * Transgourmet-Katalog online durchsuchen (für unmatched items)
+ */
+export interface SearchResultItem {
+  artikelNr: string;
+  name: string;
+  price: string | null;      // "1,01 /PK"
+  unitInfo: string | null;    // "KT = 10 PK"
+  lagernd: boolean;
+}
+
+export interface SearchResult {
+  query: string;
+  totalResults: number;
+  items: SearchResultItem[];
+}
+
+export async function searchTransgourmet(queries: string[]): Promise<SearchResult[]> {
+  if (queries.length === 0) return [];
+
+  const browser = await launchBrowser();
+  try {
+    const context = await createContext(browser);
+    const page = await context.newPage();
+
+    // Navigate to portal (triggers login if needed)
+    await page.goto(PORTAL_URL, { waitUntil: "load", timeout: 30000 });
+    await page.waitForTimeout(3000);
+    if (page.url().includes("simplelogin")) {
+      savedCookies = null;
+      const ok = await login(page);
+      if (!ok) throw new Error("Login fehlgeschlagen");
+    }
+    console.log("[TG-Search] Logged in");
+
+    const results: SearchResult[] = [];
+
+    for (const query of queries) {
+      console.log(`[TG-Search] Searching: "${query}"`);
+      const searchUrl = `${SHOP_URL}/ctx:L2NhdGFsb2cy/search?add_article=${encodeURIComponent(query)}`;
+      await page.goto(searchUrl, { waitUntil: "load", timeout: 15000 });
+      await page.waitForTimeout(2000);
+
+      const parsed = await page.evaluate(() => {
+        const bodyText = document.body.innerText;
+
+        // Total results count
+        const totalMatch = bodyText.match(/(\d+)\s*Ergebnisse?\s+für/);
+        const total = totalMatch ? parseInt(totalMatch[1]) : 0;
+
+        // Split by Art. Nr. blocks
+        const blocks = bodyText.split(/(?=Art\.\s*Nr\.\s*\d)/);
+
+        // Extract last meaningful line from a block (= product name of NEXT product)
+        function getLastName(text: string): string {
+          const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+          for (let j = lines.length - 1; j >= 0; j--) {
+            const l = lines[j];
+            if (l.length > 5 &&
+              !/^(EUR|Art\.|KT |PK |ST |EH |KI |Vorlage|ab$|Lagernd|Vorbestell|Derzeit|Alternative|Einzelpreis|in \d|Einträge|Nächste|Filter|Drucken|Merkmale|Hauptgruppe|Warenbereich|Eigenmarke|Marke|Eigenschaft|Gütesiegel|Herkunft|Ursprungsland|Aktion|Alle entfernen|Anwenden|Ähnliche|Suchresultate|Zurück|powered|Transgourmet|Impressum|AGB|\d+$)/i.test(l) &&
+              !l.startsWith("milch") && !l.startsWith("h-milch")) {
+              return l.substring(0, 100);
+            }
+          }
+          return "";
+        }
+
+        // Preamble name (name of first product)
+        const nameForFirst = blocks.length > 0 ? getLastName(blocks[0]) : "";
+
+        // Parse product blocks (skip preamble at index 0)
+        const productBlocks = blocks.filter(b => /^Art\.\s*Nr\.\d/.test(b));
+        const items: Array<{
+          artikelNr: string;
+          name: string;
+          price: string | null;
+          unitInfo: string | null;
+          lagernd: boolean;
+        }> = [];
+
+        for (let i = 0; i < Math.min(productBlocks.length, 8); i++) {
+          const block = productBlocks[i];
+          const artMatch = block.match(/Art\.\s*Nr\.(\d+)/);
+          if (!artMatch) continue;
+
+          const name = i === 0 ? nameForFirst : getLastName(productBlocks[i - 1]);
+          const lagernd = /\bLagernd\b/.test(block) && !/nicht lagernd/.test(block);
+
+          // Price: EUR X,XX /UNIT
+          const priceMatch = block.match(/EUR\s*([\d,]+)\s*\/(PK|KT|ST|KI|EH|FL|KG|LT|L)\b/);
+          // Or: EUR X,XX with unit on separate line
+          const altPriceMatch = !priceMatch ? block.match(/EUR\s*([\d,]+)/) : null;
+
+          // Unit info: KT = 10 PK, EH = 12 PK, etc.
+          const unitMatch = block.match(/(KT|PK|EH|KI|ST)\s*=\s*([\d,]+)\s*(PK|ST|KI|FL|KG)/);
+
+          items.push({
+            artikelNr: artMatch[1],
+            name,
+            price: priceMatch ? `${priceMatch[1]} /${priceMatch[2]}` : (altPriceMatch ? `${altPriceMatch[1]}` : null),
+            unitInfo: unitMatch ? `${unitMatch[1]} = ${unitMatch[2]} ${unitMatch[3]}` : null,
+            lagernd,
+          });
+        }
+
+        return { total, items };
+      });
+
+      results.push({
+        query,
+        totalResults: parsed.total,
+        items: parsed.items,
+      });
+
+      // Re-check session between searches
+      if (page.url().includes("simplelogin")) {
+        console.log("[TG-Search] Session expired, re-logging in...");
+        savedCookies = null;
+        await login(page);
+      }
+    }
+
+    savedCookies = await context.cookies();
+    await context.close();
+    return results;
+  } finally {
+    await browser.close();
+  }
+}
+
+/**
  * Haupt-Matching: Erst AI, dann lokaler Fallback
  */
 export async function matchOrderItems(

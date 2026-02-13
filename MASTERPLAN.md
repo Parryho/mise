@@ -613,9 +613,9 @@ Phase 2 (Tag-System) bringt bereits 80% Verbesserung. Pairing-Scores sind option
 | ~~🔥 1~~ | ~~**11.7-11.9**~~ | ~~**Generator cuisine-aware machen**~~ | ~~**2-3h**~~ | ✅ **Done** |
 | ~~2~~ | ~~M1-M14~~ | ~~Code Audit MITTEL-Findings~~ | ~~~45h~~ | ✅ **Done** |
 | ~~3~~ | ~~11.10~~ | ~~Bulk-Tag-Editor (235 Rezepte)~~ | ~~4-6h~~ | ✅ **Done** |
-| 4 | 16 | Dokument-Upload-Modul (Excel, PDF, etc.) | ~4h | Küchenalltag |
+| ~~4~~ | ~~16~~ | ~~Dokument-Upload-Modul (Excel, PDF, etc.)~~ | ~~~4h~~ | ✅ **Done** |
 | 5 | R2 | Offene R2-Tickets | ~16h | Admin-UX |
-| 6 | 14 | Gäste & Catering zusammenlegen | ~3.5h | UX-Vereinfachung |
+| ~~6~~ | ~~14~~ | ~~Gäste & Catering zusammenlegen~~ | ~~~3.5h~~ | ✅ **Done** |
 | ~~7~~ | ~~15~~ | ~~Rezeptdatenbank übersetzen (EN/TR/UK)~~ | ~~~1h~~ | ✅ **Done** |
 | 8 | 11.11 | KitcheNette Pairing-Scores | 8-12h | +15-20% |
 
@@ -665,15 +665,15 @@ Phase 2 (Tag-System) bringt bereits 80% Verbesserung. Pairing-Scores sind option
 
 **Ergebnis:** Alle 412 Rezepte haben Zutaten + Allergene + passende Bilder (267 gutekueche.at + 145 chefkoch.de, 0 Pexels). Batch-Import: 343 Rezepte (chefkoch.de: 215, gutekueche.at: 115, lecker.de: 13). Backfill: 20 Rezepte nachträglich Allergene erkannt. Multi-Source: gutekueche.at + chefkoch.de + ichkoche.at + eatsmarter.de + lecker.de + kochbar.de + kuechengoetter.de. Allergen-Detection v2: Hybrid-Matching (exactTokens für kurze Begriffe wie "ei"/"nuss"/"wein", substrings für lange spezifische Begriffe). 218 Rezepte korrigiert — massive Reduktion von False Positives (C aus "Weizenmehl", H aus "Kalbsnuss", O aus "Schweinefleisch"). Scraper-Bug (KNOWN_UNITS) behoben, 164 garbled Rezepte in 3 Runden bereinigt. Rescrape-Feature: Benutzer kann leere Rezepte per URL-Eingabe befüllen.
 
-### Phase 14: Gäste & Catering zusammenlegen (geplant)
+### Phase 14: Gäste & Catering zusammenlegen ✅ Done (2026-02-13)
 
 PAX/Gästezahlen und Catering-Events in eine gemeinsame Seite "Gäste & Events" zusammenführen.
 
 | # | Task | Status | Aufwand |
 |---|------|--------|--------|
-| 14.1 | Tab-Page `/guests` mit 3 Tabs: Gästezahlen \| Catering \| Allergenprofile | Offen | 2h |
+| 14.1 | Tab-Page `/guests` mit 3 Tabs: Gästezahlen \| Catering \| Allergenprofile | ✅ 13.02.2026 | 2h |
 | 14.2 | Catering-Events → PAX-Einspeisung (Event-Personenzahl automatisch zu Gästezahlen addieren) | Offen | 1h |
-| 14.3 | Navigation: Einen Menüpunkt statt zwei, Route-Redirect `/catering` → `/guests?tab=catering` | Offen | 30 Min |
+| 14.3 | Navigation: Einen Menüpunkt statt zwei, Route-Redirect `/catering` → `/guests?tab=catering` | ✅ 13.02.2026 | 30 Min |
 
 **Impact:** Weniger Nav-Punkte, Küche sieht alle Personen-bezogenen Daten an einem Ort.
 

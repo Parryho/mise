@@ -1,6 +1,10 @@
 /**
  * Transgourmet Bestell-Agent
  * Automatisiert Login + Warenkorb-Befüllung via Playwright
+ *
+ * Workflow: Login → Portal (JS-Bundles) → Schnellerfassung-Widget
+ * WICHTIG: Schnellerfassung nur als Widget vom Portal aus nutzbar,
+ * nicht als eigenständige Seite (kein JS ohne Portal-Context).
  */
 import { chromium, type Browser, type BrowserContext, type Page } from "playwright";
 import path from "path";
@@ -8,7 +12,7 @@ import fs from "fs";
 
 const SHOP_URL = "https://shop.transgourmet.at";
 const LOGIN_URL = `${SHOP_URL}/simplelogin`;
-const SCHNELLERFASSUNG_URL = `${SHOP_URL}/de/functions/Schnellerfassung`;
+const PORTAL_URL = `${SHOP_URL}/portal`;
 
 // Reuse session cookies across calls
 let savedCookies: any[] | null = null;
@@ -49,47 +53,77 @@ async function launchBrowser(): Promise<Browser> {
   });
 }
 
+async function createContext(browser: Browser): Promise<BrowserContext> {
+  const context = await browser.newContext({
+    userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+  });
+  // Block Cookiebot to prevent cookie banner from blocking interactions
+  await context.route("**/consent.cookiebot.eu/**", route => route.abort());
+  if (savedCookies) await context.addCookies(savedCookies);
+  return context;
+}
+
 async function login(page: Page): Promise<boolean> {
   const { user, pass } = getCredentials();
 
-  await page.goto(LOGIN_URL, { waitUntil: "networkidle", timeout: 30000 });
+  await page.goto(LOGIN_URL, { waitUntil: "load", timeout: 30000 });
+  await page.waitForTimeout(2000);
 
-  // Fill login form
-  await page.fill('input[name="username"], input[name="j_username"], #username', user);
-  await page.fill('input[name="password"], input[name="j_password"], #password', pass);
+  // Login form: #cid = Kundennummer, #password = Passwort
+  await page.fill("#cid", user);
+  await page.fill("#password", pass);
+  await page.click('button[name="btn_login"]');
+  await page.waitForTimeout(8000);
 
-  // Click login button
-  await page.click('button[type="submit"], input[type="submit"]');
-
-  // Wait for redirect (successful login redirects away from /simplelogin)
-  await page.waitForURL((url) => !url.pathname.includes("simplelogin"), { timeout: 15000 }).catch(() => {});
-
-  const isLoggedIn = !page.url().includes("simplelogin");
+  const isLoggedIn = page.url().includes("portal");
   if (isLoggedIn) {
-    // Save cookies for reuse
     savedCookies = await page.context().cookies();
   }
   return isLoggedIn;
 }
 
+/** Navigate to portal and open Schnellerfassung widget */
+async function openSchnellerfassung(page: Page): Promise<boolean> {
+  // Go to portal (has all JS bundles)
+  await page.goto(PORTAL_URL, { waitUntil: "load", timeout: 30000 });
+  await page.waitForTimeout(5000);
+
+  // Login if redirected
+  if (page.url().includes("simplelogin")) {
+    const ok = await login(page);
+    if (!ok) return false;
+    await page.goto(PORTAL_URL, { waitUntil: "load", timeout: 30000 });
+    await page.waitForTimeout(5000);
+  }
+
+  // Click Schnellerfassung link → loads as widget in portal
+  const link = await page.$('a[href*="quickadd"]');
+  if (!link) return false;
+  await link.click();
+  await page.waitForTimeout(3000);
+
+  // Verify quickadd widget is visible
+  const visible = await page.evaluate(() => {
+    const el = document.querySelector(".quickadd");
+    return el ? el.offsetParent !== null : false;
+  });
+  return visible;
+}
+
 /**
- * Screenshot der Schnellerfassung — zum Debuggen der Form-Struktur
+ * Screenshot der Schnellerfassung
  */
 export async function screenshotSchnellerfassung(): Promise<string> {
   const browser = await launchBrowser();
   try {
-    const context = await browser.newContext();
-    if (savedCookies) await context.addCookies(savedCookies);
+    const context = await createContext(browser);
     const page = await context.newPage();
 
-    // Check if session still valid
-    await page.goto(SCHNELLERFASSUNG_URL, { waitUntil: "networkidle", timeout: 30000 });
-    if (page.url().includes("simplelogin")) {
-      await login(page);
-      await page.goto(SCHNELLERFASSUNG_URL, { waitUntil: "networkidle", timeout: 30000 });
-    }
+    const ok = await openSchnellerfassung(page);
+    if (!ok) throw new Error("Schnellerfassung konnte nicht geöffnet werden");
 
     const screenshot = await page.screenshot({ fullPage: true });
+    savedCookies = await context.cookies();
     await context.close();
     return screenshot.toString("base64");
   } finally {
@@ -99,6 +133,12 @@ export async function screenshotSchnellerfassung(): Promise<string> {
 
 /**
  * Hauptfunktion: Artikel in den Transgourmet-Warenkorb legen
+ *
+ * Workflow:
+ * 1. Portal öffnen (lädt JS-Bundles)
+ * 2. Schnellerfassung-Widget öffnen
+ * 3. Pro Artikel: Artikelnr + Menge eingeben → "Hinzufügen" klicken
+ * 4. "Alle hinzufügen" klicken → ab in den Warenkorb
  */
 export async function addToCart(items: OrderItem[]): Promise<AgentResult> {
   if (items.length === 0) {
@@ -110,104 +150,58 @@ export async function addToCart(items: OrderItem[]): Promise<AgentResult> {
   let itemsAdded = 0;
 
   try {
-    const context = await browser.newContext();
-    if (savedCookies) await context.addCookies(savedCookies);
+    const context = await createContext(browser);
     const page = await context.newPage();
 
-    // Navigate to Schnellerfassung
-    await page.goto(SCHNELLERFASSUNG_URL, { waitUntil: "networkidle", timeout: 30000 });
-
-    // Login if needed
-    if (page.url().includes("simplelogin")) {
-      const loggedIn = await login(page);
-      if (!loggedIn) {
-        return { success: false, itemsAdded: 0, itemsFailed: items.map(i => i.name), error: "Login fehlgeschlagen" };
-      }
-      await page.goto(SCHNELLERFASSUNG_URL, { waitUntil: "networkidle", timeout: 30000 });
+    // Open Schnellerfassung widget via Portal
+    const ok = await openSchnellerfassung(page);
+    if (!ok) {
+      return { success: false, itemsAdded: 0, itemsFailed: items.map(i => i.name), error: "Schnellerfassung nicht verfügbar" };
     }
 
-    // Try to find the Schnellerfassung form
-    // Common patterns: article number input + quantity input + add button
-    // We need to inspect the actual page structure
-
-    // Strategy 1: Look for article number input fields
-    const artInputs = await page.$$('input[name*="artnr"], input[name*="artikel"], input[name*="artNr"], input[placeholder*="Artikel"]');
-
-    if (artInputs.length > 0) {
-      // Schnellerfassung has input rows for article numbers
-      for (const item of items) {
-        try {
-          // Find empty article number field
-          const artInput = await page.$('input[name*="artnr"]:not([value]), input[name*="artikel"]:not([value]), input[placeholder*="Artikel"]');
-          if (!artInput) {
-            // Try adding a new row if possible
-            const addRowBtn = await page.$('button:has-text("Zeile"), a:has-text("Zeile"), button:has-text("hinzufügen")');
-            if (addRowBtn) await addRowBtn.click();
-          }
-
-          // Fill article number
-          const currentArtInput = await page.$('input[name*="artnr"]:last-of-type, input[name*="artikel"]:last-of-type');
-          if (currentArtInput) {
-            await currentArtInput.fill(item.artikelNr);
-
-            // Fill quantity (usually next sibling input or named "menge"/"quantity")
-            const quantInput = await page.$(`input[name*="menge"], input[name*="quantity"], input[name*="quant"]`);
-            if (quantInput) await quantInput.fill(String(item.menge));
-
-            // Tab out to trigger validation/lookup
-            await currentArtInput.press("Tab");
-            await page.waitForTimeout(500);
-
-            itemsAdded++;
-          } else {
-            itemsFailed.push(item.name);
-          }
-        } catch (err) {
+    // Add each item via quickadd form
+    for (const item of items) {
+      try {
+        const artnr = await page.$(".js-quickadd__input--artnr");
+        const quant = await page.$(".js-quickadd__input--quant");
+        if (!artnr || !quant) {
           itemsFailed.push(item.name);
+          continue;
         }
-      }
 
-      // Submit / add to cart
-      const submitBtn = await page.$('button:has-text("Warenkorb"), button:has-text("bestellen"), button[type="submit"]');
-      if (submitBtn) {
-        await submitBtn.click();
+        await artnr.fill(item.artikelNr);
+        await quant.fill(String(item.menge));
+        await page.click(".js-quickadd__btn-add");
         await page.waitForTimeout(2000);
-      }
-    } else {
-      // Strategy 2: Use search + add to cart for each item
-      for (const item of items) {
-        try {
-          await page.goto(`${SHOP_URL}/search?query=${encodeURIComponent(item.artikelNr)}`, { waitUntil: "networkidle", timeout: 15000 });
 
-          // Find quantity input and add-to-cart button for this product
-          const quantInput = await page.$(`input[name*="quant_"], input[name*="quantity"]`);
-          if (quantInput) {
-            await quantInput.fill(String(item.menge));
-          }
+        // Check if item was added to the table
+        const added = await page.evaluate((artNr) => {
+          const rows = document.querySelectorAll(".quickadd__table-container tbody tr");
+          return Array.from(rows).some(r => r.textContent?.includes(artNr));
+        }, item.artikelNr);
 
-          const addBtn = await page.$('button:has-text("Warenkorb"), button.add-to-cart, button[title*="Warenkorb"]');
-          if (addBtn) {
-            await addBtn.click();
-            await page.waitForTimeout(1000);
-            itemsAdded++;
-          } else {
-            itemsFailed.push(item.name);
-          }
-        } catch (err) {
+        if (added) {
+          itemsAdded++;
+        } else {
           itemsFailed.push(item.name);
         }
+      } catch {
+        itemsFailed.push(item.name);
       }
     }
 
-    // Save cookies for next time
+    // Transfer all items to cart
+    if (itemsAdded > 0) {
+      const confirmBtn = await page.$(".js-quickadd__btn-confirm");
+      if (confirmBtn) {
+        await confirmBtn.click();
+        await page.waitForTimeout(3000);
+      }
+    }
+
     savedCookies = await context.cookies();
-
-    // Get cart URL
-    const cartUrl = `${SHOP_URL}/de/cart`;
-
-    // Take screenshot of final state
+    const cartUrl = `${SHOP_URL}/order`;
     const screenshot = await page.screenshot({ fullPage: false });
-
     await context.close();
 
     return {

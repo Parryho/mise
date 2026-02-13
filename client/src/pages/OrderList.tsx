@@ -138,10 +138,24 @@ export default function OrderListPage() {
     setScannedItems([]);
 
     try {
+      // Compress image to max 1600px to avoid entity-too-large
       const base64 = await new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.readAsDataURL(file);
+        const img = new Image();
+        img.onload = () => {
+          const MAX = 1600;
+          let { width, height } = img;
+          if (width > MAX || height > MAX) {
+            const scale = MAX / Math.max(width, height);
+            width = Math.round(width * scale);
+            height = Math.round(height * scale);
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          canvas.getContext("2d")!.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL("image/jpeg", 0.8));
+        };
+        img.src = URL.createObjectURL(file);
       });
 
       const result = await apiPost<{ items: ScannedItem[] }>(`/api/orders/${list.id}/scan`, { imageBase64: base64 });

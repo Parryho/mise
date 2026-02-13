@@ -113,7 +113,7 @@ export function registerOrderRoutes(app: Express) {
     res.status(204).end();
   });
 
-  // === Phase 2: OCR Scan ===
+  // === Phase 2: OCR Scan (Google Gemini Vision, free) ===
   app.post("/api/orders/:id/scan", requireAuth, async (req: Request, res: Response) => {
     const listId = parseInt(getParam(req.params.id));
     const list = await storage.getOrderList(listId);
@@ -124,34 +124,28 @@ export function registerOrderRoutes(app: Express) {
       return res.status(400).json({ error: "Bild (base64) erforderlich" });
     }
 
-    try {
-      const Anthropic = (await import("@anthropic-ai/sdk")).default;
-      const client = new Anthropic();
+    const googleKey = process.env.GOOGLE_AI_API_KEY;
+    if (!googleKey) {
+      return res.status(400).json({ error: "GOOGLE_AI_API_KEY nicht konfiguriert" });
+    }
 
-      // Detect media type from base64 header or default to jpeg
-      let mediaType: "image/jpeg" | "image/png" | "image/webp" | "image/gif" = "image/jpeg";
+    try {
+      const { GoogleGenerativeAI } = await import("@google/generative-ai");
+      const genAI = new GoogleGenerativeAI(googleKey);
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+
+      // Strip data URI prefix to get raw base64
+      let mimeType = "image/jpeg";
       let base64Data = imageBase64;
       if (imageBase64.startsWith("data:")) {
         const match = imageBase64.match(/^data:(image\/\w+);base64,/);
         if (match) {
-          mediaType = match[1] as typeof mediaType;
+          mimeType = match[1];
           base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
         }
       }
 
-      const response = await client.messages.create({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 2048,
-        messages: [{
-          role: "user",
-          content: [
-            {
-              type: "image",
-              source: { type: "base64", media_type: mediaType, data: base64Data },
-            },
-            {
-              type: "text",
-              text: `Du siehst ein Foto eines handgeschriebenen Küchen-Bestellzettels.
+      const prompt = `Du siehst ein Foto eines handgeschriebenen Küchen-Bestellzettels.
 Extrahiere alle Artikel mit Menge und Name.
 
 Antworte NUR mit validem JSON in diesem Format:
@@ -167,14 +161,14 @@ Regeln:
 - Wenn Menge unklar, setze amount auf null
 - confidence: 0.0-1.0, wie sicher du dir beim Lesen bist
 - Österreichische Küchenbegriffe beibehalten
-- Leere/unleserliche Einträge weglassen`,
-            },
-          ],
-        }],
-      });
+- Leere/unleserliche Einträge weglassen`;
 
-      const text = response.content[0].type === "text" ? response.content[0].text : "";
-      // Extract JSON from response (might be wrapped in markdown code block)
+      const result = await model.generateContent([
+        { inlineData: { mimeType, data: base64Data } },
+        { text: prompt },
+      ]);
+
+      const text = result.response.text();
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
         return res.status(422).json({ error: "Konnte keine Artikel erkennen", raw: text });

@@ -229,32 +229,25 @@ export async function addToCart(items: OrderItem[]): Promise<AgentResult> {
       if (confirmBtn) {
         console.log("[TG] Clicking 'Alle hinzufügen'...");
 
-        // Wait for the transfer network response
-        const transferPromise = page.waitForResponse(
-          resp => resp.url().includes("quickadd/transfer"),
-          { timeout: 15000 }
-        ).catch(() => null);
-
+        // Transfer click triggers: AJAX to /quickadd/transfer, then auto-navigates to /order
+        const navPromise = page.waitForNavigation({ timeout: 20000 }).catch(() => null);
         await confirmBtn.click();
-        const transferResp = await transferPromise;
+        const navResp = await navPromise;
 
-        if (transferResp) {
-          console.log("[TG] Transfer response:", transferResp.status(), transferResp.url());
-          await page.waitForTimeout(2000);
+        if (navResp) {
+          console.log("[TG] Auto-navigated to:", page.url());
         } else {
-          console.error("[TG] No transfer response received");
+          console.log("[TG] No auto-navigation, navigating to /order manually...");
+          await page.goto(`${SHOP_URL}/order`, { waitUntil: "load", timeout: 15000 });
         }
 
-        // Always navigate to cart to verify
-        console.log("[TG] Navigating to cart to verify...");
-        await page.goto(`${SHOP_URL}/order`, { waitUntil: "load", timeout: 15000 });
-        await page.waitForTimeout(3000);
+        // Wait for page content to render
+        await page.waitForTimeout(5000);
 
         const cartCheck = await page.evaluate(() => {
           const text = document.body.innerText;
-          const hasItems = text.includes("Positionen") && !text.includes("leer") && !text.includes("keine Einträge");
           const posMatch = text.match(/(\d+)\s*Position/);
-          return { hasItems, positions: posMatch ? posMatch[1] : "0", snippet: text.substring(0, 300) };
+          return { hasItems: !!posMatch && parseInt(posMatch[1]) > 0, positions: posMatch ? posMatch[1] : "0", snippet: text.substring(0, 300) };
         });
         console.log("[TG] Cart check:", cartCheck.hasItems ? `${cartCheck.positions} Positionen` : "LEER");
         transferOk = cartCheck.hasItems;

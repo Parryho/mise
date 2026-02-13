@@ -327,6 +327,30 @@
   --ring: 190 100% 23%;
 }
 
+/* Petrol dark mode */
+.dark .theme-petrol,
+.theme-petrol.dark {
+  --background: 195 30% 8%;         /* Deep petrol-tinted black */
+  --foreground: 40 15% 90%;         /* Warm off-white */
+  --card: 195 25% 11%;              /* Slightly lighter card */
+  --card-foreground: 40 15% 90%;
+  --popover: 195 25% 11%;
+  --popover-foreground: 40 15% 90%;
+  --primary: 190 80% 42%;           /* Brighter petrol for dark bg */
+  --primary-foreground: 195 30% 8%;
+  --secondary: 195 20% 15%;
+  --secondary-foreground: 40 15% 85%;
+  --muted: 195 15% 15%;
+  --muted-foreground: 40 8% 55%;    /* Muted light gray */
+  --accent: 119 30% 50%;            /* Brighter sage for dark bg */
+  --accent-foreground: 195 30% 8%;
+  --destructive: 0 63% 40%;
+  --destructive-foreground: 40 15% 90%;
+  --border: 195 15% 18%;
+  --input: 195 15% 18%;
+  --ring: 190 80% 42%;
+}
+
 /* Landing page — floating gradient orbs */
 @keyframes landing-float {
   0%, 100% { transform: translate(0, 0) scale(1); }

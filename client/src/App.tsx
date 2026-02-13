@@ -261,7 +261,7 @@ function Router() {
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} storageKey="mise-theme">
+      <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} storageKey="mise-theme">
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
             <AppProvider>

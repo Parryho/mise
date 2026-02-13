@@ -417,6 +417,12 @@
     "noStaffTitle": "No staff available",
     "selectBlock": "Please select at least one block."
   },
+  "guestsHub": {
+    "title": "Guests & Events",
+    "tabPax": "Guest Counts",
+    "tabCatering": "Catering",
+    "tabProfiles": "Allergen Profiles"
+  },
   "guests": {
     "title": "Guest Counts",
     "adults": "Adults",

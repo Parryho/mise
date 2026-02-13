@@ -73,7 +73,7 @@ const emptyForm = {
   dishes: "",
 };
 
-export default function Catering() {
+export default function Catering({ embedded }: { embedded?: boolean }) {
   const [events, setEvents] = useState<CateringEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState("");
@@ -235,14 +235,16 @@ export default function Catering() {
   const avgPax = activeEvents.length > 0 ? Math.round(totalPax / activeEvents.length) : 0;
 
   return (
-    <div className="p-4 space-y-4 pb-24">
+    <div className={embedded ? "space-y-4" : "p-4 space-y-4 pb-24"}>
       {/* Header */}
       <div className="flex items-center justify-between">
+        {!embedded && (
         <div>
           <h1 className="text-2xl font-heading font-bold">{t("catering.title")}</h1>
           <p className="text-xs text-muted-foreground">{t("catering.subtitle")}</p>
         </div>
-        <Button size="sm" className="gap-1" onClick={startNew}>
+        )}
+        <Button size="sm" className="gap-1 ml-auto" onClick={startNew}>
           <PlusCircle className="h-4 w-4" /> {t("catering.newEvent")}
         </Button>
       </div>

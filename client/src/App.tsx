@@ -21,17 +21,15 @@ const Recipes = lazy(() => import("@/pages/Recipes"));
 const HACCP = lazy(() => import("@/pages/HACCP"));
 const Reports = lazy(() => import("@/pages/Reports"));
 const Settings = lazy(() => import("@/pages/Settings"));
-const Guests = lazy(() => import("@/pages/Guests"));
+const GuestsHub = lazy(() => import("@/pages/GuestsHub"));
 const Schedule = lazy(() => import("@/pages/Schedule"));
 const Rotation = lazy(() => import("@/pages/Rotation"));
 const RotationPrint = lazy(() => import("@/pages/RotationPrint"));
 const ProductionList = lazy(() => import("@/pages/ProductionList"));
 const ShoppingList = lazy(() => import("@/pages/ShoppingList"));
 const Print = lazy(() => import("@/pages/Print"));
-const Catering = lazy(() => import("@/pages/Catering"));
 const MasterIngredients = lazy(() => import("@/pages/MasterIngredients"));
 const Suppliers = lazy(() => import("@/pages/Suppliers"));
-const GuestProfiles = lazy(() => import("@/pages/GuestProfiles"));
 const AllergenOverview = lazy(() => import("@/pages/AllergenOverview"));
 const BuffetCards = lazy(() => import("@/pages/BuffetCards"));
 const QRGenerator = lazy(() => import("@/pages/QRGenerator"));
@@ -91,7 +89,7 @@ function AuthenticatedRoutes() {
         <Layout><HACCP /></Layout>
       </Route>
       <Route path="/guests">
-        <Layout><Guests /></Layout>
+        <Layout><GuestsHub /></Layout>
       </Route>
       <Route path="/schedule">
         <Layout><Schedule /></Layout>
@@ -166,7 +164,7 @@ function AuthenticatedRoutes() {
         <Layout><Suppliers /></Layout>
       </Route>
       <Route path="/settings/guest-profiles">
-        <Layout><GuestProfiles /></Layout>
+        <Redirect to="/guests?tab=profiles" />
       </Route>
       <Route path="/agent-team">
         <Layout><AgentTeam /></Layout>
@@ -193,7 +191,7 @@ function AuthenticatedRoutes() {
         <Layout><Documents /></Layout>
       </Route>
       <Route path="/catering">
-        <Layout><Catering /></Layout>
+        <Redirect to="/guests?tab=catering" />
       </Route>
       <Route path="/print">
         <Layout><Print /></Layout>

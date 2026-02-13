@@ -56,8 +56,9 @@ function getMonthDates(baseDate: Date): Date[] {
 
 const WEEKDAY_KEYS = ["mo", "di", "mi", "do", "fr", "sa", "so"] as const;
 
-export default function Guests() {
+export default function Guests({ embedded }: { embedded?: boolean }) {
   const { t } = useTranslation();
+  if (embedded) return <GuestCountsView />;
   return (
     <div className="p-4 space-y-4 pb-24">
       <div className="flex items-center justify-between">

@@ -34,7 +34,7 @@ interface GuestProfile {
   createdAt: string;
 }
 
-export default function GuestProfiles() {
+export default function GuestProfiles({ embedded }: { embedded?: boolean }) {
   const [locationFilter, setLocationFilter] = useState("all");
   const [showAdd, setShowAdd] = useState(false);
   const { toast } = useToast();
@@ -109,15 +109,17 @@ export default function GuestProfiles() {
   }
 
   return (
-    <div className="p-4 space-y-4 pb-24">
+    <div className={embedded ? "space-y-4" : "p-4 space-y-4 pb-24"}>
       <div className="flex items-center gap-3">
-        <div className="flex-1">
-          <h1 className="text-xl font-heading font-bold">{t("guestProfiles.title")}</h1>
-          <p className="text-xs text-muted-foreground">
-            {t("guestProfiles.subtitle", { count: profiles?.length || 0 })}
-          </p>
-        </div>
-        <Button size="sm" className="gap-1 min-h-[44px]" onClick={() => setShowAdd(true)}>
+        {!embedded && (
+          <div className="flex-1">
+            <h1 className="text-xl font-heading font-bold">{t("guestProfiles.title")}</h1>
+            <p className="text-xs text-muted-foreground">
+              {t("guestProfiles.subtitle", { count: profiles?.length || 0 })}
+            </p>
+          </div>
+        )}
+        <Button size="sm" className="gap-1 min-h-[44px] ml-auto" onClick={() => setShowAdd(true)}>
           <PlusCircle className="h-4 w-4" /> {t("guestProfiles.newProfile")}
         </Button>
       </div>

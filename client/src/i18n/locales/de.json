@@ -417,6 +417,12 @@
     "noStaffTitle": "Keine Mitarbeiter vorhanden",
     "selectBlock": "Bitte mindestens einen Block auswählen."
   },
+  "guestsHub": {
+    "title": "G\u00e4ste & Events",
+    "tabPax": "G\u00e4stezahlen",
+    "tabCatering": "Catering",
+    "tabProfiles": "Allergenprofile"
+  },
   "guests": {
     "title": "G\u00e4stezahlen",
     "adults": "Erwachsene",

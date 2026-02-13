@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Plus, Camera, Mic, MicOff, Printer, CheckCheck, Trash2, Loader2,
-  ShoppingCart, Package, Archive, ChevronDown, ChevronUp,
+  ShoppingCart, Package, Archive, ChevronDown, ChevronUp, Truck, AlertTriangle, ExternalLink,
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
@@ -54,6 +54,12 @@ export default function OrderListPage() {
   const [scanning, setScanning] = useState(false);
   const [scannedItems, setScannedItems] = useState<ScannedItem[]>([]);
   const [addingScan, setAddingScan] = useState(false);
+  const [showTransgourmet, setShowTransgourmet] = useState(false);
+  const [tgMatching, setTgMatching] = useState(false);
+  const [tgOrdering, setTgOrdering] = useState(false);
+  const [tgMatched, setTgMatched] = useState<any[]>([]);
+  const [tgUnmatched, setTgUnmatched] = useState<any[]>([]);
+  const [tgResult, setTgResult] = useState<any>(null);
   const [isListening, setIsListening] = useState(false);
   const [voiceTranscript, setVoiceTranscript] = useState("");
   const voiceTranscriptRef = useRef("");
@@ -277,6 +283,45 @@ export default function OrderListPage() {
     }
   };
 
+  // === Transgourmet Bestell-Agent ===
+  const startTransgourmetMatch = async () => {
+    if (!list) return;
+    setTgMatching(true);
+    setShowTransgourmet(true);
+    setTgMatched([]);
+    setTgUnmatched([]);
+    setTgResult(null);
+
+    try {
+      const data = await apiPost<{ matched: any[]; unmatched: any[] }>(`/api/orders/${list.id}/transgourmet/match`, {});
+      setTgMatched(data.matched || []);
+      setTgUnmatched(data.unmatched || []);
+    } catch (error: any) {
+      toast({ title: "Matching fehlgeschlagen", description: error.message, variant: "destructive" });
+      setShowTransgourmet(false);
+    } finally {
+      setTgMatching(false);
+    }
+  };
+
+  const submitTransgourmetOrder = async () => {
+    if (!list || tgMatched.length === 0) return;
+    setTgOrdering(true);
+    try {
+      const orderItems = tgMatched.map((m: any) => ({
+        artikelNr: m.match.artikelNr,
+        name: m.match.name,
+        menge: m.suggestedQty || 1,
+      }));
+      const result = await apiPost<any>(`/api/orders/${list.id}/transgourmet/order`, { items: orderItems });
+      setTgResult(result);
+    } catch (error: any) {
+      toast({ title: "Bestellung fehlgeschlagen", description: error.message, variant: "destructive" });
+    } finally {
+      setTgOrdering(false);
+    }
+  };
+
   // === Archiv ===
   const loadArchive = async () => {
     if (showArchive) {
@@ -425,9 +470,18 @@ export default function OrderListPage() {
       {items.length > 0 && (
         <div className="mt-6 space-y-3 print:hidden">
           <Button
-            onClick={markOrdered}
+            onClick={startTransgourmetMatch}
             className="w-full min-h-12 text-base"
             variant="default"
+            disabled={uncheckedCount === 0 || tgMatching}
+          >
+            {tgMatching ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <Truck className="h-5 w-5 mr-2" />}
+            Bei Transgourmet bestellen
+          </Button>
+          <Button
+            onClick={markOrdered}
+            className="w-full min-h-12 text-base"
+            variant="outline"
           >
             <CheckCheck className="h-5 w-5 mr-2" />
             Als bestellt markieren
@@ -516,6 +570,103 @@ export default function OrderListPage() {
                 </Button>
               )}
             </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Transgourmet Dialog */}
+      <Dialog open={showTransgourmet} onOpenChange={setShowTransgourmet}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Truck className="h-5 w-5" />
+              Transgourmet Bestellung
+            </DialogTitle>
+            <DialogDescription>
+              {tgMatching ? "Artikel werden zugeordnet..." :
+               tgResult ? (tgResult.success ? `${tgResult.itemsAdded} Artikel im Warenkorb` : "Fehler bei Bestellung") :
+               `${tgMatched.length} zugeordnet, ${tgUnmatched.length} nicht gefunden`}
+            </DialogDescription>
+          </DialogHeader>
+
+          {tgMatching ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : tgResult ? (
+            /* Ergebnis nach Bestellung */
+            <div className="space-y-4">
+              {tgResult.success ? (
+                <>
+                  <div className="p-4 rounded-lg bg-status-success-subtle text-center">
+                    <p className="font-medium text-status-success">{tgResult.itemsAdded} Artikel im Warenkorb</p>
+                  </div>
+                  {tgResult.cartUrl && (
+                    <a href={tgResult.cartUrl} target="_blank" rel="noopener noreferrer">
+                      <Button className="w-full" variant="default">
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        Warenkorb öffnen
+                      </Button>
+                    </a>
+                  )}
+                  {tgResult.itemsFailed?.length > 0 && (
+                    <div className="p-3 rounded-lg bg-status-warning-subtle">
+                      <p className="text-sm font-medium text-status-warning mb-1">Nicht hinzugefügt:</p>
+                      {tgResult.itemsFailed.map((name: string, i: number) => (
+                        <p key={i} className="text-sm text-muted-foreground">{name}</p>
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="p-4 rounded-lg bg-status-danger-subtle text-center">
+                  <p className="text-sm text-status-danger">{tgResult.error || "Unbekannter Fehler"}</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Matching-Vorschau */
+            <div className="space-y-3">
+              {/* Gematchte Items */}
+              {tgMatched.map((m: any, idx: number) => (
+                <div key={idx} className="flex items-center gap-3 p-2 rounded-lg border">
+                  <Package className="h-4 w-4 text-status-success shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{m.orderItemName}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      → {m.match?.name} (Art. {m.match?.artikelNr})
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {m.suggestedQty}x · €{m.match?.preis?.toFixed(2)} / {m.match?.einheit}
+                    </p>
+                  </div>
+                  <Badge variant={m.confidence >= 0.8 ? "default" : "secondary"} className="shrink-0 text-xs">
+                    {Math.round(m.confidence * 100)}%
+                  </Badge>
+                </div>
+              ))}
+
+              {/* Nicht gematchte Items */}
+              {tgUnmatched.length > 0 && (
+                <div className="p-3 rounded-lg bg-status-warning-subtle">
+                  <div className="flex items-center gap-2 mb-1">
+                    <AlertTriangle className="h-4 w-4 text-status-warning" />
+                    <p className="text-sm font-medium text-status-warning">Nicht im Katalog:</p>
+                  </div>
+                  {tgUnmatched.map((u: any, idx: number) => (
+                    <p key={idx} className="text-sm text-muted-foreground">{u.orderItemName}</p>
+                  ))}
+                </div>
+              )}
+
+              {/* Bestellen Button */}
+              {tgMatched.length > 0 && (
+                <Button onClick={submitTransgourmetOrder} disabled={tgOrdering} className="w-full mt-2">
+                  {tgOrdering ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Truck className="h-4 w-4 mr-2" />}
+                  {tgMatched.length} Artikel in Warenkorb legen
+                </Button>
+              )}
+            </div>
           )}
         </DialogContent>
       </Dialog>

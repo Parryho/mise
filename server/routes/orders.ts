@@ -255,6 +255,76 @@ Regeln:
     res.json(parseLocal(text));
   });
 
+  // === Transgourmet: Artikel-Matching ===
+  app.post("/api/orders/:id/transgourmet/match", requireAuth, async (req: Request, res: Response) => {
+    const listId = parseInt(getParam(req.params.id));
+    const list = await storage.getOrderList(listId);
+    if (!list) return res.status(404).json({ error: "Liste nicht gefunden" });
+
+    const items = await storage.getOrderItems(listId);
+    const uncheckedItems = items
+      .filter((i: any) => !i.isChecked)
+      .map((i: any) => ({ name: i.name, amount: i.amount }));
+
+    if (uncheckedItems.length === 0) {
+      return res.json({ matched: [], unmatched: [] });
+    }
+
+    try {
+      const { matchOrderItems } = await import("../transgourmet-agent");
+      const results = await matchOrderItems(uncheckedItems);
+
+      const matched = results.filter(r => r.match !== null);
+      const unmatched = results.filter(r => r.match === null);
+
+      res.json({ matched, unmatched });
+    } catch (error: any) {
+      console.error("Transgourmet match error:", error);
+      res.status(500).json({ error: "Matching fehlgeschlagen: " + error.message });
+    }
+  });
+
+  // === Transgourmet: In Warenkorb legen ===
+  app.post("/api/orders/:id/transgourmet/order", requireAuth, async (req: Request, res: Response) => {
+    const listId = parseInt(getParam(req.params.id));
+    const list = await storage.getOrderList(listId);
+    if (!list) return res.status(404).json({ error: "Liste nicht gefunden" });
+
+    const { items } = req.body; // [{artikelNr, name, menge}]
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: "Keine Artikel angegeben" });
+    }
+
+    try {
+      const { addToCart } = await import("../transgourmet-agent");
+      const result = await addToCart(items);
+
+      // Save result in order list notes
+      if (result.success) {
+        await storage.updateOrderList(listId, {
+          notes: `Transgourmet: ${result.itemsAdded} Artikel im Warenkorb. ${result.cartUrl || ""}`,
+        });
+      }
+
+      res.json(result);
+    } catch (error: any) {
+      console.error("Transgourmet order error:", error);
+      res.status(500).json({ error: "Bestellung fehlgeschlagen: " + error.message });
+    }
+  });
+
+  // === Transgourmet: Screenshot (Debug) ===
+  app.get("/api/orders/transgourmet/screenshot", requireAuth, async (_req: Request, res: Response) => {
+    try {
+      const { screenshotSchnellerfassung } = await import("../transgourmet-agent");
+      const screenshot = await screenshotSchnellerfassung();
+      res.json({ screenshot: `data:image/png;base64,${screenshot}` });
+    } catch (error: any) {
+      console.error("Transgourmet screenshot error:", error);
+      res.status(500).json({ error: "Screenshot fehlgeschlagen: " + error.message });
+    }
+  });
+
   // === Phase 3: Public read-only endpoint for wall display ===
   app.get("/api/public/order-list", async (_req: Request, res: Response) => {
     const list = await storage.getActiveOrderList();

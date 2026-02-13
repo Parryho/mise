@@ -5,7 +5,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, ChevronLeft, ChevronRight, Trash2, ShoppingCart, CalendarDays, Users, GripVertical, BookOpen, X, Search, Check, ChevronsUpDown } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, Trash2, ShoppingCart, CalendarDays, Users, GripVertical, BookOpen, X, Search, Check, ChevronsUpDown, RotateCw, Printer } from "lucide-react";
+import { Link } from "wouter";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -256,6 +257,16 @@ export default function MenuPlan() {
             )}
           </div>
           <div className="flex gap-1">
+            <Link href="/rotation">
+              <Button variant="ghost" size="sm" className="h-8 text-xs text-primary-foreground hover:bg-white/20 gap-1 px-2">
+                <RotateCw className="h-3.5 w-3.5" /> Rotation
+              </Button>
+            </Link>
+            <Link href="/print">
+              <Button variant="ghost" size="sm" className="h-8 text-xs text-primary-foreground hover:bg-white/20 gap-1 px-2">
+                <Printer className="h-3.5 w-3.5" /> {t("common.print")}
+              </Button>
+            </Link>
             <Button
               variant="ghost"
               size="sm"

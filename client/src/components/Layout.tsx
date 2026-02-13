@@ -17,7 +17,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const navItems = [
     { icon: Home, labelKey: "nav.home", href: "/today" },
-    { icon: CalendarDays, labelKey: "nav.planning", href: "/rotation" },
+    { icon: CalendarDays, labelKey: "nav.planning", href: "/wochenplan" },
     { icon: ChefHat, labelKey: "nav.recipes", href: "/recipes" },
     { icon: Dices, labelKey: "nav.quiz", href: "/quiz" },
     { icon: Thermometer, labelKey: "nav.haccp", href: "/haccp" },

@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Loader2, ChefHat, Printer, AlertTriangle, Plus, Settings2, Trash2 } from "lucide-react";
+import { Loader2, ChefHat, Printer, AlertTriangle, Plus, Settings2, Trash2, CalendarDays } from "lucide-react";
 import { Link } from "wouter";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -371,6 +371,11 @@ export default function Rotation() {
 
         {/* Action buttons */}
         <div className="flex gap-2 mb-2">
+          <Link href="/wochenplan" className="flex-1">
+            <Button size="sm" variant="secondary" className="w-full gap-1.5 text-xs font-semibold">
+              <CalendarDays className="h-3.5 w-3.5" /> {t("rotation.weekPlan")}
+            </Button>
+          </Link>
           <Button
             size="sm"
             variant="secondary"

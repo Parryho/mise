@@ -56,16 +56,35 @@ export default function Print() {
     apiFetch("/api/locations").then(setLocations).catch(() => {});
   }, []);
 
-  const fetchData = async () => {
+  const fetchData = async (start: string, end: string) => {
     setLoading(true);
     try {
       const [planData, recipeData] = await Promise.all([
-        apiFetch<MenuPlanEntry[]>(`/api/menu-plans?start=${startDate}&end=${endDate}`),
+        apiFetch<MenuPlanEntry[]>(`/api/menu-plans?start=${start}&end=${end}`),
         apiFetch<Recipe[]>("/api/recipes"),
       ]);
 
       const recipeMap: Record<number, Recipe> = {};
       for (const r of recipeData) recipeMap[r.id] = r;
+
+      // Auto-advance to next week if current week has no data
+      if (planData.length === 0 && start === weekRange.start && end === weekRange.end) {
+        const nextMonday = new Date(start);
+        nextMonday.setDate(nextMonday.getDate() + 7);
+        const nextSunday = new Date(nextMonday);
+        nextSunday.setDate(nextMonday.getDate() + 6);
+        const nextStart = formatLocalDate(nextMonday);
+        const nextEnd = formatLocalDate(nextSunday);
+        const nextData = await apiFetch<MenuPlanEntry[]>(`/api/menu-plans?start=${nextStart}&end=${nextEnd}`);
+        if (nextData.length > 0) {
+          setStartDate(nextStart);
+          setEndDate(nextEnd);
+          setPlans(nextData);
+          setRecipes(recipeMap);
+          setLoading(false);
+          return;
+        }
+      }
 
       setPlans(planData);
       setRecipes(recipeMap);
@@ -77,7 +96,7 @@ export default function Print() {
   };
 
   useEffect(() => {
-    fetchData();
+    fetchData(startDate, endDate);
   }, [startDate, endDate]);
 
   const dates = Array.from(new Set(plans.map(p => p.date))).sort();

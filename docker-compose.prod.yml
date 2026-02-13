@@ -36,6 +36,7 @@ services:
     volumes:
       - ./backups:/backups
       - recipe-uploads:/app/uploads/recipes
+      - document-uploads:/app/uploads/documents
     environment:
       DATABASE_URL: postgresql://${PGUSER:-postgres}:${PGPASSWORD}@db:5432/${PGDATABASE:-mise}
       PORT: 3000
@@ -115,6 +116,7 @@ services:
 volumes:
   pgdata:
   recipe-uploads:
+  document-uploads:
   certbot-conf:
   certbot-www:
   # prometheus-data:

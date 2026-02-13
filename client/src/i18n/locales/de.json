@@ -624,7 +624,9 @@
       "gdpr": "DSGVO",
       "gdprDesc": "Export & Löschung",
       "server": "Server",
-      "serverDesc": "Monitoring & Status"
+      "serverDesc": "Monitoring & Status",
+      "documents": "Dokumente",
+      "documentsDesc": "Dateien & Uploads"
     },
     "roles": {
       "admin": "K\u00fcchenchef (Admin)",
@@ -1379,5 +1381,34 @@
     "done": "erledigt",
     "print": "Drucken",
     "scan": "Zettel scannen"
+  },
+  "documents": {
+    "title": "Dokumente",
+    "upload": "Hochladen",
+    "uploadTitle": "Dateien hochladen",
+    "category": "Kategorie",
+    "description": "Beschreibung",
+    "descriptionPlaceholder": "Optionale Beschreibung...",
+    "dropHere": "Dateien hierher ziehen oder antippen",
+    "allowedTypes": "JPG, PNG, WebP, PDF, Excel, Word, TXT, CSV",
+    "maxSize": "Max. {{size}} pro Datei, bis zu {{count}} Dateien",
+    "tooLarge": "Datei zu groß",
+    "uploading": "Wird hochgeladen...",
+    "uploadCount": "{{count}} Datei(en) hochladen",
+    "uploadSuccess": "Upload erfolgreich",
+    "filesUploaded": "{{count}} Datei(en) hochgeladen",
+    "deleted": "Dokument gelöscht",
+    "confirmDelete": "Dokument wirklich löschen?",
+    "empty": "Noch keine Dokumente hochgeladen",
+    "noPreview": "Keine Vorschau verfügbar — bitte herunterladen",
+    "download": "Herunterladen",
+    "uploadedBy": "Hochgeladen von {{name}}",
+    "categories": {
+      "rechnungen": "Rechnungen",
+      "lieferscheine": "Lieferscheine",
+      "haccp": "HACCP",
+      "rezepte": "Rezepte",
+      "sonstiges": "Sonstiges"
+    }
   }
 }

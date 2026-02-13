@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import {
   Loader2, Users, Shield, Settings2, Check, Globe, Trash2, UserCheck, UserX,
   LogOut, UserPlus, Mail, ChevronRight, Database, Activity, MapPin, Info,
-  Eye, EyeOff,
+  Eye, EyeOff, FileText,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
@@ -112,6 +112,7 @@ export default function SettingsPage() {
               { href: "/settings/backup", icon: Database, labelKey: "settings.adminGrid.backup", descKey: "settings.adminGrid.backupDesc", bg: "bg-green-50", color: "text-green-600" },
               { href: "/settings/gdpr", icon: Shield, labelKey: "settings.adminGrid.gdpr", descKey: "settings.adminGrid.gdprDesc", bg: "bg-purple-50", color: "text-purple-600" },
               { href: "/settings/server-status", icon: Activity, labelKey: "settings.adminGrid.server", descKey: "settings.adminGrid.serverDesc", bg: "bg-amber-50", color: "text-amber-600" },
+              { href: "/documents", icon: FileText, labelKey: "settings.adminGrid.documents", descKey: "settings.adminGrid.documentsDesc", bg: "bg-teal-50", color: "text-teal-600" },
             ].map(({ href, icon: Icon, labelKey, descKey, bg, color }) => (
               <Card
                 key={href}

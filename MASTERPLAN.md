@@ -613,10 +613,11 @@ Phase 2 (Tag-System) bringt bereits 80% Verbesserung. Pairing-Scores sind option
 | ~~🔥 1~~ | ~~**11.7-11.9**~~ | ~~**Generator cuisine-aware machen**~~ | ~~**2-3h**~~ | ✅ **Done** |
 | ~~2~~ | ~~M1-M14~~ | ~~Code Audit MITTEL-Findings~~ | ~~~45h~~ | ✅ **Done** |
 | ~~3~~ | ~~11.10~~ | ~~Bulk-Tag-Editor (235 Rezepte)~~ | ~~4-6h~~ | ✅ **Done** |
-| 4 | R2 | Offene R2-Tickets | ~16h | Admin-UX |
-| 5 | 14 | Gäste & Catering zusammenlegen | ~3.5h | UX-Vereinfachung |
-| ~~6~~ | ~~15~~ | ~~Rezeptdatenbank übersetzen (EN/TR/UK)~~ | ~~~1h~~ | ✅ **Done** |
-| 7 | 11.11 | KitcheNette Pairing-Scores | 8-12h | +15-20% |
+| 4 | 16 | Dokument-Upload-Modul (Excel, PDF, etc.) | ~4h | Küchenalltag |
+| 5 | R2 | Offene R2-Tickets | ~16h | Admin-UX |
+| 6 | 14 | Gäste & Catering zusammenlegen | ~3.5h | UX-Vereinfachung |
+| ~~7~~ | ~~15~~ | ~~Rezeptdatenbank übersetzen (EN/TR/UK)~~ | ~~~1h~~ | ✅ **Done** |
+| 8 | 11.11 | KitcheNette Pairing-Scores | 8-12h | +15-20% |
 
 ### Metriken
 
@@ -690,6 +691,31 @@ PAX/Gästezahlen und Catering-Events in eine gemeinsame Seite "Gäste & Events" 
 | 15.6 | Client: `apiFetch` sendet Sprache automatisch + Public Menu mit `?lang=` | ✅ Done | 15 Min |
 
 **Kosten:** $0 (Google Translate gratis, Haiku über Max-Abo) | **Aufwand:** ~1.5h gesamt
+
+### Phase 16: Dokument-Upload-Modul ✅ (13.02.2026)
+
+Allgemeine Dokumentenablage für Küchenpersonal: Excel, PDF, Bilder, Word, CSV hochladen, organisieren, ansehen, parsen.
+Typische Anwendungsfälle: Rechnungen, Lieferscheine, HACCP-Protokolle, Rezept-PDFs, Preislisten.
+
+| # | Task | Status | Aufwand |
+|---|------|--------|--------|
+| 16.1 | DB-Schema: `documents` Tabelle (id, filename, originalName, mimeType, size, category, description, uploadedBy) | ✅ | 15 Min |
+| 16.2 | Upload-Modul: Multer-Config (`server/modules/documents/upload.ts`) — max 20MB, 10 Dateien, erlaubte Typen | ✅ | 20 Min |
+| 16.3 | API-Routen (`server/routes/documents.ts`): GET list, GET :id, POST upload, PUT metadata, DELETE, GET :id/download | ✅ | 45 Min |
+| 16.4 | Route registrieren + statisches Serving `/uploads/documents` | ✅ | 10 Min |
+| 16.5 | Frontend-Seite `Documents.tsx`: Card-Grid, Suche, Kategorie-Filter | ✅ | 1h |
+| 16.6 | Upload-Komponente `DocumentUploadArea.tsx`: Drag & Drop, Kategorie-Auswahl | ✅ | 30 Min |
+| 16.7 | Vorschau-Komponente `DocumentPreview.tsx`: Bilder inline, PDF iframe, Download | ✅ | 30 Min |
+| 16.8 | Navigation + Router-Route `/documents` + Settings-Link | ✅ | 10 Min |
+| 16.9 | Übersetzungen (de.json/en.json) | ✅ | 10 Min |
+| 16.10 | Docker Volume `document-uploads` für Persistenz | ✅ | 10 Min |
+| 16.11 | DB-Migration (`drizzle-kit push`) | ⏳ Deploy | 5 Min |
+| 16.12 | `xlsx` von devDependencies → dependencies | ⏳ Optional | 5 Min |
+
+**Kategorien:** `rechnungen`, `lieferscheine`, `haccp`, `rezepte`, `sonstiges`
+**Erlaubte Dateitypen:** JPEG, PNG, WebP, PDF, XLSX/XLS, DOCX/DOC, TXT, CSV
+**Pattern-Vorlage:** `RecipeMediaUpload.tsx` (Drag & Drop) + `server/modules/recipe/media.ts` (Multer)
+**Aufwand:** ~4h gesamt
 
 ---
 

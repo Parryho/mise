@@ -58,6 +58,7 @@ const GuestMenu = lazy(() => import("@/pages/public/GuestMenu"));
 const DigitalSignage = lazy(() => import("@/pages/public/DigitalSignage"));
 const OrderList = lazy(() => import("@/pages/OrderList"));
 const OrderBoard = lazy(() => import("@/pages/public/OrderBoard"));
+const Documents = lazy(() => import("@/pages/Documents"));
 
 function PageLoader() {
   return (
@@ -187,6 +188,9 @@ function AuthenticatedRoutes() {
       </Route>
       <Route path="/orders">
         <Layout><OrderList /></Layout>
+      </Route>
+      <Route path="/documents">
+        <Layout><Documents /></Layout>
       </Route>
       <Route path="/catering">
         <Layout><Catering /></Layout>

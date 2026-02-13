@@ -103,7 +103,7 @@ async function openSchnellerfassung(page: Page): Promise<boolean> {
   console.log("[TG] Portal loaded:", page.url());
 
   // Wait for jQuery to be available (JS bundles loaded)
-  const hasJQuery = await page.evaluate(() => typeof jQuery !== "undefined");
+  const hasJQuery = await page.evaluate(() => typeof (window as any).jQuery !== "undefined");
   console.log("[TG] jQuery loaded:", hasJQuery);
   if (!hasJQuery) {
     // Wait a bit more for JS to initialize
@@ -119,7 +119,7 @@ async function openSchnellerfassung(page: Page): Promise<boolean> {
   // Verify quickadd widget is visible
   const visible = await page.evaluate(() => {
     const el = document.querySelector(".quickadd");
-    return el ? el.offsetParent !== null : false;
+    return el ? (el as HTMLElement).offsetParent !== null : false;
   });
   console.log("[TG] Schnellerfassung visible:", visible);
   return visible;

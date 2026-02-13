@@ -624,7 +624,9 @@
       "gdpr": "GDPR",
       "gdprDesc": "Export & Deletion",
       "server": "Server",
-      "serverDesc": "Monitoring & Status"
+      "serverDesc": "Monitoring & Status",
+      "documents": "Documents",
+      "documentsDesc": "Files & Uploads"
     },
     "roles": {
       "admin": "Head Chef (Admin)",
@@ -1379,5 +1381,34 @@
     "done": "done",
     "print": "Print",
     "scan": "Scan note"
+  },
+  "documents": {
+    "title": "Documents",
+    "upload": "Upload",
+    "uploadTitle": "Upload files",
+    "category": "Category",
+    "description": "Description",
+    "descriptionPlaceholder": "Optional description...",
+    "dropHere": "Drop files here or tap to select",
+    "allowedTypes": "JPG, PNG, WebP, PDF, Excel, Word, TXT, CSV",
+    "maxSize": "Max {{size}} per file, up to {{count}} files",
+    "tooLarge": "File too large",
+    "uploading": "Uploading...",
+    "uploadCount": "Upload {{count}} file(s)",
+    "uploadSuccess": "Upload successful",
+    "filesUploaded": "{{count}} file(s) uploaded",
+    "deleted": "Document deleted",
+    "confirmDelete": "Really delete this document?",
+    "empty": "No documents uploaded yet",
+    "noPreview": "No preview available — please download",
+    "download": "Download",
+    "uploadedBy": "Uploaded by {{name}}",
+    "categories": {
+      "rechnungen": "Invoices",
+      "lieferscheine": "Delivery notes",
+      "haccp": "HACCP",
+      "rezepte": "Recipes",
+      "sonstiges": "Other"
+    }
   }
 }

@@ -493,6 +493,33 @@ export const orderItems = pgTable("order_items", {
   index("idx_order_items_list").on(table.listId),
 ]);
 
+// === Documents (Datei-Upload) ===
+export const DOCUMENT_CATEGORIES = [
+  { id: "rechnungen", label: "Rechnungen" },
+  { id: "lieferscheine", label: "Lieferscheine" },
+  { id: "haccp", label: "HACCP-Dokumente" },
+  { id: "rezepte", label: "Rezepte" },
+  { id: "sonstiges", label: "Sonstiges" },
+] as const;
+
+export type DocumentCategoryId = typeof DOCUMENT_CATEGORIES[number]["id"];
+
+export const documents = pgTable("documents", {
+  id: serial("id").primaryKey(),
+  filename: text("filename").notNull(),
+  originalName: text("original_name").notNull(),
+  mimeType: text("mime_type").notNull(),
+  size: integer("size").notNull(),
+  category: text("category").notNull().default("sonstiges"),
+  description: text("description"),
+  uploadedBy: varchar("uploaded_by").references(() => users.id, { onDelete: "set null" }),
+  uploadedByName: text("uploaded_by_name"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => [
+  index("idx_documents_category").on(table.category),
+  index("idx_documents_created").on(table.createdAt),
+]);
+
 // ========================
 // Zod Schemas
 // ========================
@@ -569,6 +596,13 @@ export const updateOrderItemSchema = z.object({
   supplierId: z.number().nullable().optional(),
   isChecked: z.boolean().optional(),
   sortOrder: z.number().optional(),
+});
+
+// Document schemas
+export const insertDocumentSchema = createInsertSchema(documents).omit({ id: true, createdAt: true });
+export const updateDocumentSchema = z.object({
+  category: z.string().optional(),
+  description: z.string().nullable().optional(),
 });
 
 export const quizFeedbackBatchSchema = z.object({
@@ -699,3 +733,7 @@ export type OrderList = typeof orderLists.$inferSelect;
 export type InsertOrderList = z.infer<typeof insertOrderListSchema>;
 export type OrderItem = typeof orderItems.$inferSelect;
 export type InsertOrderItem = z.infer<typeof insertOrderItemSchema>;
+
+// Document types
+export type Document = typeof documents.$inferSelect;
+export type InsertDocument = z.infer<typeof insertDocumentSchema>;

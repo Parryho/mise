@@ -17,6 +17,7 @@ import { registerPublicRoutes } from "./public";
 import { registerSupplierRoutes } from "./suppliers";
 import { registerAgentTeamRoutes } from "./agent-team";
 import { registerOrderRoutes } from "./orders";
+import { registerDocumentRoutes } from "./documents";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -41,6 +42,7 @@ export async function registerRoutes(
   registerSupplierRoutes(app);
   registerAgentTeamRoutes(app);
   registerOrderRoutes(app);
+  registerDocumentRoutes(app);
 
   // M7: API route index
   app.get("/api", (_req, res) => {
@@ -58,6 +60,7 @@ export async function registerRoutes(
       { module: "admin", prefix: "/api/admin", endpoints: ["GET /users", "PUT /users/:id", "POST /users/create", "DELETE /users/:id"] },
       { module: "suppliers", prefix: "/api/suppliers", endpoints: ["GET /", "POST /", "PUT /:id", "DELETE /:id"] },
       { module: "orders", prefix: "/api/orders", endpoints: ["GET /active", "GET /", "POST /", "PUT /:id", "POST /:id/items", "PUT /items/:itemId", "DELETE /items/:itemId", "POST /:id/scan"] },
+      { module: "documents", prefix: "/api/documents", endpoints: ["GET /", "GET /:id", "POST /upload", "PUT /:id", "DELETE /:id", "GET /:id/download"] },
     ];
     res.json({ version: "1.0", modules });
   });

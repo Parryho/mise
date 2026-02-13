@@ -182,6 +182,79 @@ Regeln:
     }
   });
 
+  // === Voice-to-Items (Gemini text parsing) ===
+  app.post("/api/orders/:id/voice", requireAuth, async (req: Request, res: Response) => {
+    const listId = parseInt(getParam(req.params.id));
+    const list = await storage.getOrderList(listId);
+    if (!list) return res.status(404).json({ error: "Liste nicht gefunden" });
+
+    const { text } = req.body;
+    if (!text) return res.status(400).json({ error: "Text erforderlich" });
+
+    // Local fallback parser (no API needed)
+    const parseLocal = (input: string) => {
+      const parts = input.split(/,|\bund\b|\bdann\b|\baußerdem\b|\bnoch\b/i).map(s => s.trim()).filter(Boolean);
+      return {
+        items: parts.map(part => {
+          const m = part.match(/^(\d+[\.,]?\d*\s*(?:kg|g|l|ml|stk|stück|pkg|kiste|sack|fl|bd|bund|dosen?|glas|eimer|beutel|karton)?)\s+(.+)$/i);
+          return {
+            name: m ? m[2].trim() : part,
+            amount: m ? m[1].trim() : null,
+            confidence: 0.6,
+          };
+        }).filter(i => i.name.length > 1),
+      };
+    };
+
+    const googleKey = process.env.GOOGLE_AI_API_KEY;
+
+    // Try Gemini first, fall back to local parser
+    if (googleKey) {
+      try {
+        const { GoogleGenerativeAI } = await import("@google/generative-ai");
+        const genAI = new GoogleGenerativeAI(googleKey);
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+
+        const prompt = `Du bekommst eine gesprochene Bestellung aus einer Großküche (österreichisches Deutsch, evtl. Dialekt).
+Extrahiere alle Artikel mit Menge und Name.
+
+Gesprochener Text: "${text}"
+
+Antworte NUR mit validem JSON:
+{
+  "items": [
+    { "name": "Mehl", "amount": "2kg", "confidence": 0.95 },
+    { "name": "Butter", "amount": "500g", "confidence": 0.8 }
+  ]
+}
+
+Regeln:
+- NUR Lebensmittel, Zutaten und Küchenprodukte extrahieren
+- Zwischengespräche, Smalltalk, Kommentare IGNORIEREN (z.B. "wart mal", "was noch", "ach ja")
+- Menge und Einheit zusammen als String (z.B. "2kg", "3 Stk", "1 Kiste")
+- Wenn Menge unklar oder nicht genannt, setze amount auf null
+- confidence: 0.0-1.0, wie sicher du dir bei der Erkennung bist
+- Österreichische Küchenbegriffe beibehalten (Erdäpfel, Paradeiser, Topfen...)
+- "und" / "dann noch" / "außerdem" als Trennzeichen interpretieren
+- Dialekt in Hochdeutsch-Artikelnamen umwandeln (z.B. "Erdöpfe" → "Erdäpfel")
+- DUPLIKATE zusammenfassen (Spracherkennung wiederholt oft Wörter)
+- Wenn gar kein Lebensmittel erkennbar, gib leeres items-Array zurück`;
+
+        const result = await model.generateContent(prompt);
+        const responseText = result.response.text();
+        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          return res.json(JSON.parse(jsonMatch[0]));
+        }
+      } catch (error: any) {
+        console.error("Gemini voice parse failed, using local fallback:", error.message);
+      }
+    }
+
+    // Fallback: lokaler Parser
+    res.json(parseLocal(text));
+  });
+
   // === Phase 3: Public read-only endpoint for wall display ===
   app.get("/api/public/order-list", async (_req: Request, res: Response) => {
     const list = await storage.getActiveOrderList();

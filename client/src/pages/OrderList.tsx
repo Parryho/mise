@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Plus, Camera, Printer, CheckCheck, Trash2, Loader2,
+  Plus, Camera, Mic, MicOff, Printer, CheckCheck, Trash2, Loader2,
   ShoppingCart, Package, Archive, ChevronDown, ChevronUp,
 } from "lucide-react";
 import {
@@ -54,6 +54,11 @@ export default function OrderListPage() {
   const [scanning, setScanning] = useState(false);
   const [scannedItems, setScannedItems] = useState<ScannedItem[]>([]);
   const [addingScan, setAddingScan] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [voiceTranscript, setVoiceTranscript] = useState("");
+  const voiceTranscriptRef = useRef("");
+  const recognitionRef = useRef<any>(null);
+  const stoppedByUserRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -170,6 +175,91 @@ export default function OrderListPage() {
     }
   };
 
+  // === Spracheingabe ===
+  const startListening = () => {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) {
+      toast({ title: "Nicht unterstützt", description: "Dein Browser unterstützt keine Spracheingabe", variant: "destructive" });
+      return;
+    }
+
+    stoppedByUserRef.current = false;
+    voiceTranscriptRef.current = "";
+    setVoiceTranscript("");
+    setIsListening(true);
+
+    const launch = () => {
+      const rec = new SR();
+      rec.lang = "de-AT";
+      rec.continuous = false;
+      rec.interimResults = true;
+
+      let interim = "";
+
+      rec.onresult = (e: any) => {
+        interim = "";
+        for (let i = 0; i < e.results.length; i++) {
+          const t = e.results[i][0].transcript;
+          if (e.results[i].isFinal) {
+            voiceTranscriptRef.current += t + ", ";
+            interim = "";
+          } else {
+            interim = t;
+          }
+        }
+        setVoiceTranscript((voiceTranscriptRef.current + interim).trim());
+      };
+
+      rec.onerror = (e: any) => {
+        if (e.error !== "no-speech" && e.error !== "aborted") {
+          console.error("Speech error:", e.error);
+        }
+      };
+
+      rec.onend = () => {
+        if (!stoppedByUserRef.current) {
+          setTimeout(launch, 100);
+        }
+      };
+
+      recognitionRef.current = rec;
+      rec.start();
+    };
+
+    launch();
+  };
+
+  const stopListening = async () => {
+    stoppedByUserRef.current = true;
+    recognitionRef.current?.stop();
+    setIsListening(false);
+
+    // Wait briefly for final result to arrive
+    await new Promise(r => setTimeout(r, 500));
+
+    const text = voiceTranscriptRef.current.trim();
+    if (!text || !list) {
+      console.log("Voice: no text captured, transcript was:", JSON.stringify(voiceTranscriptRef.current));
+      return;
+    }
+    console.log("Voice: sending text to server:", text);
+
+    // Send to Gemini for structured parsing
+    setScanning(true);
+    setShowScan(true);
+    setScannedItems([]);
+
+    try {
+      const result = await apiPost<{ items: ScannedItem[] }>(`/api/orders/${list.id}/voice`, { text });
+      setScannedItems(result.items || []);
+    } catch (error: any) {
+      toast({ title: "Erkennung fehlgeschlagen", description: error.message, variant: "destructive" });
+      setShowScan(false);
+    } finally {
+      setScanning(false);
+    }
+  };
+
   const addScannedItems = async () => {
     if (!list || scannedItems.length === 0) return;
     setAddingScan(true);
@@ -223,6 +313,14 @@ export default function OrderListPage() {
           <Button variant="outline" size="icon" onClick={() => fileRef.current?.click()} title="Zettel scannen">
             <Camera className="h-4 w-4" />
           </Button>
+          <Button
+            variant={isListening ? "destructive" : "outline"}
+            size="icon"
+            onClick={isListening ? stopListening : startListening}
+            title={isListening ? "Stopp" : "Ansagen"}
+          >
+            {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+          </Button>
         </div>
       </div>
 
@@ -235,6 +333,22 @@ export default function OrderListPage() {
         className="hidden"
         onChange={handlePhotoCapture}
       />
+
+      {/* Voice transcript live */}
+      {isListening && (
+        <div className="mb-3 p-3 rounded-lg border-2 border-destructive bg-destructive/5 print:hidden">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="h-2 w-2 rounded-full bg-destructive animate-pulse" />
+            <span className="text-sm font-medium text-destructive">Aufnahme läuft...</span>
+          </div>
+          {voiceTranscript ? (
+            <p className="text-sm text-muted-foreground italic">"{voiceTranscript}"</p>
+          ) : (
+            <p className="text-sm text-muted-foreground">Sag was bestellt werden soll...</p>
+          )}
+          <p className="text-xs text-muted-foreground/60 mt-1">Duplikate werden automatisch bereinigt</p>
+        </div>
+      )}
 
       {/* Quick-Add Bar */}
       <div className="sticky top-0 z-10 bg-background pb-3 pt-1 print:hidden">

@@ -240,24 +240,24 @@ export async function addToCart(items: OrderItem[]): Promise<AgentResult> {
 
         if (transferResp) {
           console.log("[TG] Transfer response:", transferResp.status(), transferResp.url());
-          // Transfer redirects to /order on success
-          await page.waitForTimeout(3000);
-          transferOk = true;
+          await page.waitForTimeout(2000);
         } else {
           console.error("[TG] No transfer response received");
         }
 
-        // Verify: check if we're on the cart page or if cart has items
-        const currentUrl = page.url();
-        if (currentUrl.includes("/order")) {
-          // We're on the cart page — check for items
-          const cartHasItems = await page.evaluate(() => {
-            const text = document.body.innerText;
-            return !text.includes("keine Einträge") && !text.includes("leer");
-          });
-          console.log("[TG] Cart page, has items:", cartHasItems);
-          transferOk = cartHasItems;
-        }
+        // Always navigate to cart to verify
+        console.log("[TG] Navigating to cart to verify...");
+        await page.goto(`${SHOP_URL}/order`, { waitUntil: "load", timeout: 15000 });
+        await page.waitForTimeout(3000);
+
+        const cartCheck = await page.evaluate(() => {
+          const text = document.body.innerText;
+          const hasItems = text.includes("Positionen") && !text.includes("leer") && !text.includes("keine Einträge");
+          const posMatch = text.match(/(\d+)\s*Position/);
+          return { hasItems, positions: posMatch ? posMatch[1] : "0", snippet: text.substring(0, 300) };
+        });
+        console.log("[TG] Cart check:", cartCheck.hasItems ? `${cartCheck.positions} Positionen` : "LEER");
+        transferOk = cartCheck.hasItems;
       } else {
         console.error("[TG] 'Alle hinzufügen' button not found");
       }

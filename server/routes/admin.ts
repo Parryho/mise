@@ -304,9 +304,7 @@ export function registerAdminRoutes(app: Express) {
   });
 
   // --- Health ---
-  app.get("/api/health", (_req: Request, res: Response) => {
-    res.json({ status: "ok", timestamp: new Date().toISOString() });
-  });
+  app.get("/api/health", healthHandler);
 
   // --- Locations ---
   app.get("/api/locations", requireAuth, async (_req: Request, res: Response) => {

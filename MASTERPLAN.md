@@ -528,18 +528,18 @@ Phase 2 (Tag-System) bringt bereits 80% Verbesserung. Pairing-Scores sind option
 | Prio | Issue | Datei | Status |
 |------|-------|-------|--------|
 | HOCH | `xlsx` hat 2 High-Vulns — ersetzen durch `exceljs` | `package.json` | offen |
-| HOCH | `jsPDF` 4x moderate Vulns (PDF Injection, DoS) | `package.json` | offen |
-| MITTEL | Role-Parameter bei User-Erstellung nicht gegen Enum validiert | `server/routes/auth.ts:189` | offen |
-| MITTEL | SSRF-Schutz fehlt IPv6 (`::1`, `fe80::`) | `server/modules/recipe/scraper.ts:28` | offen |
+| HOCH | `jsPDF` 4x moderate Vulns (PDF Injection, DoS) | `package.json` | ✅ 13.02.2026 (→ 4.1.0) |
+| MITTEL | Role-Parameter bei User-Erstellung nicht gegen Enum validiert | `server/routes/auth.ts:189` | ✅ 13.02.2026 |
+| MITTEL | SSRF-Schutz fehlt IPv6 (`::1`, `fe80::`) | `server/modules/recipe/scraper.ts:28` | ✅ War bereits implementiert |
 | MITTEL | Public Endpoints ohne Rate Limiting | `server/routes/public.ts` | offen |
 
 ### Performance
 | Prio | Issue | Datei | Status |
 |------|-------|-------|--------|
 | HOCH | Menu-Export lädt ALLE Rezepte statt nur referenzierte | `server/routes/menu-plans.ts:142` | offen |
-| HOCH | Fehlende DB-Indexes (recipes.name, staff, tasks) | `shared/schema.ts` | offen |
+| HOCH | Fehlende DB-Indexes (recipes.name, staff, tasks) | `shared/schema.ts` | ✅ 13.02.2026 (6 Indexes) |
 | MITTEL | Unbounded Queries ohne Pagination | `server/storage.ts` | offen |
-| MITTEL | Kein Image-Resizing — volle Fotos ans Handy | `server/modules/recipe/media.ts` | offen |
+| MITTEL | Kein Image-Resizing — volle Fotos ans Handy | `server/modules/recipe/media.ts` | ✅ 13.02.2026 (sharp 1920px) |
 
 ### Code-Qualität
 | Datei | Zeilen | Problem | Status |

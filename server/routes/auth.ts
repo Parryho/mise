@@ -1,6 +1,6 @@
 import type { Express, Request, Response } from "express";
 import bcrypt from "bcryptjs";
-import { registerUserSchema, loginUserSchema, updateUserSchema } from "@shared/schema";
+import { registerUserSchema, loginUserSchema, updateUserSchema, VALID_ROLES } from "@shared/schema";
 import { requireAuth, requireAdmin, requireRole, audit, getParam, storage, KITCHEN_POSITIONS, authRateLimiter, registerRateLimiter } from "./middleware";
 
 export function registerAuthRoutes(app: Express) {
@@ -186,7 +186,7 @@ export function registerAuthRoutes(app: Express) {
         name,
         email,
         position: "Koch",
-        role: role || "koch",
+        role: role && (VALID_ROLES as readonly string[]).includes(role) ? role : "koch",
         isApproved: true,
       });
 

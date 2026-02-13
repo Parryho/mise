@@ -620,9 +620,13 @@ export const quizFeedbackBatchSchema = z.object({
   })),
 });
 
+// Valid roles enum
+export const VALID_ROLES = ["admin", "souschef", "koch", "fruehkoch", "lehrling", "abwasch", "guest"] as const;
+export type UserRole = typeof VALID_ROLES[number];
+
 // Update schemas (partial versions for PUT endpoints)
 export const updateUserSchema = z.object({
-  role: z.string().optional(),
+  role: z.enum(VALID_ROLES).optional(),
   isApproved: z.boolean().optional(),
   position: z.string().optional(),
   name: z.string().optional(),

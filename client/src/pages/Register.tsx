@@ -58,16 +58,13 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-b from-background to-secondary/20">
+    <div className="theme-petrol min-h-screen flex items-center justify-center p-4 bg-gradient-to-b from-background to-secondary/20">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <div className="bg-primary/10 p-4 rounded-full">
-              <ChefHat className="h-12 w-12 text-primary" />
-            </div>
+          <div className="flex justify-center mb-2">
+            <img src="/mise-logo-new.png" alt="Mise" className="h-16 object-contain" />
           </div>
-          <CardTitle className="text-2xl font-heading">Registrierung</CardTitle>
-          <CardDescription>Erstellen Sie Ihr mise-Konto</CardDescription>
+          <CardDescription>Neues Konto erstellen</CardDescription>
         </CardHeader>
         <CardContent>
           {success ? (
